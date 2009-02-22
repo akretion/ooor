@@ -13,7 +13,7 @@ rescue SystemCallError
   $stderr.print "IO failed: " + $!
   puts "
 ***********
-   obviously you forget to create and configure a small Yaml file Ooor needs to connect to your OpenERP server
+   obviously you forgot to create and configure a small Yaml file Ooor needs to connect to your OpenERP server
    you should create a file APPLICATION_ROOT/config/ooor.yml
    it should contains the following (adapted to your running OpenERP account of course):
 
@@ -85,5 +85,5 @@ end
 models.each {|openerp_model| OpenObjectResource.define_openerp_model(openerp_model, models_url, database, user_id, pass, proc) }
 
 
-# *************** load the models and their REST controllers
+# *************** load the models REST controllers
 models.each {|openerp_model| OpenObjectsController.define_openerp_controller(openerp_model.model, proc) }
