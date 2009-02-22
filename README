@@ -1,0 +1,118 @@
+Ooor - OpenObject on Rails
+=========
+
+What?
+Who told you ERP's hurt? OpenERP is an ERP that doesn't hurt, just like Rails is "web development that doesn't hurt".
+And what is Ooor? Ooor stands for OpenObject on Rails. Remember OpenObject is the RAD framework powering the most powerfull open source ERP, namly OpenERP.
+Meaning Ooor exposes seamlessly your OpenERP application, to your custom Rails application.
+Needless to say, Ooor doubly doesn't hurt.
+
+
+Why?
+OpenERP has lot's of built-in business modules (350+) and makes it really straightforward to create/customize business applications. That's complex persistent data-models
+featuring
+- ACID transactions on PostgreSQL
+- role based
+- modular
+- integrated BPM (Business Process Management)
+- integrated reporting system
+...
+In a word OpenERP really rocks when it's about quickly creating the bacloffice of those enterprise applications. OpenERP is a bit higher level than Rails (for instance it's
+component oriented while Rails is REST oriented) so if you adhere to the OpenERP conventions, then you are done faster than coding a Rails app (seriously).
+Adhering means: you stick to their views, their widget, their look and feel, their way composing components, their ORM (kind of ActiveRecord, the Postgres database...
+
+But sometimes you can't afford that. Typicall examples are end users application like e-commerce shops.
+So what happens if you don't adhere to the OpenERP framework? Well that's where Ooor comes into action. It allows you to build a Rails application much like you want,
+where you totally control the end user presentation and interaction. But Ooor makes it straightforward to use a standard OpenERP model as your persistant model.
+An other reason why you might want to use Ooor is because you would like to code essentially a Rails or say web appication
+(because you know it better, because the framework is cleaner or because you will reuse something, possibly Java libraries though JRuby)
+but you still want to benefor from OpenERP features.
+Finally you light also want to use Ooor simply expose your OpenERP through REST to other consumer applications. Since Ooor juts does that too.
+
+
+How?
+OpenERP is a Python based open source ERP. Every action in OpenERP is actually invokable as a webservice (SOA orientation, close to being RESTful).
+Ooor just takes advantage of this to power your favorite web development tool - Rails - with OpenERP domain objects and business methods.
+
+Ooor aims at being a very simple piece of code (< 500 lines of code; e.g no bug, easy to evolve) adhering to Rails standards.
+So instead of re-inventing the wheel, Ooor basically just sits on the top of Rails ActiveResource::Base, you know the standard way of
+remoting you ActiveRecord Rails models with REST.
+
+Remember, ActiveResource is actually simpler than ActiveRecord. It's aimed at remoting ANY object model, not necessarily ActiveRecord models.
+So ActiveResource is only a subset of ActiveRecord, sharing the common denominator API.
+
+Ooor implements ActiveResource public API almost fully. It means that you can remotely work on any OpenERP model using the standard ActiveResource API.
+
+But, Ooor goes actually a bit further: it does implements model associations (one2many, many2many, many2one, single table inheritance).
+Indeed, when loading the OpenERP models, we load the relationnal meta-model using OpenERP standard datamodel introspection services. Then we cache
+that relationnal model and use it in OpenObjectResource.method_missing to load associations as requested.
+
+Ooor also extends ActiveResource a bit with special request parameters (like :domain or :context) that will just map smoothly to the OpenERP native API, see API.
+
+
+Example
+=======
+
+Object API
+
+Basic finders:
+    ProductProduct.find(1)
+    ProductProduct.find([1,2])
+    ProductProduct.find([1])
+    ProductProduct.find(:all)
+    ProductProduct.find(:last)
+
+OpenERP domain support:
+    ResPartner.find(:all, :domain=>[['supplier', '=', 1],['active','=',1]])
+
+OpenERP context support:
+    ProductProduct.find(1, :context => {:my_key => 'value'}
+
+Request params or ActiveResource equivalence of OpenERP domain (but degraded as only the = operator is supported, else use domain):
+    Partners.find(:all, :params => {:supplier => true})
+
+Relations (many2one, one2many, many2many) support:
+    ProductProduct.find(1).product_tmpl_id
+    Support inherited relations, for instance:  ProductProduct.find(1).categ_id where categ_id is inherited from the ProductTemplate
+    SaleOrder.find(1).order_line
+
+Load only specific fields support (faster than loading all fields):
+    ProductProduct.find(1, :fields=>["state", "id"])
+    ProductProduct.find(:all, :fields=>["state", "id"])
+    ProductProduct.find([1,2], :fields=>["state", "id"])
+    ProductProduct.find(:all, :fields=>["state", "id"])
+    even in relations:
+    SaleOrder.find(1).order_line(:fields => ["state"])
+
+Create:
+>> pc = ProductCategory.new(:name => 'Categ From Rails!')
+=> #<ProductCategory:0xb702c42c @prefix_options={}, @attributes={"name"=>"Categ From Rails!"}>
+>> pc.create
+=> 14
+
+Update:
+TODO
+
+Delete:
+TODO
+
+
+
+REST API (HTTP methods hitting Rails controllers)
+
+http://localhost:3000/res_partner
+http://localhost:3000/res_partner.xml
+http://localhost:3000/res_partner.js
+http://localhost:3000/res_partner/2
+http://localhost:3000/res_partner/2.js
+http://localhost:3000/res_partner/2.xml
+http://localhost:3000/res_partner/[2,3,4].xml
+http://localhost:3000/res_partner/[2,3,4].js
+
+TODO http://localhost:3000/res_partner.xml?active=1
+
+TODO http://localhost:3000/res_partner.xml?domain=TODO
+
+
+
+Copyright (c) 2009 [Raphaël Valyi], released under the MIT license
