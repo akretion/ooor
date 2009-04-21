@@ -274,7 +274,7 @@ class OpenObjectResource < ActiveResource::Base
     result = relationnal_result(method_id, *arguments)
     if result
       return result
-    elsif !self.class.many2one_relations.empty?
+    elsif @relations and @relations[method_id.to_s] and !self.class.many2one_relations.empty?
       #maybe the relation is inherited or could be inferred from a related field
       self.class.many2one_relations.each do |k, field|
         model = self.class.load_relation(field.relation, @relations[method_id.to_s][0], *arguments)
