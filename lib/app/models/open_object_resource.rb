@@ -99,6 +99,7 @@ class OpenObjectResource < ActiveResource::Base
       @field_defined = true
     end
 
+
     def define_openerp_model(arg, url, database, user_id, pass, binding)
       param = (arg.is_a? OpenObjectResource) ? arg.attributes.merge(arg.relations) : {'model' => arg}
       model_key = param['model']
@@ -143,7 +144,7 @@ class OpenObjectResource < ActiveResource::Base
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
     def rpc_execute_with_all(db, uid, pass, obj, method, *args)
-      client.call("execute", db, uid, pass, obj, method, *args)
+      try_with_pretty_error_log { client.call("execute", db, uid, pass, obj, method, *args) }
     end
 
 
@@ -157,7 +158,21 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def rpc_exec_workflow_with_all(method, *args)
-      client.call("exec_workflow", db, uid, pass, obj, method,  *args)
+      try_with_pretty_error_log { client.call("exec_workflow", db, uid, pass, obj, method,  *args) }
+    end
+
+
+    def try_with_pretty_error_log
+      begin
+        yield
+      rescue RuntimeError => e
+        puts "OpenERP server error!"
+        begin
+          puts eval("#{ e }".gsub("wrong fault-structure: ", ""))["faultString"]
+        rescue
+          puts e.inspect
+        end
+      end
     end
 
 
@@ -246,7 +261,17 @@ class OpenObjectResource < ActiveResource::Base
 
   #compatible with the Rails way but also supports OpenERP context
   def create(context={})
-    self.class.rpc_execute('create', *(@attributes + [context]))
+    self.id = self.class.rpc_execute('create', @attributes, context)
+  end
+
+  #compatible with the Rails way but also supports OpenERP context
+  def update(context={})
+    self.class.rpc_execute('write', self.id, @attributes.reject{|k, v| k == 'id'}, context)
+  end
+
+  #compatible with the Rails way but also supports OpenERP context
+  def destroy(context={})
+    self.class.rpc_execute('unlink', self.id, context)
   end
 
 
