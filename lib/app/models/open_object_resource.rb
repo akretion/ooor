@@ -163,16 +163,12 @@ class OpenObjectResource < ActiveResource::Base
 
 
     def try_with_pretty_error_log
-      begin
         yield
       rescue RuntimeError => e
         puts "OpenERP server error!"
-        begin
-          puts eval("#{ e }".gsub("wrong fault-structure: ", ""))["faultString"]
+        puts eval("#{ e }".gsub("wrong fault-structure: ", ""))["faultString"]
         rescue
           puts e.inspect
-        end
-      end
     end
 
 
