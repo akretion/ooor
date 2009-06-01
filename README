@@ -58,14 +58,15 @@ Create a Rails application (tested with Rail 2.1) or use some existing Rails app
 Install the ooor plugin inside you RAILS_ROOT/vendor/plugin/ directory
 At this point you should be able to start you Rails server with ruby script/sever for instance, but you'll get some errors because the plgin isn't yet configured to
 connect the OpenERP server.
-So you should create a ooor.yml file in your RAILS_ROOT/config/ directory. Edit ooor.yml and paste the default content that was given inside the previous error log
-(or look in ooor/lib/ooor.rb the default content), adapt it to your OpenERP config. You should here give the admin username + password, They are required to
+So you should create a ooor.yml file in your RAILS_ROOT/config/ directory. Edit ooor.yml and paste the default content you can find in the ooor/ooor.yml file in the plugin,
+customize it to your own OpenERP config. You should here give the admin username + password, They are required to
 load your OpenERP object model in Rails.
 Now you can restart and you should get no error this time.
 You can already test the Object API in a Rails console (ruby script/console) evetually.
 If you want to activate the REST controllers, edit your config/route.rb file.
 Then somewhere inside the ActionController::Routing::Routes.draw do |map| statement (depending on the priority you want), write:
     OpenObjectsController.load_all_controllers(map)
+
 This will define the controllers and register the appropiate Rails REST resources mapping to them.
 You are done.
 
@@ -111,10 +112,18 @@ Create:
 => 14
 
 Update:
-TODO
+>> pc.name = "A new name"
+>> pc.save
 
 Delete:
-TODO
+>> pc.destroy
+
+
+Call workflow:
+see code; TODO document
+
+Call aribtrary method:
+see code; TODO document
 
 
 

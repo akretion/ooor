@@ -1,0 +1,24 @@
+#In order Rails knows how to t=connect to your OpenERP server, you should create a file APPLICATION_ROOT/config/ooor.yml
+#with the following pattern customized with your OpenERP server URL, your target OpenERP database, your login and password.
+
+development:
+  url: http://localhost:8069/xmlrpc         #the OpenERP XML/RPC server
+  database: database_name                #the OpenERP database you want to connect to
+  username: admin
+  password: admin
+  #comment the following line if you want to load ALL the available models (slower startup), or complete it with all the OpenERP models you want to be loaded
+  models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice]
+
+test:
+  url: http://localhost:8069/xmlrpc
+  database: database_name
+  username: admin
+  password: admin
+  models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice]
+
+production:
+  url: http://localhost:8069/xmlrpc
+  database: database_name
+  username: admin
+  password: admin
+  models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice]

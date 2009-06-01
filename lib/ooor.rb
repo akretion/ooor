@@ -9,33 +9,11 @@ end
 #*************** load the custom configuration
 begin
   config = YAML.load_file("#{RAILS_ROOT}/config/ooor.yml")[RAILS_ENV]
-rescue SystemCallError
-  $stderr.print "IO failed: " + $!
-  puts "
-***********
-   obviously you forgot to create and configure a small Yaml file Ooor needs to connect to your OpenERP server
-   you should create a file APPLICATION_ROOT/config/ooor.yml
-   it should contains the following (adapted to your running OpenERP account of course):
-
-development:
-  url: http://localhost:8069/xmlrpc/object/   #the OpenERP XML/RPC server
-  database: database_name                      #the OpenERP database you want to connect to
-  username: admin
-  password: admin
-  models: [res.partner, product.template, product.product] #comment that line if you want to load ALL the available models (slower), or complete it with other models
-
-test:
-  url: http://localhost:8069/xmlrpc/object/
-  database: database_name
-  username: admin
-  password: admin
-
-production:
-  url: http://localhost:8069/xmlrpc/object/
-  database: database_name
-  username: admin
-  password: admin
-"
+rescue SystemCallError => error
+   puts "failed to load OOOR yaml configuration file."
+   puts "make sure your Rails app has a #{RAILS_ROOT}/config/ooor.yml file correctly set up"
+   puts "if not, just copy/paste the default #{RAILS_ROOT}/vendor/plugins/ooor/ooor.yml file"
+   puts "to #{RAILS_ROOT}/config/ooor.yml and customize it properly\n\n"
   raise
 end
 
@@ -91,6 +69,3 @@ rescue SystemCallError => error
    puts "database: #{database}; user name: #{user}; password: #{pass}"
    puts "OOOR plugin not loaded! Continuing..."
 end
-
-
-
