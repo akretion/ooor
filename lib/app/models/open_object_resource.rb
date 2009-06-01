@@ -16,7 +16,7 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def all_loaded_models
-      @all_loaded_models
+      @all_loaded_models ||= []
     end
 
 
@@ -103,8 +103,8 @@ class OpenObjectResource < ActiveResource::Base
     def define_openerp_model(arg, url, database, user_id, pass, binding)
       param = (arg.is_a? OpenObjectResource) ? arg.attributes.merge(arg.relations) : {'model' => arg}
       model_key = param['model']
-      @all_loaded_models ||= []
-      @all_loaded_models.push(model_key)
+      #@all_loaded_models ||= []
+      all_loaded_models.push(model_key)
       model_class_name = class_name_from_model_key(model_key)
       puts "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{model_key} model"
       definition = "

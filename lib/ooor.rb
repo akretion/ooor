@@ -55,35 +55,42 @@ begin
  login_url = url.gsub(/\/$/,'') + "/common"
  client = XMLRPC::Client.new2(login_url)
  user_id = client.call("login", database, user, pass)
-rescue
-   $stderr.print "login to OpenERP server failed: " + $!
+ 
+ 
+ #*************** load the models
+
+  models_url = url.gsub(/\/$/,'') + "/object"
+
+  #FIXME: I don't know the hell why this is required, but if I define a Rails ActiveResource or Controller
+  #out of this file in an eval without passing such a binding, then the class will not be found
+  #by Rails, so I actually pass a lambda from here to the eval and it does the trick.
+  proc = lambda { }
+
+  OpenObjectResource.define_openerp_model("ir.model", models_url, database, user_id, pass, proc)
+  OpenObjectResource.define_openerp_model("ir.model.fields", models_url, database, user_id, pass, proc)
+
+  if config['models'] #we load only a customized subset of the OpenERP models
+    models = IrModel.find(:all, :domain => [['model', 'in', config['models']]])
+  else #we load all the models
+    models = IrModel.find(:all)
+  end
+
+  models.each {|openerp_model| OpenObjectResource.define_openerp_model(openerp_model, models_url, database, user_id, pass, proc) }
+
+
+  # *************** load the models REST controllers
+  models.each {|openerp_model| OpenObjectsController.define_openerp_controller(openerp_model.model, proc) }
+
+ 
+rescue SystemCallError => error
+   puts "login to OpenERP server failed:"
+   puts error.inspect
+   puts error.backtrace
    puts "Are your sure the server is started? Are your login parameters correct? Can this server ping the OpenERP server?"
    puts "login XML/RPC url was #{login_url}"
    puts "database: #{database}; user name: #{user}; password: #{pass}"
-   raise
+   puts "OOOR plugin not loaded! Continuing..."
 end
 
 
-#*************** load the models
 
-models_url = url.gsub(/\/$/,'') + "/object"
-
-#FIXME: I don't know the hell why this is required, but if I define a Rails ActiveResource or Controller
-#out of this file in an eval without passing such a binding, then the class will not be found
-#by Rails, so I actually pass a lambda from here to the eval and it does the trick.
-proc = lambda { }
-
-OpenObjectResource.define_openerp_model("ir.model", models_url, database, user_id, pass, proc)
-OpenObjectResource.define_openerp_model("ir.model.fields", models_url, database, user_id, pass, proc)
-
-if config['models'] #we load only a customized subset of the OpenERP models
-  models = IrModel.find(:all, :domain => [['model', 'in', config['models']]])
-else #we load all the models
-  models = IrModel.find(:all)
-end
-
-models.each {|openerp_model| OpenObjectResource.define_openerp_model(openerp_model, models_url, database, user_id, pass, proc) }
-
-
-# *************** load the models REST controllers
-models.each {|openerp_model| OpenObjectsController.define_openerp_controller(openerp_model.model, proc) }
