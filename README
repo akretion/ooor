@@ -3,7 +3,7 @@ Ooor - OpenObject on Rails
 
 What?
 Who told you ERP's hurt? OpenERP is an ERP that doesn't hurt, just like Rails is "web development that doesn't hurt".
-And what is Ooor? Ooor stands for OpenObject on Rails. Remember OpenObject is the RAD framework powering the most powerfull open source ERP, namly OpenERP.
+And what is Ooor? Ooor stands for OpenObject on Rails. Remember OpenObject is the RAD framework powering the most powerful open source ERP, namely OpenERP.
 Meaning Ooor exposes seamlessly your OpenERP application, to your custom Rails application.
 Needless to say, Ooor doubly doesn't hurt.
 
@@ -44,8 +44,8 @@ So ActiveResource is only a subset of ActiveRecord, sharing the common denominat
 Ooor implements ActiveResource public API almost fully. It means that you can remotely work on any OpenERP model using the standard ActiveResource API.
 
 But, Ooor goes actually a bit further: it does implements model associations (one2many, many2many, many2one, single table inheritance).
-Indeed, when loading the OpenERP models, we load the relationnal meta-model using OpenERP standard datamodel introspection services. Then we cache
-that relationnal model and use it in OpenObjectResource.method_missing to load associations as requested.
+Indeed, when loading the OpenERP models, we load the relational meta-model using OpenERP standard datamodel introspection services. Then we cache
+that relational model and use it in OpenObjectResource.method_missing to load associations as requested.
 
 Ooor also extends ActiveResource a bit with special request parameters (like :domain or :context) that will just map smoothly to the OpenERP native API, see API.
 
