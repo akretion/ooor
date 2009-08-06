@@ -235,6 +235,9 @@ class OpenObjectResource < ActiveResource::Base
 
   # ******************** instance methods ********************
 
+  def pre_cast_attributes
+    @attributes.each {|k, v| @attributes[k] = ((v.is_a? BigDecimal) ? Float(v) : v)}
+  end
 
   def load(attributes)
     self.class.reload_fields_definition unless self.class.field_defined
@@ -257,11 +260,13 @@ class OpenObjectResource < ActiveResource::Base
 
   #compatible with the Rails way but also supports OpenERP context
   def create(context={})
+    self.pre_cast_attributes
     self.id = self.class.rpc_execute('create', @attributes, context)
   end
 
   #compatible with the Rails way but also supports OpenERP context
   def update(context={})
+    self.pre_cast_attributes
     self.class.rpc_execute('write', self.id, @attributes.reject{|k, v| k == 'id'}, context)
   end
 
