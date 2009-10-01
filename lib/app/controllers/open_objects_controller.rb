@@ -67,7 +67,7 @@ class OpenObjectsController < ApplicationController
     respond_to do |format|
       format.html # show.html.erb
       format.xml  { render :xml => @models }
-      format.js  { render :json => @models }
+      format.json  { render :json => @models }
     end
   end
 
