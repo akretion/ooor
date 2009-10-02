@@ -2,16 +2,13 @@ module Ooor
 
   #load the custom configuration
   def self.load_config
-    begin
       config = YAML.load_file("#{RAILS_ROOT}/config/ooor.yml")[RAILS_ENV]
     rescue SystemCallError => error
-       puts "failed to load OOOR yaml configuration file."
-       puts "make sure your Rails app has a #{RAILS_ROOT}/config/ooor.yml file correctly set up"
-       puts "if not, just copy/paste the default #{RAILS_ROOT}/vendor/plugins/ooor/ooor.yml file"
-       puts "to #{RAILS_ROOT}/config/ooor.yml and customize it properly\n\n"
-      raise
-    end
-    config
+       puts """failed to load OOOR yaml configuration file.
+       make sure your Rails app has a #{RAILS_ROOT}/config/ooor.yml file correctly set up
+       if not, just copy/paste the default #{RAILS_ROOT}/vendor/plugins/ooor/ooor.yml file
+       to #{RAILS_ROOT}/config/ooor.yml and customize it properly\n\n"""
+       raise
   end
 
   
@@ -74,13 +71,13 @@ module Ooor
 
 
     rescue SystemCallError => error
-       puts "login to OpenERP server failed:"
-       puts error.inspect
-       puts error.backtrace
-       puts "Are your sure the server is started? Are your login parameters correct? Can this server ping the OpenERP server?"
-       puts "login XML/RPC url was #{login_url}"
-       puts "database: #{database}; user name: #{user}; password: #{pass}"
-       puts "OOOR plugin not loaded! Continuing..."
+       puts """login to OpenERP server failed:
+       #{error.inspect}
+       #{error.backtrace}
+       Are your sure the server is started? Are your login parameters correct? Can this server ping the OpenERP server?
+       login XML/RPC url was #{login_url}
+       database: #{database}; user name: #{user}; password: #{pass}
+       OOOR plugin not loaded! Continuing..."""
     end
 
   end
