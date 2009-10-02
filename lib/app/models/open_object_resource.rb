@@ -22,53 +22,13 @@ class OpenObjectResource < ActiveResource::Base
 
     # ******************** model class attributes assotiated to the OpenERP ir.model ********************
 
-    def openerp_id=(openerp_id)
-      @openerp_id = openerp_id
-    end
+    attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, :field_defined, :many2one_relations, :one2many_relations, :many2many_relations
 
-    def info=(info)
-      @info = info
-    end
-
-    def access_ids=(access_ids)
-      @access_ids = access_ids
-    end
-
-    def name=(name)
-      @name = name
-    end
-
-    def openerp_model=(openerp_model)
-      @openerp_model = openerp_model
-    end
-
-    def field_ids=(field_ids)
-      @field_ids = field_ids
-    end
-
-    def state=(state)
-      @state = state
-    end
 
     def class_name_from_model_key(model_key)
       model_key.split('.').collect {|name_part| name_part[0..0].upcase + name_part[1..-1]}.join
     end
 
-    def field_defined
-      @field_defined
-    end
-
-    def many2one_relations
-      @many2one_relations || {}
-    end
-
-    def one2many_relations
-      @one2many_relations || {}
-    end
-
-    def many2many_relations
-      @many2many_relations || {}
-    end
 
     def reload_fields_definition(force = false)
       if self != IrModel and self != IrModelFields and (force or not @field_defined)#TODO have a way to force reloading @field_ids too eventually
@@ -120,6 +80,9 @@ class OpenObjectResource < ActiveResource::Base
         self.state = '#{param['state']}'
         self.field_ids = #{(param['field_id'] and '[' + param['field_id'].join(',') + ']') || false}
         self.access_ids = #{(param['access_ids'] and '[' + param['access_ids'].join(',') + ']') || false}
+        self.many2one_relations = {}
+        self.one2many_relations = {}
+        self.many2many_relations = {}
       end"
       eval definition, binding
     end
