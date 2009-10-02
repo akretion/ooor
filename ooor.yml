@@ -8,6 +8,7 @@ development:
   password: admin
   #comment the following line if you want to load ALL the available models (slower startup), or complete it with all the OpenERP models you want to be loaded
   models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice]
+  bootstrap: true   #true if you want to load OpenObject models (will hit OpenERP server) at startup; else use Ooor.reload!(lambda {}) to reload the Ooor models at any time
 
 test:
   url: http://localhost:8069/xmlrpc
@@ -15,6 +16,7 @@ test:
   username: admin
   password: admin
   models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice]
+  bootstrap: true
 
 production:
   url: http://localhost:8069/xmlrpc
@@ -22,3 +24,4 @@ production:
   username: admin
   password: admin
   models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice]
+  bootstrap: true
