@@ -6,6 +6,8 @@ class OpenObjectsController < ApplicationController
   # ******************** class methods ********************
   class << self
 
+    cattr_accessor :logger
+
     def model_class
         if defined?(@model_class)
           @model_class
@@ -29,7 +31,7 @@ class OpenObjectsController < ApplicationController
     def define_openerp_controller(model_key, binding)
       model_class_name = OpenObjectResource.class_name_from_model_key(model_key)
       controller_class_name = model_class_name + "Controller"
-      puts "registering #{controller_class_name} as a Rails ActiveResource Controller wrapper for OpenObject #{model_key} model"
+      logger.info "registering #{controller_class_name} as a Rails ActiveResource Controller wrapper for OpenObject #{model_key} model"
       eval "
       class #{controller_class_name} < OpenObjectsController
         self.model_class = #{model_class_name}

@@ -1,10 +1,12 @@
 module Ooor
 
+  @logger = Logger.new(STDOUT)
+
   #load the custom configuration
   def self.load_config
       config = YAML.load_file("#{RAILS_ROOT}/config/ooor.yml")[RAILS_ENV]
-    rescue SystemCallError => error
-       puts """failed to load OOOR yaml configuration file.
+    rescue SystemCallError
+       @logger.error """failed to load OOOR yaml configuration file.
        make sure your Rails app has a #{RAILS_ROOT}/config/ooor.yml file correctly set up
        if not, just copy/paste the default #{RAILS_ROOT}/vendor/plugins/ooor/ooor.yml file
        to #{RAILS_ROOT}/config/ooor.yml and customize it properly\n\n"""
@@ -36,9 +38,10 @@ module Ooor
       database = config['database']
       user = config['username']
       pass = config['password']
-    rescue
-       $stderr.print "ooor.yml failed: " + $!
-       puts "You probably didn't configure the ooor.yml file properly because we can't load it"
+    rescue Exception => error
+       @logger.error """ooor.yml failed: #{error.inspect}
+       #{error.backtrace}
+       You probably didn't configure the ooor.yml file properly because we can't load it"""
        raise
     end
 
@@ -53,6 +56,7 @@ module Ooor
 
       models_url = url.gsub(/\/$/,'') + "/object"
 
+      OpenObjectResource.logger = @logger
       OpenObjectResource.define_openerp_model("ir.model", models_url, database, user_id, pass, binding)
       OpenObjectResource.define_openerp_model("ir.model.fields", models_url, database, user_id, pass, binding)
 
@@ -67,11 +71,14 @@ module Ooor
 
 
       # *************** load the models REST controllers
-      models.each {|openerp_model| OpenObjectsController.define_openerp_controller(openerp_model.model, binding) }
+      if defined?(ActionController)
+        OpenObjectsController.logger = @logger
+        models.each {|openerp_model| OpenObjectsController.define_openerp_controller(openerp_model.model, binding) }
+      end
 
 
     rescue SystemCallError => error
-       puts """login to OpenERP server failed:
+       @logger.error """login to OpenERP server failed:
        #{error.inspect}
        #{error.backtrace}
        Are your sure the server is started? Are your login parameters correct? Can this server ping the OpenERP server?
@@ -85,7 +92,7 @@ module Ooor
 end
 
 
-if defined?(Rails) and defined?(ActionController)
+if defined?(Rails)
   config = Ooor.load_config
   if config['bootstrap']
     Ooor.reload!(lambda {})

@@ -11,6 +11,8 @@ class OpenObjectResource < ActiveResource::Base
   # ******************** class methods ********************
   class << self
 
+    cattr_accessor :logger
+
     def openerp_database=(openerp_database)
       @openerp_database = openerp_database
     end
@@ -54,7 +56,7 @@ class OpenObjectResource < ActiveResource::Base
             @fields[field.attributes['name']] = field
           end
         end
-        puts "#{fields.size} fields"
+        logger.info "#{fields.size} fields"
       end
       @field_defined = true
     end
@@ -66,7 +68,7 @@ class OpenObjectResource < ActiveResource::Base
       #@all_loaded_models ||= []
       all_loaded_models.push(model_key)
       model_class_name = class_name_from_model_key(model_key)
-      puts "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{model_key} model"
+      logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{model_key} model"
       definition = "
       class #{model_class_name} < OpenObjectResource
         self.site = '#{url}'
@@ -128,10 +130,11 @@ class OpenObjectResource < ActiveResource::Base
     def try_with_pretty_error_log
         yield
       rescue RuntimeError => e
-        puts "OpenERP server error!"
-        puts eval("#{ e }".gsub("wrong fault-structure: ", ""))["faultString"]
-        rescue
-          puts e.inspect
+        logger.error "OpenERP server error!
+        ***********
+        #{eval("#{ e }".gsub("wrong fault-structure: ", ""))["faultString"]}
+        ***********"""
+        raise
     end
 
 
