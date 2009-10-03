@@ -23,12 +23,15 @@ module Ooor
     end
   end
 
+  def self.loaded?
+    OpenObjectResource.all_loaded_models.is_a? Array and OpenObjectResource.all_loaded_models.size > 0
+  end
+
   def self.reload!(binding)
     #FIXME: I don't know the hell why this is required, but if I define a Rails ActiveResource or Controller
     #out of this file in an eval without passing such a binding, then the class will not be found
     #by Rails, so I actually pass a new lambda (lambda {}) as an argument and it does the trick.
 
-    self.load_core_classes
     config = self.load_config
 
     begin
@@ -91,6 +94,7 @@ end
 
 
 if defined?(Rails)
+  Ooor.load_core_classes
   config = Ooor.load_config
   if config['bootstrap']
     Ooor.reload!(lambda {})
