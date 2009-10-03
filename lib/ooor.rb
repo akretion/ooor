@@ -1,6 +1,6 @@
 module Ooor
 
-  @logger = Logger.new(STDOUT)
+  @logger = (RAILS_ENV == "development" ? Logger.new(STDOUT) : Rails.logger)
 
   #load the custom configuration
   def self.load_config
@@ -12,7 +12,6 @@ module Ooor
        to #{RAILS_ROOT}/config/ooor.yml and customize it properly\n\n"""
        raise
   end
-
   
   #load the required core classes, see http://guides.rubyonrails.org/creating_plugins.html#_models
   def self.load_core_classes
@@ -23,7 +22,6 @@ module Ooor
       ActiveSupport::Dependencies.load_once_paths.delete(path)
     end
   end
-
 
   def self.reload!(binding)
     #FIXME: I don't know the hell why this is required, but if I define a Rails ActiveResource or Controller

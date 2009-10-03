@@ -5,32 +5,19 @@ require 'xmlrpc/client'
 #TODO support offset, limit and order
 #see def search(self, cr, user, args, offset=0, limit=None, order=None, context=None, count=False):
 
-
 class OpenObjectResource < ActiveResource::Base
 
   # ******************** class methods ********************
   class << self
 
     cattr_accessor :logger
-
-    def openerp_database=(openerp_database)
-      @openerp_database = openerp_database
-    end
-
-    def all_loaded_models
-      @all_loaded_models ||= []
-    end
-
-
-    # ******************** model class attributes assotiated to the OpenERP ir.model ********************
-
-    attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, :field_defined, :many2one_relations, :one2many_relations, :many2many_relations
-
+    attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes assotiated to the OpenERP ir.model
+                  :field_defined, :many2one_relations, :one2many_relations, :many2many_relations,
+                  :openerp_database, :all_loaded_models
 
     def class_name_from_model_key(model_key)
       model_key.split('.').collect {|name_part| name_part[0..0].upcase + name_part[1..-1]}.join
     end
-
 
     def reload_fields_definition(force = false)
       if self != IrModel and self != IrModelFields and (force or not @field_defined)#TODO have a way to force reloading @field_ids too eventually
@@ -61,11 +48,10 @@ class OpenObjectResource < ActiveResource::Base
       @field_defined = true
     end
 
-
     def define_openerp_model(arg, url, database, user_id, pass, binding)
       param = (arg.is_a? OpenObjectResource) ? arg.attributes.merge(arg.relations) : {'model' => arg}
       model_key = param['model']
-      #@all_loaded_models ||= []
+      @all_loaded_models ||= []
       all_loaded_models.push(model_key)
       model_class_name = class_name_from_model_key(model_key)
       logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{model_key} model"
@@ -90,13 +76,11 @@ class OpenObjectResource < ActiveResource::Base
     end
 
 
-
     # ******************** remote communication ********************
 
     def client
       @client ||= XMLRPC::Client.new2(@site.to_s.gsub(/\/$/,'')) #always remove trailing / to make OpenERP happy
     end
-
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
     def rpc_execute(method, *args)
@@ -112,7 +96,6 @@ class OpenObjectResource < ActiveResource::Base
       try_with_pretty_error_log { client.call("execute", db, uid, pass, obj, method, *args) }
     end
 
-
      #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
     def rpc_exec_workflow(method, *args)
       rpc_exec_workflow_with_object(@openerp_model, method, *args)
@@ -126,7 +109,8 @@ class OpenObjectResource < ActiveResource::Base
       try_with_pretty_error_log { client.call("exec_workflow", db, uid, pass, obj, method,  *args) }
     end
 
-
+    #grab the eventual error log from OpenERP response as OpenERP doesn't enforce carefuly
+    #the XML/RPC spec, see https://bugs.launchpad.net/openerp/+bug/257581
     def try_with_pretty_error_log
         yield
       rescue RuntimeError => e
@@ -137,8 +121,6 @@ class OpenObjectResource < ActiveResource::Base
         raise
     end
 
-
-
     def load_relation(model_key, ids, *arguments)
       options = arguments.extract_options!
       relation_model_class = eval class_name_from_model_key(model_key)
@@ -146,8 +128,7 @@ class OpenObjectResource < ActiveResource::Base
     end
 
 
-
-    # ******************** finders ********************
+    # ******************** finders low level implementation ********************
 
     private
 
@@ -195,7 +176,6 @@ class OpenObjectResource < ActiveResource::Base
       return active_resources
     end
 
-
   end
 
 
@@ -242,8 +222,7 @@ class OpenObjectResource < ActiveResource::Base
   end
 
 
-
-   # ******************** fake associations like much like ActiveRecord according to the cached OpenERP data model ********************
+  # ******************** fake associations like much like ActiveRecord according to the cached OpenERP data model ********************
 
   def relations
       @relations ||= {} and @relations
