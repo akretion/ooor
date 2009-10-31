@@ -1,4 +1,5 @@
 require 'xmlrpc/client'
+require 'activeresource'
 
 #TODO support name_search via search + param
 #see name_search(self, cr, user, name='', args=None, operator='ilike', context=None, limit=None):

@@ -1,85 +1,75 @@
+require 'logger'
+
 module Ooor
 
-  @logger = (defined?(RAILS_ENV) and RAILS_ENV != "development" ? Rails.logger : Logger.new(STDOUT))
+  @ooor_logger = ((defined?(RAILS_ENV) and RAILS_ENV != "development") ? Rails.logger : Logger.new(STDOUT))
 
   #load the custom configuration
-  def self.load_config
-      config = YAML.load_file("#{RAILS_ROOT}/config/ooor.yml")[RAILS_ENV]
-    rescue SystemCallError
-       @logger.error """failed to load OOOR yaml configuration file.
-       make sure your Rails app has a #{RAILS_ROOT}/config/ooor.yml file correctly set up
-       if not, just copy/paste the default #{RAILS_ROOT}/vendor/plugins/ooor/ooor.yml file
+  def self.load_config(config_file=nil, env=nil)
+    config_file ||= defined?(RAILS_ROOT) && "#{RAILS_ROOT}/config/ooor.yml" || 'ooor.yml'
+    env ||= defined?(RAILS_ENV) && RAILS_ENV || 'development'
+    @ooor_config = YAML.load_file(config_file)[env]
+  rescue SystemCallError
+    @ooor_logger.error """failed to load OOOR yaml configuration file.
+       make sure your app has a #{config_file} file correctly set up
+       if not, just copy/paste the default ooor.yml file from the OOOR Gem
        to #{RAILS_ROOT}/config/ooor.yml and customize it properly\n\n"""
-       raise
-  end
-  
-  #load the required core classes, see http://guides.rubyonrails.org/creating_plugins.html#_models
-  def self.load_core_classes
-    %w{ models controllers }.each do |dir|
-      path = File.join(File.dirname(__FILE__), 'app', dir)
-      $LOAD_PATH << path
-      ActiveSupport::Dependencies.load_paths << path
-      ActiveSupport::Dependencies.load_once_paths.delete(path)
-    end
+    raise
   end
 
   def self.loaded?
     OpenObjectResource.all_loaded_models.is_a? Array and OpenObjectResource.all_loaded_models.size > 0
   end
 
-  def self.reload!(binding)
-    #FIXME: I don't know the hell why this is required, but if I define a Rails ActiveResource or Controller
-    #out of this file in an eval without passing such a binding, then the class will not be found
-    #by Rails, so I actually pass a new lambda (lambda {}) as an argument and it does the trick.
-
-    config = self.load_config
+  def self.reload!(config=false, env=false, keep_config=false)
+    @ooor_config = config.is_a?(Hash) && config or keep_config && @ooor_config or self.load_config(config, env)
 
     begin
-      url = config['url']
-      database = config['database']
-      user = config['username']
-      pass = config['password']
+      url = @ooor_config['url']
+      database = @ooor_config['database']
+      user = @ooor_config['username']
+      pass = @ooor_config['password']
     rescue Exception => error
-       @logger.error """ooor.yml failed: #{error.inspect}
+      @ooor_logger.error """ooor.yml failed: #{error.inspect}
        #{error.backtrace}
        You probably didn't configure the ooor.yml file properly because we can't load it"""
-       raise
+      raise
     end
 
     require 'xmlrpc/client'
     begin
-     login_url = url.gsub(/\/$/,'') + "/common"
-     client = XMLRPC::Client.new2(login_url)
-     user_id = client.call("login", database, user, pass)
+      login_url = url.gsub(/\/$/,'') + "/common"
+      client = XMLRPC::Client.new2(login_url)
+      user_id = client.call("login", database, user, pass)
 
 
-     #*************** load the models
+      #*************** load the models
 
       models_url = url.gsub(/\/$/,'') + "/object"
+      OpenObjectResource.logger = @ooor_logger
+      @ooor_binding = lambda {}
+      OpenObjectResource.define_openerp_model("ir.model", models_url, database, user_id, pass, @ooor_binding)
+      OpenObjectResource.define_openerp_model("ir.model.fields", models_url, database, user_id, pass, @ooor_binding)
 
-      OpenObjectResource.logger = @logger
-      OpenObjectResource.define_openerp_model("ir.model", models_url, database, user_id, pass, binding)
-      OpenObjectResource.define_openerp_model("ir.model.fields", models_url, database, user_id, pass, binding)
 
-
-      if config['models'] #we load only a customized subset of the OpenERP models
-        models = IrModel.find(:all, :domain => [['model', 'in', config['models']]])
+      if @ooor_config['models'] #we load only a customized subset of the OpenERP models
+        models = IrModel.find(:all, :domain => [['model', 'in', @ooor_config['models']]])
       else #we load all the models
         models = IrModel.find(:all)
       end
 
-      models.each {|openerp_model| OpenObjectResource.define_openerp_model(openerp_model, models_url, database, user_id, pass, binding) }
+      models.each {|openerp_model| OpenObjectResource.define_openerp_model(openerp_model, models_url, database, user_id, pass, @ooor_binding) }
 
 
       # *************** load the models REST controllers
       if defined?(ActionController)
-        OpenObjectsController.logger = @logger
-        models.each {|openerp_model| OpenObjectsController.define_openerp_controller(openerp_model.model, binding) }
+        OpenObjectsController.logger = @ooor_logger
+        models.each {|openerp_model| OpenObjectsController.define_openerp_controller(openerp_model.model, @ooor_binding) }
       end
 
 
     rescue SystemCallError => error
-       @logger.error """login to OpenERP server failed:
+      @ooor_logger.error """login to OpenERP server failed:
        #{error.inspect}
        #{error.backtrace}
        Are your sure the server is started? Are your login parameters correct? Can this server ping the OpenERP server?
@@ -93,10 +83,13 @@ module Ooor
 end
 
 
+require 'app/models/open_object_resource'
+require 'app/controllers/open_objects_controller'
+
+
 if defined?(Rails)
-  Ooor.load_core_classes
-  config = Ooor.load_config
-  if config['bootstrap']
-    Ooor.reload!(lambda {})
+  include Ooor
+  if Ooor.load_config['bootstrap']
+    Ooor.reload!(false, false, true)
   end
 end

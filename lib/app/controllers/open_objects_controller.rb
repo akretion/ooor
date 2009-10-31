@@ -1,4 +1,6 @@
-class OpenObjectsController < ApplicationController
+require 'action_controller'
+
+class OpenObjectsController < ActionController::Base
 
   #TODO get lang from URL in before filter
   #TODO use timezone from HTTP header and put is in context
