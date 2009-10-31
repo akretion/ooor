@@ -1,6 +1,6 @@
 module Ooor
 
-  @logger = (RAILS_ENV == "development" ? Logger.new(STDOUT) : Rails.logger)
+  @logger = (defined?(RAILS_ENV) and RAILS_ENV != "development" ? Rails.logger : Logger.new(STDOUT))
 
   #load the custom configuration
   def self.load_config
