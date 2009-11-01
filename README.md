@@ -77,7 +77,7 @@ In all case, you first need to install the ooor gem:
 (the ooor gem is hosted on gemcutter.org, make sure you have it in your gem source lists, a way is to do >gem tumble)
 
 
-Standalone (J)Ruby application:
+### Standalone (J)Ruby application:
 
 Let's test OOOR in an irb console (irb command):
     $ require 'rubygems'
@@ -89,7 +89,7 @@ Let's try to retrieve the user with id 1:
     $ ResUsers.find(1)
     
     
-(J)Ruby on Rails application:
+### (J)Ruby on Rails application:
 
 we assume you created a working Rails application, in your config/environment.rb
 Inside the Rails::Initializer.run do |config| statement, paste the following gem dependency:
