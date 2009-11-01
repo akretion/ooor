@@ -12,7 +12,8 @@ in any (J)Ruby application without Rails, for testing purposes for instance.
 Why?
 ------------
 
-OpenERP makes it really straightforward to create/customize business applications with
+OpenERP makes it really straightforward to create/customize business applications with:
+
 * standard ERP business modules (more than 300 modules)
 * complex relationnal data model, with automated migration and backoffice interfaces
 * ACID transactions on PostgreSQL
@@ -116,78 +117,78 @@ Or only enable the route to some specific model instead (here partners):
 API usage
 ------------
 
-#Basic finders:
+Basic finders:
 
-    ProductProduct.find(1)
-    ProductProduct.find([1,2])
-    ProductProduct.find([1])
-    ProductProduct.find(:all)
-    ProductProduct.find(:last)
-
-
-#OpenERP domain support:
-
-    ResPartner.find(:all, :domain=>[['supplier', '=', 1],['active','=',1]])
+    $ ProductProduct.find(1)
+    $ ProductProduct.find([1,2])
+    $ ProductProduct.find([1])
+    $ ProductProduct.find(:all)
+    $ ProductProduct.find(:last)
 
 
-#OpenERP context support:
+OpenERP domain support:
 
-    ProductProduct.find(1, :context => {:my_key => 'value'}
-
-
-#Request params or ActiveResource? equivalence of OpenERP domain (but degraded as only the = operator is supported, else use domain):
-
-    Partners.find(:all, :params => {:supplier => true})
+    $ ResPartner.find(:all, :domain=>[['supplier', '=', 1],['active','=',1]])
 
 
-#Relations (many2one, one2many, many2many) support:
+OpenERP context support:
 
-    SaleOrder.find(1).order_line
-    p = ProductProduct.find(1)
-    p.product_tmpl_id #many2one relation
-    p.tax_ids = [6, 0, [1,2]] #create many2many associations,
-    p.save #assigns taxes with id 1 and 2 as sale taxes,
-#see OpenERP doc Here http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many
+    $ ProductProduct.find(1, :context => {:my_key => 'value'}
 
 
-#Inherited relations support:
+Request params or ActiveResource? equivalence of OpenERP domain (but degraded as only the = operator is supported, else use domain):
 
-    ProductProduct.find(1).categ_id #where categ_id is inherited from the ProductTemplate
+    $ Partners.find(:all, :params => {:supplier => true})
 
 
-#Load only specific fields support (faster than loading all fields):
+Relations (many2one, one2many, many2many) support:
 
-    ProductProduct.find(1, :fields=>["state", "id"])
-    ProductProduct.find(:all, :fields=>["state", "id"])
-    ProductProduct.find([1,2], :fields=>["state", "id"])
-    ProductProduct.find(:all, :fields=>["state", "id"])
+    $ SaleOrder.find(1).order_line
+    $ p = ProductProduct.find(1)
+    $ p.product_tmpl_id #many2one relation
+    $ p.tax_ids = [6, 0, [1,2]] #create many2many associations,
+    $ p.save #assigns taxes with id 1 and 2 as sale taxes,
+see OpenERP doc Here http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many
+
+
+Inherited relations support:
+
+    $ ProductProduct.find(1).categ_id #where categ_id is inherited from the ProductTemplate
+
+
+Load only specific fields support (faster than loading all fields):
+
+    $ ProductProduct.find(1, :fields=>["state", "id"])
+    $ ProductProduct.find(:all, :fields=>["state", "id"])
+    $ ProductProduct.find([1,2], :fields=>["state", "id"])
+    $ ProductProduct.find(:all, :fields=>["state", "id"])
     even in relations:
-    SaleOrder.find(1).order_line(:fields => ["state"])
+    $ SaleOrder.find(1).order_line(:fields => ["state"])
 
 
-#Create:
+Create:
 
->> pc = ProductCategory.new(:name => 'Categ From Rails!')
-=> #<ProductCategory:0xb702c42c @prefix_options={}, @attributes={"name"=>"Categ From Rails!"}>
->> pc.create
-=> 14
-
-
-#Update:
-
->> pc.name = "A new name"
->> pc.save
+    $ pc = ProductCategory.new(:name => 'Categ From Rails!')
+    $ #<ProductCategory:0xb702c42c @prefix_options={}, @attributes={"name"=>"Categ From Rails!"}>
+    $ pc.create
+    $ => 14
 
 
-#Delete:
+Update:
 
->> pc.destroy
-
-
-#Call workflow: see code; TODO document
+    $ pc.name = "A new name"
+    $ pc.save
 
 
-#Call aribtrary method: see code; TODO document
+Delete:
+
+    $ pc.destroy
+
+
+Call workflow: see code; TODO document
+
+
+Call aribtrary method: see code; TODO document
 
 
 
