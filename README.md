@@ -5,8 +5,8 @@ OOOR stands for OpenObject On Rails. OpenObject is the RAD framework behind Open
 the ERP that doesn't hurt, just like Rails is "web development that doesn't hurt".
 So OOOR exposes seamlessly your OpenOpbject application, to your custom Rails application.
 Needless to say, OOOR doubly doesn't hurt.
-Furthermore, OOOR only depends on the "activeresource" gem of Rails. So it can even be used
-in any (J)Ruby application without Rails, for testing purposes for instance.
+Furthermore, OOOR only depends on the "activeresource" gem. So it can even be used
+in any (J)Ruby application without Rails.
 
 
 Why?
@@ -97,7 +97,7 @@ Inside the Rails::Initializer.run do |config| statement, paste the following gem
     $ config.gem "ooor"
 
 Now, you should also create a ooor.yml config file in your config directory
-You can copy/paste the default ooor.yml from the OOOR gem (here http://github.com/rvalyi/ooor/blob/master/ooor.yml )
+You can copy/paste the default ooor.yml from the OOOR gem (here <http://github.com/rvalyi/ooor/blob/master/ooor.yml> )
 and then adapt it to your OpenERP server environment.
 If you set the 'bootstrap' parameter to true, OpenERP models will be loaded at the Rails startup.
 That the easiest option to get started while you might not want that in production.
@@ -139,7 +139,7 @@ OpenERP context support:
     $ ProductProduct.find(1, :context => {:my_key => 'value'}
 
 
-Request params or ActiveResource? equivalence of OpenERP domain (but degraded as only the = operator is supported, else use domain):
+Request params or ActiveResource equivalence of OpenERP domain (but degraded as only the = operator is supported, else use domain):
 
     $ Partners.find(:all, :params => {:supplier => true})
 
@@ -151,7 +151,7 @@ Relations (many2one, one2many, many2many) support:
     $ p.product_tmpl_id #many2one relation
     $ p.tax_ids = [6, 0, [1,2]] #create many2many associations,
     $ p.save #assigns taxes with id 1 and 2 as sale taxes,
-see OpenERP doc Here http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many
+see OpenERP doc Here <http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many>
 
 
 Inherited relations support:
