@@ -69,7 +69,7 @@ Installation
 
 You can use OOOR in a standalone (J)Ruby application, or in a Rails application.
 For both example we assume that you already started some OpenERP server on localhost, with XML/RPC on port 8069 (default),
-with a database called 'database_name', with username 'admin' and password 'admin'.
+with a database called 'mybase', with username 'admin' and password 'admin'.
 
 In all case, you first need to install the ooor gem:
 
@@ -83,7 +83,7 @@ Let's test OOOR in an irb console (irb command):
     $ require 'rubygems'
     $ require 'ooor'
     $ include Ooor
-    $ Ooor.reload!({:url => 'http://localhost:8069/xmlrpc', :database => 'database_name', :username => 'admin', :password => 'admin'})
+    $ Ooor.reload!({:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
 This should load all your OpenERP models into Ruby proxy Activeresource objects. Of course there are option to load only some models.
 Let's try to retrieve the user with id 1:
     $ ResUsers.find(1)
@@ -201,9 +201,9 @@ For non *nix users, you can alternatively start your server with the --log-level
 Then create indents in the log before doing some action and watch your logs carefully. OOOR will allow you to do the same easily from Ruby/Rails.
 
 You can load/reload your models at any time (even in console), using the Ooor.reload! method, for instance:
-    $ Ooor.reload!({:url => 'http://localhost:8069/xmlrpc', :database => 'database_name', :username => 'admin', :password => 'admin'})
+    $ Ooor.reload!({:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
 or using a config YAML file instead:
     $ Ooor.reload!("config/ooor.yml")
 
 You can load only some OpenERP models (not all), which is faster and better in term of memory/security:
-    $ Ooor.reload!({:models => [res.partner, product.template, product.product], :url => 'http://localhost:8069/xmlrpc', :database => 'database_name', :username => 'admin', :password => 'admin'})
+    $ Ooor.reload!({:models => [res.partner, product.template, product.product], :url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
