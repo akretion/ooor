@@ -117,6 +117,9 @@ Or only enable the route to some specific model instead (here partners):
 API usage
 ------------
 
+Note: Ruby proxies objects are named after OpenERP models in but removing the '.' and using CamelCase.
+we remind you that OpenERP tables are also named after OpenERP models but replacing the '.' by '_'.
+
 Basic finders:
 
     $ ProductProduct.find(1)
