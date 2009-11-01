@@ -23,12 +23,13 @@ module Ooor
 
   def self.reload!(config=false, env=false, keep_config=false)
     @ooor_config = config.is_a?(Hash) && config or keep_config && @ooor_config or self.load_config(config, env)
+    @ooor_config.symbolize_keys!
 
     begin
-      url = @ooor_config['url']
-      database = @ooor_config['database']
-      user = @ooor_config['username']
-      pass = @ooor_config['password']
+      url = @ooor_config[:url]
+      database = @ooor_config[:database]
+      user = @ooor_config[:username]
+      pass = @ooor_config[:password]
     rescue Exception => error
       @ooor_logger.error """ooor.yml failed: #{error.inspect}
        #{error.backtrace}
@@ -52,8 +53,8 @@ module Ooor
       OpenObjectResource.define_openerp_model("ir.model.fields", models_url, database, user_id, pass, @ooor_binding)
 
 
-      if @ooor_config['models'] #we load only a customized subset of the OpenERP models
-        models = IrModel.find(:all, :domain => [['model', 'in', @ooor_config['models']]])
+      if @ooor_config[:models] #we load only a customized subset of the OpenERP models
+        models = IrModel.find(:all, :domain => [['model', 'in', @ooor_config[:models]]])
       else #we load all the models
         models = IrModel.find(:all)
       end
