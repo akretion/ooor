@@ -83,7 +83,7 @@ with a database called 'mybase', with username 'admin' and password 'admin'.
 In all case, you first need to install the ooor gem:
 
     $ gem install ooor
-(the ooor gem is hosted on gemcutter.org, make sure you have it in your gem source lists, a way is to do >gem tumble)
+(the ooor gem is hosted [on gemcutter.org here](http://gemcutter.org/gems/ooor), make sure you have it in your gem source lists, a way is to do >gem tumble)
 
 
 ### Standalone (J)Ruby application:
@@ -106,7 +106,7 @@ Inside the Rails::Initializer.run do |config| statement, paste the following gem
     $ config.gem "ooor"
 
 Now, you should also create a ooor.yml config file in your config directory
-You can copy/paste the default ooor.yml from the OOOR gem (here <http://github.com/rvalyi/ooor/blob/master/ooor.yml> )
+You can copy/paste [the default ooor.yml from the OOOR gem](http://github.com/rvalyi/ooor/blob/master/ooor.yml)
 and then adapt it to your OpenERP server environment.
 If you set the 'bootstrap' parameter to true, OpenERP models will be loaded at the Rails startup.
 That the easiest option to get started while you might not want that in production.
@@ -160,7 +160,7 @@ Relations (many2one, one2many, many2many) support:
     $ p.product_tmpl_id #many2one relation
     $ p.tax_ids = [6, 0, [1,2]] #create many2many associations,
     $ p.save #assigns taxes with id 1 and 2 as sale taxes,
-see OpenERP doc Here <http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many>
+see [the official OpenERP documentation](http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many)
 
 
 Inherited relations support:
