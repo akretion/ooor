@@ -3,11 +3,8 @@ OOOR - OpenObject On Rails
 
 <table>
     <tr>
-        <td><img src="http://img.skitch.com/20091020-xtiqtj4eajuxs43iu5h3be7upj.png" />
-        </td>
-        <td>
-[![Hurl](http://img.skitch.com/20091020-xtiqtj4eajuxs43iu5h3be7upj.png)](http://hurl.it)
-        </td>
+        <td><a href="http://github.com/rvalyi/ooor" title="OOOR - OpenObject On Rails"><img src="http://github.com/rvalyi/ooor/blob/master/ooor_s.png" width="159px" height="124px" /></a></td>
+        <td><a href="http://www.akretion.com" title="Akretion - open source to spin the world"><img src="http://github.com/rvalyi/ooor/blob/master/akretion_s.png" width="228px" height="124px" /></a></td>
     </tr>
 </table>
 
