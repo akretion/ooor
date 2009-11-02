@@ -209,7 +209,7 @@ FAQ
 
 ### How do I know which object or OpenERP webservice I should Invoke from OOOR?
 
-An easy way to discover what is the sebservice to do something in OpenERP, is to use your GTK client and start it with the -l debug_rpc (or alternatively -l debug_rpc_answer) option.
+An easy is to use your GTK client and start it with the -l debug_rpc (or alternatively -l debug_rpc_answer) option.
 For non *nix users, you can alternatively start your server with the --log-level=debug_rpc option (you can also set this option in your hidden OpenERP server config file in your user directory).
 Then create indents in the log before doing some action and watch your logs carefully. OOOR will allow you to do the same easily from Ruby/Rails.
 
