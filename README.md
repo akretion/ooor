@@ -226,7 +226,7 @@ You can load only some OpenERP models (not all), which is faster and better in t
     $ Ooor.reload!({:models => [res.partner, product.template, product.product], :url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
 
 
-### Isn't Ooor slow?
+### Isn't OOOR slow?
 
 You might think that proxying a Python based server through a Rails app using XML/RPC would be dog slow. Well, not too much actually.
 I did some load testing using a Centrino Duo laptop (dual core at 1.6 GHz), and I was able to approach 10 requests/sec, to display some OpenERP resource as XML through HTTP.
@@ -239,7 +239,7 @@ Also notice that using JRuby I could serve some 20% faster.
 Yes Ooor is fully JRuby compatible. It's even somewhat 20% faster using Java6 + last JRuby.
 This might be espcially interresting if you plan to mix Java libraries with OpenERP in the same web appication.
 
-### Can I extend the Ooor models?
+### Can I extend the OOOR models?
 
 Yes you can perfectly do that. Basically an OpenERP model get a basic ActiveResource model. For instance: product.product is mapped to the ProductProduct ActiveResource model.
 But using the Ruby open classes features, you can asbolutely re-open the ProductProduct class and add features of your own.
@@ -253,7 +253,7 @@ In you app/model directory, create a product_product.rb file with inside, the re
 
 Now a ProductProduct resource got a method foo, returning "bar".
 
-### Can I extend the Ooor controllers?
+### Can I extend the OOOR controllers?
 
 Yes, you can do that, see the "how to extends models" section as it's very similar. Instead, in the app/controllers directory, you'll re-open defined controllers,
 for the product.product controllers, it means creating a product_product_controller.rb file with:
