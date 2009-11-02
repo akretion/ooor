@@ -4,6 +4,7 @@ OOOR - OpenObject On Rails
 <table>
     <tr>
         <td><a href="http://github.com/rvalyi/ooor" title="OOOR - OpenObject On Rails"><img src="/rvalyi/ooor/raw/master/ooor_s.jpg" width="159px" height="124px" /></a></td>
+        <td><b>BY</b><td>
         <td><a href="http://www.akretion.com" title="Akretion - open source to spin the world"><img src="/rvalyi/ooor/raw/master/akretion_s.png" width="228px" height="124px" /></a></td>
     </tr>
 </table>
