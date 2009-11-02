@@ -266,3 +266,13 @@ for the product.product controllers, it means creating a product_product_control
 
 Now, if you register that new method in your route.rb file GET /product_product/1/foo will render "bar" on your browser screen.
 You could instead just customize the existing CRUD methods so you don't need to regiter any other route in route.rb.
+
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-369646-7");
+pageTracker._initData();
+pageTracker._trackPageview();
+</script>
