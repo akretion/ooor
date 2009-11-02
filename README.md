@@ -1,6 +1,16 @@
 OOOR - OpenObject On Rails
 ====
 
+<table>
+    <tr>
+        <td>Logo1</td>
+    </tr>
+    <tr>
+        <td>Logo2</td>
+    </tr>
+</table>
+
+
 OOOR stands for OpenObject On Rails. OpenObject is the RAD framework behind OpenERP,
 the ERP that doesn't hurt, just like Rails is "web development that doesn't hurt".
 So OOOR exposes seamlessly your OpenOpbject application, to your custom Rails application.
