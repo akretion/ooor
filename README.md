@@ -3,8 +3,12 @@ OOOR - OpenObject On Rails
 
 <table>
     <tr>
-        <td>[![Hurl](http://img.skitch.com/20091020-xtiqtj4eajuxs43iu5h3be7upj.png)](http://hurl.it)</td>
-        <td>[![Hurl](http://img.skitch.com/20091020-xtiqtj4eajuxs43iu5h3be7upj.png)](http://hurl.it)</td>
+        <td>
+[![Hurl](http://img.skitch.com/20091020-xtiqtj4eajuxs43iu5h3be7upj.png)](http://hurl.it)
+        </td>
+        <td>
+[![Hurl](http://img.skitch.com/20091020-xtiqtj4eajuxs43iu5h3be7upj.png)](http://hurl.it)
+        </td>
     </tr>
 </table>
 
