@@ -64,7 +64,7 @@ class OpenObjectResource < ActiveResource::Base
         self.openerp_database = '#{database}'
         self.openerp_model = '#{model_key}'
         self.openerp_id = #{param['id'] || false}
-        self.info = '#{param['info']}'
+        self.info = '#{(param['info'] || '').gsub("'",' ')}'
         self.name = '#{param['name']}'
         self.state = '#{param['state']}'
         self.field_ids = #{(param['field_id'] and '[' + param['field_id'].join(',') + ']') || false}
