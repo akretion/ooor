@@ -6,16 +6,16 @@ OOOR - OpenObject On Rails
         <td><a href="http://github.com/rvalyi/ooor" title="OOOR - OpenObject On Rails"><img src="/rvalyi/ooor/raw/master/ooor_s.jpg" width="159px" height="124px" /></a></td>
         <td><b>BY</b><td>
         <td><a href="http://www.akretion.com" title="Akretion - open source to spin the world"><img src="/rvalyi/ooor/raw/master/akretion_s.png" width="228px" height="124px" /></a></td>
-    </tr>
-</table>
-
-
+        <td>
 OOOR stands for OpenObject On Rails. OpenObject is the RAD framework behind OpenERP,
 the ERP that doesn't hurt, just like Rails is "web development that doesn't hurt".
 So OOOR exposes seamlessly your OpenOpbject application, to your custom Rails application.
 Needless to say, OOOR doubly doesn't hurt.
 Furthermore, OOOR only depends on the "activeresource" gem. So it can even be used
 in any (J)Ruby application without Rails.
+        </td>
+    </tr>
+</table>
 
 
 Why?
