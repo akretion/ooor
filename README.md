@@ -3,9 +3,9 @@ OOOR - OpenObject On Rails
 
 <table>
     <tr>
-        <td><a href="http://github.com/rvalyi/ooor" title="OOOR - OpenObject On Rails"><img src="/rvalyi/ooor/raw/master/ooor_s.jpg" width="159px" height="124px" /></a></td>
+        <td><a href="http://github.com/rvalyi/ooor" title="OOOR - OpenObject On Rails"><img src="http://sites.google.com/site/assetserversite/_/rsrc/1257126460164/home/ooor_s.jpg" width="159px" height="124px" /></a></td>
         <td><b>BY</b></td>
-        <td><a href="http://www.akretion.com" title="Akretion - open source to spin the world"><img src="/rvalyi/ooor/raw/master/akretion_s.png" width="228px" height="124px" /></a></td>
+        <td><a href="http://www.akretion.com" title="Akretion - open source to spin the world"><img src="http://sites.google.com/site/assetserversite/_/rsrc/1257126470309/home/akretion_s.png" width="228px" height="124px" /></a></td>
         <td>
 OOOR stands for OpenObject On Rails. OpenObject is the RAD framework behind OpenERP,
 the ERP that doesn't hurt, just like Rails is "web development that doesn't hurt".
