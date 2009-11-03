@@ -44,7 +44,7 @@ class OpenObjectResource < ActiveResource::Base
             @fields[field.attributes['name']] = field
           end
         end
-        logger.info "#{fields.size} fields"
+        logger.info "#{fields.size} fields loaded"
       end
       @field_defined = true
     end
@@ -209,12 +209,14 @@ class OpenObjectResource < ActiveResource::Base
   def create(context={})
     self.pre_cast_attributes
     self.id = self.class.rpc_execute('create', @attributes, context)
+    load(self.class.find(self.id, :context => context).attributes)
   end
 
   #compatible with the Rails way but also supports OpenERP context
   def update(context={})
     self.pre_cast_attributes
     self.class.rpc_execute('write', self.id, @attributes.reject{|k, v| k == 'id'}, context)
+    load(self.class.find(self.id, :context => context).attributes)
   end
 
   #compatible with the Rails way but also supports OpenERP context
@@ -222,11 +224,16 @@ class OpenObjectResource < ActiveResource::Base
     self.class.rpc_execute('unlink', self.id, context)
   end
 
+  #OpenERP copy method, load persisted copied Object
+  def copy(defaults=[], context={})
+    self.class.find(self.class.rpc_execute('copy', self.id, defaults, context), :context => context)
+  end
+
 
   # ******************** fake associations like much like ActiveRecord according to the cached OpenERP data model ********************
 
   def relations
-      @relations ||= {} and @relations
+    @relations ||= {} and @relations
   end
 
   def relationnal_result(method_id, *arguments)

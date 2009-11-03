@@ -141,6 +141,9 @@ Basic finders:
 OpenERP domain support:
 
     $ ResPartner.find(:all, :domain=>[['supplier', '=', 1],['active','=',1]])
+More subbtle now, remember OpenERP use a kind of inverse polish notation for complex domains,
+here we look for a product in category 1 AND which name is either 'PC1' OR 'PC2':
+    $ ProductProduct.find(:all, :domain=>[['categ_id','=',1],'|',['name', '=', 'PC1'],['name','=','PC2']])
 
 
 OpenERP context support:
@@ -190,6 +193,11 @@ Update:
 
     $ pc.name = "A new name"
     $ pc.save
+
+
+Copy:
+
+    $ copied_object = pc.copy({:categ_id => 2})  #first optionnal arg is new default values, second is context
 
 
 Delete:
