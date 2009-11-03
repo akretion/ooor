@@ -30,6 +30,7 @@ module Ooor
       database = @ooor_config[:database]
       user = @ooor_config[:username]
       pass = @ooor_config[:password]
+      @ooor_logger.level = @ooor_config[:log_level] if @ooor_config[:log_level]
     rescue Exception => error
       @ooor_logger.error """ooor.yml failed: #{error.inspect}
        #{error.backtrace}
