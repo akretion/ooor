@@ -59,12 +59,12 @@ OpenERP is a Python based open source ERP. Every action in OpenERP is actually i
 OOOR just takes advantage of brings this power your favorite web development tool - Rails - with OpenERP domain objects and business methods.
 
 OOOR aims at being a very simple piece of code (< 500 lines of code; e.g no bug, easy to evolve) adhering to Rails standards.
-So instead of re-inventing the wheel, OOOR basically just sits on the top of Rails ActiveResource::Base, the standard way of remoting you ActiveRecord Rails models with REST.
+So instead of re-inventing the wheel, OOOR basically just sits on the top of Rails [ActiveResource::Base](http://api.rubyonrails.org/classes/ActiveResource/Base.html), the standard way of remoting you ActiveRecord Rails models with REST.
 
-Remember, ActiveResource is actually simpler than ActiveRecord. It's aimed at remoting ANY object model, not necessarily ActiveRecord models.
+Remember, ActiveResource is actually simpler than [ActiveRecord](http://api.rubyonrails.org/classes/ActiveRecord/Base.html). It's aimed at remoting ANY object model, not necessarily ActiveRecord models.
 So ActiveResource is only a subset of ActiveRecord, sharing the common denominator API (integration is expected to become even more powerful in Rails 3).
 
-OOOR implements ActiveResource public API almost fully. It means that you can remotely work on any OpenERP model using the standard ActiveResource API.
+OOOR implements ActiveResource public API almost fully. It means that you can remotely work on any OpenERP model using [the standard ActiveResource API](http://api.rubyonrails.org/classes/ActiveResource/Base.html).
 
 But, OOOR goes actually a bit further: it does implements model associations (one2many, many2many, many2one, single table inheritance).
 Indeed, when loading the OpenERP models, we load the relational meta-model using OpenERP standard datamodel introspection services.
