@@ -79,6 +79,11 @@ class OpenObjectResource < ActiveResource::Base
 
     # ******************** remote communication ********************
 
+    #OpenERP search method
+    def search(domain, offset=0, limit=false, order=false, context={}, count=false)
+      rpc_execute('search', domain, offset, limit, order, context, count)
+    end
+
     def client
       @client ||= XMLRPC::Client.new2(@site.to_s.gsub(/\/$/,'')) #always remove trailing / to make OpenERP happy
     end
@@ -115,10 +120,15 @@ class OpenObjectResource < ActiveResource::Base
     def try_with_pretty_error_log
         yield
       rescue RuntimeError => e
-        logger.error "OpenERP server error!
-        ***********
-        #{eval("#{ e }".gsub("wrong fault-structure: ", ""))["faultString"]}
-        ***********"""
+        begin
+          openerp_error_hash = eval("#{ e }".gsub("wrong fault-structure: ", ""))
+          if openerp_error_hash.is_a? Hash
+            logger.error "*********** OpenERP Server ERROR:
+            #{openerp_error_hash["faultString"]}
+            ***********"
+          end
+        rescue
+        end
         raise
     end
 
@@ -227,6 +237,19 @@ class OpenObjectResource < ActiveResource::Base
   #OpenERP copy method, load persisted copied Object
   def copy(defaults=[], context={})
     self.class.find(self.class.rpc_execute('copy', self.id, defaults, context), :context => context)
+  end
+
+  #Generic OpenERP rpc method call
+  def call(method, *args)
+    self.class.rpc_execute(method, *args)
+  end
+
+  #Generic OpenERP on_change method
+  def on_change(on_change_method, *args)
+    result = self.class.rpc_execute(on_change_method, *args)
+    self.classlogger.info result["warning"]["title"] if result["warning"]
+    self.class.logger.info result["warning"]["message"] if result["warning"]
+    load(result["value"])
   end
 
 
