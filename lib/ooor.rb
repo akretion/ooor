@@ -5,7 +5,7 @@ module Ooor
 
   class << self
 
-    cattr_accessor :logger, :config, :all_loaded_models, :binding, :common_url, :object_url
+    attr_accessor :logger, :config, :all_loaded_models, :binding, :common_url, :object_url
 
     #load the custom configuration
     def load_config(config_file=nil, env=nil)
