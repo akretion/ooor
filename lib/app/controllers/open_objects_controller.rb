@@ -42,7 +42,7 @@ class OpenObjectsController < ActionController::Base
     end
 
     def load_all_controllers(map)
-      OpenObjectResource.all_loaded_models.each do |model|
+      Ooor.all_loaded_models.each do |model|
         map.resources model.gsub('.', '_').to_sym
       end
     end

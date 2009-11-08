@@ -18,7 +18,15 @@ module Ooor
   end
 
   def self.loaded?
-    OpenObjectResource.all_loaded_models.is_a? Array and OpenObjectResource.all_loaded_models.size > 0
+    @all_loaded_models.size > 0
+  end
+
+  def self.binding
+    return @ooor_binding
+  end
+
+  def self.all_loaded_models
+    return @all_loaded_models
   end
 
   def self.reload!(config=false, env=false, keep_config=false)
@@ -47,6 +55,7 @@ module Ooor
 
       #*************** load the models
 
+      @all_loaded_models = []
       models_url = url.gsub(/\/$/,'') + "/object"
       OpenObjectResource.logger = @ooor_logger
       @ooor_binding = lambda {}

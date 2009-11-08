@@ -14,7 +14,7 @@ class OpenObjectResource < ActiveResource::Base
     cattr_accessor :logger
     attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes assotiated to the OpenERP ir.model
                   :field_defined, :many2one_relations, :one2many_relations, :many2many_relations,
-                  :openerp_database, :all_loaded_models
+                  :openerp_database
 
     def class_name_from_model_key(model_key)
       model_key.split('.').collect {|name_part| name_part[0..0].upcase + name_part[1..-1]}.join
@@ -23,7 +23,7 @@ class OpenObjectResource < ActiveResource::Base
     def reload_fields_definition(force = false)
       if self != IrModel and self != IrModelFields and (force or not @field_defined)#TODO have a way to force reloading @field_ids too eventually
         unless @field_ids
-           model_def = IrModel.find(:all, :domain => [['model', '=', @openerp_model]])
+           model_def = IrModel.find(:first, :domain => [['model', '=', @openerp_model]])
            @field_ids = model_def.field_id
            @access_ids = model_def.access_ids
         end
@@ -52,8 +52,7 @@ class OpenObjectResource < ActiveResource::Base
     def define_openerp_model(arg, url, database, user_id, pass, binding)
       param = (arg.is_a? OpenObjectResource) ? arg.attributes.merge(arg.relations) : {'model' => arg}
       model_key = param['model']
-      @all_loaded_models ||= []
-      all_loaded_models.push(model_key)
+      Ooor.all_loaded_models.push(model_key)
       model_class_name = class_name_from_model_key(model_key)
       logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{model_key} model"
       definition = "
@@ -134,6 +133,10 @@ class OpenObjectResource < ActiveResource::Base
 
     def load_relation(model_key, ids, *arguments)
       options = arguments.extract_options!
+      unless Ooor.all_loaded_models.index(model_key)
+        model = IrModel.find(:first, :domain => [['model', '=', model_key]])
+        define_openerp_model(model, site, openerp_database, user, password, Ooor.binding)
+      end
       relation_model_class = eval class_name_from_model_key(model_key)
       relation_model_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
     end
@@ -273,17 +276,19 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   def method_missing(method_id, *arguments)
+    @loaded_relations ||= {}
+    result = @loaded_relations[method_id.to_s]
+    return result if result
     result = relationnal_result(method_id, *arguments)
     if result
-      return result
+      @loaded_relations[method_id.to_s] = result
+      return result 
     elsif @relations and @relations[method_id.to_s] and !self.class.many2one_relations.empty?
       #maybe the relation is inherited or could be inferred from a related field
       self.class.many2one_relations.each do |k, field|
         model = self.class.load_relation(field.relation, @relations[method_id.to_s][0], *arguments)
         result = model.relationnal_result(method_id, *arguments)
-        if result
-          return result
-        end
+        return result if result
       end
       super
     end
