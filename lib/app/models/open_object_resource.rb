@@ -98,16 +98,16 @@ class OpenObjectResource < ActiveResource::Base
     end
 
      #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
-    def rpc_exec_workflow(method, *args)
-      rpc_exec_workflow_with_object(@openerp_model, method, *args)
+    def rpc_exec_workflow(action, *args)
+      rpc_exec_workflow_with_object(@openerp_model, action, *args)
     end
 
-    def rpc_exec_workflow_with_object(object, method, *args)
-      rpc_exec_workflow_with_all(@database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], object, method, *args)
+    def rpc_exec_workflow_with_object(object, action, *args)
+      rpc_exec_workflow_with_all(@database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], object, action, *args)
     end
 
-    def rpc_exec_workflow_with_all(method, *args)
-      try_with_pretty_error_log { client(@database && @site || Ooor.object_url).call("exec_workflow", method, *args) }
+    def rpc_exec_workflow_with_all(db, uid, pass, obj, action, *args)
+      try_with_pretty_error_log { client(@database && @site || Ooor.object_url).call("exec_workflow", db, uid, pass, obj, action, *args) }
     end
 
     #grab the eventual error log from OpenERP response as OpenERP doesn't enforce carefuly
@@ -252,6 +252,12 @@ class OpenObjectResource < ActiveResource::Base
     self.classlogger.info result["warning"]["title"] if result["warning"]
     self.class.logger.info result["warning"]["message"] if result["warning"]
     load(result["value"])
+  end
+
+  #wrapper for OpenERP exec_workflow Business Process Management engine
+  def wkf_action(action, context={})
+    self.class.rpc_exec_workflow(action, self.id) #FIXME looks like OpenERP exec_workflow doesn't accept context but it might be a bug
+    load(self.class.find(self.id, :context => context).attributes)
   end
 
 
