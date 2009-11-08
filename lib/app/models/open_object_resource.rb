@@ -115,7 +115,7 @@ class OpenObjectResource < ActiveResource::Base
     #grab the eventual error log from OpenERP response as OpenERP doesn't enforce carefuly
     #the XML/RPC spec, see https://bugs.launchpad.net/openerp/+bug/257581
     def try_with_pretty_error_log
-        yield
+      yield
       rescue RuntimeError => e
         begin
           openerp_error_hash = eval("#{ e }".gsub("wrong fault-structure: ", ""))
@@ -193,7 +193,7 @@ class OpenObjectResource < ActiveResource::Base
 
   # ******************** instance methods ********************
 
-  attr_accessor :ooor_user, :ooor_password
+  attr_accessor :relations, :loaded_relations
 
   def pre_cast_attributes
     @attributes.each {|k, v| @attributes[k] = ((v.is_a? BigDecimal) ? Float(v) : v)}
@@ -203,6 +203,8 @@ class OpenObjectResource < ActiveResource::Base
     self.class.reload_fields_definition unless self.class.field_defined
     raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
     @prefix_options, attributes = split_options(attributes)
+    @relations = {}
+    @loaded_relations = {}
     attributes.each do |key, value|
       case value
         when Array
@@ -264,36 +266,31 @@ class OpenObjectResource < ActiveResource::Base
 
   # ******************** fake associations like much like ActiveRecord according to the cached OpenERP data model ********************
 
-  def relations
-    @relations ||= {} and @relations
-  end
-
-  def relationnal_result(method_id, *arguments)
+  def relationnal_result(method_name, *arguments)
     self.class.reload_fields_definition unless self.class.field_defined
-    if self.class.many2one_relations[method_id.to_s]
-      self.class.load_relation(self.class.many2one_relations[method_id.to_s].relation, @relations[method_id.to_s][0], *arguments)
-    elsif self.class.one2many_relations[method_id.to_s]
-      self.class.load_relation(self.class.one2many_relations[method_id.to_s].relation, @relations[method_id.to_s], *arguments)
-    elsif self.class.many2many_relations[method_id.to_s]
-      self.class.load_relation(self.class.many2many_relations[method_id.to_s].relation, @relations[method_id.to_s], *arguments)
+    if self.class.many2one_relations.has_key?(method_name)
+      self.class.load_relation(self.class.many2one_relations[method_name].relation, @relations[method_name][0], *arguments)
+    elsif self.class.one2many_relations.has_key?(method_name)
+      self.class.load_relation(self.class.one2many_relations[method_name].relation, @relations[method_name], *arguments)
+    elsif self.class.many2many_relations.has_key?(method_name)
+      self.class.load_relation(self.class.many2many_relations[method_name].relation, @relations[method_name], *arguments)
     else
       false
     end
   end
 
-  def method_missing(method_id, *arguments)
-    @loaded_relations ||= {}
-    result = @loaded_relations[method_id.to_s]
-    return result if result
-    result = relationnal_result(method_id, *arguments)
+  def method_missing(method_symbol, *arguments)
+    method_name = method_symbol.to_s
+    return @loaded_relations[method_name] if @loaded_relations.has_key?(method_name)
+    result = relationnal_result(method_name, *arguments)
     if result
-      @loaded_relations[method_id.to_s] = result
+      @loaded_relations[method_name] = result
       return result 
-    elsif @relations and @relations[method_id.to_s] and !self.class.many2one_relations.empty?
+    elsif @relations and @relations.has_key?(method_name) and !self.class.many2one_relations.empty?
       #maybe the relation is inherited or could be inferred from a related field
       self.class.many2one_relations.each do |k, field|
-        model = self.class.load_relation(field.relation, @relations[method_id.to_s][0], *arguments)
-        result = model.relationnal_result(method_id, *arguments)
+        model = self.class.load_relation(field.relation, @relations[method_name][0], *arguments)
+        result = model.relationnal_result(method_name, *arguments)
         return result if result
       end
       super
