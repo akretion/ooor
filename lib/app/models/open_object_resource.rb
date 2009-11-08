@@ -1,11 +1,6 @@
 require 'xmlrpc/client'
 require 'activeresource'
 
-#TODO support name_search via search + param
-#see name_search(self, cr, user, name='', args=None, operator='ilike', context=None, limit=None):
-#TODO support offset, limit and order
-#see def search(self, cr, user, args, offset=0, limit=None, order=None, context=None, count=False):
-
 class OpenObjectResource < ActiveResource::Base
 
   # ******************** class methods ********************
@@ -14,7 +9,7 @@ class OpenObjectResource < ActiveResource::Base
     cattr_accessor :logger
     attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes assotiated to the OpenERP ir.model
                   :field_defined, :many2one_relations, :one2many_relations, :many2many_relations,
-                  :openerp_database
+                  :openerp_database, :user_id
 
     def class_name_from_model_key(model_key)
       model_key.split('.').collect {|name_part| name_part[0..0].upcase + name_part[1..-1]}.join
@@ -22,11 +17,6 @@ class OpenObjectResource < ActiveResource::Base
 
     def reload_fields_definition(force = false)
       if self != IrModel and self != IrModelFields and (force or not @field_defined)#TODO have a way to force reloading @field_ids too eventually
-        unless @field_ids
-           model_def = IrModel.find(:first, :domain => [['model', '=', @openerp_model]])
-           @field_ids = model_def.field_id
-           @access_ids = model_def.access_ids
-        end
         fields = IrModelFields.find(@field_ids)
         @fields = {}
         @many2one_relations = {}
@@ -57,9 +47,9 @@ class OpenObjectResource < ActiveResource::Base
       logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{model_key} model"
       definition = "
       class #{model_class_name} < OpenObjectResource
-        self.site = '#{url}'
+        self.site = '#{url || Ooor.object_url}'
         self.user = #{user_id}
-        self.password = '#{pass}'
+        self.password = #{pass || false}
         self.openerp_database = '#{database}'
         self.openerp_model = '#{model_key}'
         self.openerp_id = #{param['id'] || false}
@@ -83,8 +73,14 @@ class OpenObjectResource < ActiveResource::Base
       rpc_execute('search', domain, offset, limit, order, context, count)
     end
 
-    def client
-      @client ||= XMLRPC::Client.new2(@site.to_s.gsub(/\/$/,'')) #always remove trailing / to make OpenERP happy
+    def client(url)
+      @clients ||= {}
+      @client = @clients[url]
+      unless @clientl
+        @client ||= XMLRPC::Client.new2(url)
+        @clients[url] = @client
+      end
+      return @client
     end
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
@@ -93,12 +89,12 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def rpc_execute_with_object(object, method, *args)
-      rpc_execute_with_all(@openerp_database, @user, @password, object, method, *args)
+      rpc_execute_with_all(@database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], object, method, *args)
     end
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
     def rpc_execute_with_all(db, uid, pass, obj, method, *args)
-      try_with_pretty_error_log { client.call("execute", db, uid, pass, obj, method, *args) }
+      try_with_pretty_error_log { client(@database && @site || Ooor.object_url).call("execute",  db, uid, pass, obj, method, *args) }
     end
 
      #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
@@ -107,11 +103,11 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def rpc_exec_workflow_with_object(object, method, *args)
-      rpc_exec_workflow_with_all(@openerp_database, @user, @password, object, method, *args)
+      rpc_exec_workflow_with_all(@database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], object, method, *args)
     end
 
     def rpc_exec_workflow_with_all(method, *args)
-      try_with_pretty_error_log { client.call("exec_workflow", db, uid, pass, obj, method,  *args) }
+      try_with_pretty_error_log { client(@database && @site || Ooor.object_url).call("exec_workflow", method, *args) }
     end
 
     #grab the eventual error log from OpenERP response as OpenERP doesn't enforce carefuly
@@ -135,7 +131,7 @@ class OpenObjectResource < ActiveResource::Base
       options = arguments.extract_options!
       unless Ooor.all_loaded_models.index(model_key)
         model = IrModel.find(:first, :domain => [['model', '=', model_key]])
-        define_openerp_model(model, site, openerp_database, user, password, Ooor.binding)
+        define_openerp_model(model, nil, nil, nil, nil, Ooor.binding)
       end
       relation_model_class = eval class_name_from_model_key(model_key)
       relation_model_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
@@ -195,6 +191,8 @@ class OpenObjectResource < ActiveResource::Base
 
   # ******************** instance methods ********************
 
+  attr_accessor :ooor_user, :ooor_password
+
   def pre_cast_attributes
     @attributes.each {|k, v| @attributes[k] = ((v.is_a? BigDecimal) ? Float(v) : v)}
   end
@@ -208,7 +206,7 @@ class OpenObjectResource < ActiveResource::Base
         when Array
            relations[key.to_s] = value #the relation because we want the method to load the association through method missing
         when Hash
-          resource = find_or_create_resource_for(key)
+          resource = find_or_create_resource_for(key) #TODO check!
           @attributes[key.to_s] = resource@attributes[key.to_s].new(value)
         else
           @attributes[key.to_s] = value.dup rescue value
@@ -250,6 +248,7 @@ class OpenObjectResource < ActiveResource::Base
   #Generic OpenERP on_change method
   def on_change(on_change_method, *args)
     result = self.class.rpc_execute(on_change_method, *args)
+    session
     self.classlogger.info result["warning"]["title"] if result["warning"]
     self.class.logger.info result["warning"]["message"] if result["warning"]
     load(result["value"])
