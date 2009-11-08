@@ -9,6 +9,9 @@ development:
   #comment the following line if you want to load ALL the available models (slower startup), or complete it with all the OpenERP models you want to be loaded
   models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice]
   bootstrap: true   #true if you want to load OpenObject models (will hit OpenERP server) at startup; else use Ooor.reload!(lambda {}) to reload the Ooor models at any time
+  #log_level: 0
+  #global_context:
+    #'lang': en_US
 
 test:
   url: http://localhost:8069/xmlrpc

@@ -5,7 +5,7 @@ module Ooor
 
   class << self
 
-    attr_accessor :logger, :config, :all_loaded_models, :binding, :common_url, :object_url
+    attr_accessor :logger, :config, :all_loaded_models, :binding, :common_url, :object_url, :global_context
 
     #load the custom configuration
     def load_config(config_file=nil, env=nil)
@@ -44,6 +44,7 @@ module Ooor
       Ooor.logger.level = Ooor.config[:log_level] if Ooor.config[:log_level]
       Ooor.common_url = Ooor.config[:url].gsub(/\/$/,'') + "/common"
       Ooor.object_url = Ooor.config[:url].gsub(/\/$/,'') + "/object"
+      Ooor.global_context = Ooor.config[:global_context] || {}
       Ooor.config[:user_id] = global_login(Ooor.config[:username] || 'admin', Ooor.config[:password] || 'admin')
 
       #*************** load the models
