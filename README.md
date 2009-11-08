@@ -156,6 +156,12 @@ Request params or ActiveResource equivalence of OpenERP domain (but degraded as 
     $ Partners.find(:all, :params => {:supplier => true})
 
 
+OpenERP search method:
+
+    $ ResPartner.search([['name', 'ilike', 'a']], 0, 2)
+Arguments are: domain, offset=0, limit=false, order=false, context={}, count=false
+
+
 Relations (many2one, one2many, many2many) support:
 
     $ SaleOrder.find(1).order_line
@@ -169,6 +175,12 @@ see [the official OpenERP documentation](http://doc.openerp.com/developer/5_18_u
 Inherited relations support:
 
     $ ProductProduct.find(1).categ_id #where categ_id is inherited from the ProductTemplate
+
+Please notice that loaded relations are cached (to avoid  hitting OpenERP over and over)
+until the root object is reloaded (after save/update for instance)
+Currently, save/update doesn't save the whole object graph but only the current object.
+We might change this in the future to match the way OpenERP clients are working which
+is supported by the OpenERP ORM, see issue: http://github.com/rvalyi/ooor/issues/#issue/3
 
 
 Load only specific fields support (faster than loading all fields):
@@ -205,10 +217,46 @@ Delete:
     $ pc.destroy
 
 
-Call workflow: see code; TODO document
+Call workflow:
+
+    $ s = SaleOrder.find(2)
+    $ s.wkf_action('cancel')
+    $ s.state
+    $ => 'cancel'
 
 
-Call aribtrary method: see code; TODO document
+On Change methods:
+
+    $ l=SaleOrderLine.new
+    $ l.on_change('product_id_change', 1, 1, false, false, false, false, false, false, 1)
+    $ => #<Ooor::SaleOrderLine:0x10c2cfe1 @prefix_options={}, @attributes={"product_packaging"=>false, "product_uos_qty"=>false, "th_weight"=>0}>
+Notice that it reloads the Objects attrs and print warning message accordingly
+
+
+Call aribtrary method:
+
+    $ use static ObjectClass.rpc_execute_with_all method
+    $ or object.call(method_name, args*) #were args is an aribtrary list of arguments
+
+
+Change logged user:
+
+    $ Ooor.global_login('demo', 'demo')
+    $ s = SaleOrder.find(2)
+    $ => 'Access denied error'
+Notice that this changes the globally logged user and doesn't address the issue of
+different users using Ooor concurrently with different credentials as you might want
+for instance in a Rails web application. That second issue will be addressed at
+the API level but it's not easy as ActiveResource has not been designed for it.
+
+
+Change log level:
+
+By default the log level is very verbose (debug level) to help newcomers to jumpstart
+However you might want to change that. 2 solutions:
+    $ Ooor.logger.level = 1 #available levels are those of the standard Ruby Logger class: 0 debug, 1 info, 2 error
+    $ In the config yaml file or hash, set the :log_level parameter
+
 
 
 REST HTTP API:

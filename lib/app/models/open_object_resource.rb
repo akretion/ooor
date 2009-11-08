@@ -94,6 +94,7 @@ class OpenObjectResource < ActiveResource::Base
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
     def rpc_execute_with_all(db, uid, pass, obj, method, *args)
+      logger.debug "rpc_execute_with_all: rpc_methods: 'execute', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, method: #{method}, *args: #{args.inspect}"
       try_with_pretty_error_log { client(@database && @site || Ooor.object_url).call("execute",  db, uid, pass, obj, method, *args) }
     end
 
@@ -107,6 +108,7 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def rpc_exec_workflow_with_all(db, uid, pass, obj, action, *args)
+      logger.debug "rpc_execute_with_all: rpc_methods: 'exec_workflow', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, action #{action}, *args: #{args.inspect}"
       try_with_pretty_error_log { client(@database && @site || Ooor.object_url).call("exec_workflow", db, uid, pass, obj, action, *args) }
     end
 
@@ -248,7 +250,6 @@ class OpenObjectResource < ActiveResource::Base
   #Generic OpenERP on_change method
   def on_change(on_change_method, *args)
     result = self.class.rpc_execute(on_change_method, *args)
-    session
     self.classlogger.info result["warning"]["title"] if result["warning"]
     self.class.logger.info result["warning"]["message"] if result["warning"]
     load(result["value"])
