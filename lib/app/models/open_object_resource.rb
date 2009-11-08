@@ -179,7 +179,7 @@ class OpenObjectResource < ActiveResource::Base
         scope = [scope]
         is_collection = false
       end
-      records = rpc_execute('read', scope, *(fields + [context]))
+      records = rpc_execute('read', scope, fields, context)
       active_resources = []
       records.each do |record|
         r = {}
