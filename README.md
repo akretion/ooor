@@ -113,6 +113,8 @@ That the easiest option to get started while you might not want that in producti
 
 Then just start your Rails application, your OpenERP models will be loaded as you'll see in the Rails log.
 You can then use all the OOOR API upon all loaded OpenERP models in your regular Rails code (see API usage section).
+A good way to start playing with OOOR is inside the console, using:
+    $ ruby script/console #or jruby script/console on JRuby of course
 
 Enabling REST HTTP routes to your OpenERP models:
 in your config/route.rb, you can alternatively enable routes to all your OpenERP models by addding:
@@ -177,7 +179,7 @@ Inherited relations support:
     $ ProductProduct.find(1).categ_id #where categ_id is inherited from the ProductTemplate
 
 Please notice that loaded relations are cached (to avoid  hitting OpenERP over and over)
-until the root object is reloaded (after save/update for instance)
+until the root object is reloaded (after save/update for instance).
 Currently, save/update doesn't save the whole object graph but only the current object.
 We might change this in the future to match the way OpenERP clients are working which
 is supported by the OpenERP ORM, see issue: http://github.com/rvalyi/ooor/issues/#issue/3
@@ -252,7 +254,7 @@ the API level but it's not easy as ActiveResource has not been designed for it.
 
 Change log level:
 
-By default the log level is very verbose (debug level) to help newcomers to jumpstart
+By default the log level is very verbose (debug level) to help newcomers to jumpstart.
 However you might want to change that. 2 solutions:
     $ Ooor.logger.level = 1 #available levels are those of the standard Ruby Logger class: 0 debug, 1 info, 2 error
     $ In the config yaml file or hash, set the :log_level parameter
