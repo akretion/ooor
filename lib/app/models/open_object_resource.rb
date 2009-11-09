@@ -1,6 +1,11 @@
 require 'xmlrpc/client'
 require 'activeresource'
 
+#TODO implement method missing on the OpenObjectResource level and proxy the method upon the RPC client, as done in openerp/tools/rpc.py
+#in the official web client
+
+#TODO implement passing session credentials to RPC methods (concurrent access of different user credentials in Rails)
+
 class OpenObjectResource < ActiveResource::Base
 
   # ******************** class methods ********************
