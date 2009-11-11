@@ -150,7 +150,7 @@ here we look for a product in category 1 AND which name is either 'PC1' OR 'PC2'
 
 OpenERP context support:
 
-    $ ProductProduct.find(1, :context => {:my_key => 'value'}
+    $ ProductProduct.find(1, :context => {:my_key => 'value'})
 
 
 Request params or ActiveResource equivalence of OpenERP domain (but degraded as only the = operator is supported, else use domain):
@@ -169,7 +169,7 @@ Relations (many2one, one2many, many2many) support:
     $ SaleOrder.find(1).order_line
     $ p = ProductProduct.find(1)
     $ p.product_tmpl_id #many2one relation
-    $ p.tax_ids = [6, 0, [1,2]] #create many2many associations,
+    $ p.product_tmpl_id.taxes_id = [6, 0, [1,2]] #create many2many associations,
     $ p.save #assigns taxes with id 1 and 2 as sale taxes,
 see [the official OpenERP documentation](http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many)
 

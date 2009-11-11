@@ -176,7 +176,7 @@ class OpenObjectResource < ActiveResource::Base
 
     # Find a single resource from the default URL
     def find_single(scope, options)
-      fields = (options[:fields] and [options[:fields]]) || []
+      fields = options[:fields] || []
       context = options[:context] || {}
       prefix_options, query_options = split_options(options[:params])
       is_collection = true
