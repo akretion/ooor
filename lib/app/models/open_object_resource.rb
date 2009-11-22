@@ -1,9 +1,6 @@
 require 'xmlrpc/client'
 require 'activeresource'
 
-#TODO implement method missing on the OpenObjectResource level and proxy the method upon the RPC client, as done in openerp/tools/rpc.py
-#in the official web client
-
 #TODO implement passing session credentials to RPC methods (concurrent access of different user credentials in Rails)
 
 class OpenObjectResource < ActiveResource::Base
@@ -140,6 +137,10 @@ class OpenObjectResource < ActiveResource::Base
         raise
     end
 
+    def method_missing(method_symbol, *arguments)
+      return self.rpc_execute(method_symbol.to_s, *arguments)
+    end
+
     def load_relation(model_key, ids, *arguments)
       options = arguments.extract_options!
       unless Ooor.all_loaded_models.index(model_key)
@@ -171,7 +172,7 @@ class OpenObjectResource < ActiveResource::Base
 
     #TODO, make sense?
     def find_one
-      raise "Not implemented yet, go one!"
+      raise "Not implemented yet, go on!"
     end
 
     # Find a single resource from the default URL
