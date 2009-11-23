@@ -1,5 +1,6 @@
 require 'xmlrpc/client'
 require 'activeresource'
+require 'app/models/open_object_ui'
 
 #TODO implement passing session credentials to RPC methods (concurrent access of different user credentials in Rails)
 
@@ -118,6 +119,15 @@ class OpenObjectResource < ActiveResource::Base
       end
       logger.debug "rpc_execute_with_all: rpc_methods: 'exec_workflow', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, action #{action}, *args: #{args.inspect}"
       try_with_pretty_error_log { client(@database && @site || Ooor.object_url).call("exec_workflow", db, uid, pass, obj, action, *args) }
+    end
+
+    def old_wizard_step(wizard_name, ids, step='init', wizard_id=nil, form={}, context={}, report_type='pdf')
+      context = Ooor.global_context.merge(context)
+      unless wizard_id
+        #TODO deal with service URL, refactor all URL's
+        wizard_id = try_with_pretty_error_log { client("http://localhost:8069/xmlrpc/wizard").call("create",  @database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], wizard_name) }
+      end
+      [wizard_id, try_with_pretty_error_log { client("http://localhost:8069/xmlrpc/wizard").call("execute",  @database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], wizard_id, {'model' => @openerp_model, 'form' => form, 'id' => ids[0], 'report_type' => report_type, 'ids' => ids}, step, context) }]
     end
 
     #grab the eventual error log from OpenERP response as OpenERP doesn't enforce carefuly
@@ -273,6 +283,11 @@ class OpenObjectResource < ActiveResource::Base
   def wkf_action(action, context={})
     self.class.rpc_exec_workflow(action, self.id) #FIXME looks like OpenERP exec_workflow doesn't accept context but it might be a bug
     load(self.class.find(self.id, :context => context).attributes)
+  end
+
+  def old_wizard_step(wizard_name, step='init', wizard_id=nil, form={}, context={})
+    result = self.class.old_wizard_step(wizard_name, [self.id], step, wizard_id, form, {})
+    OpenObjectWizard.new(wizard_name, result[0], result[1], [self])
   end
 
 
