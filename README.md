@@ -239,6 +239,20 @@ Call aribtrary method:
 
     $ use static ObjectClass.rpc_execute_with_all method
     $ or object.call(method_name, args*) #were args is an aribtrary list of arguments
+    $ or use the method missing wrapper that will proxy any OpenERP osv.py/orm.py method, see fo instance:
+    $ ResPartner.name_search('ax', [], 'ilike', {})
+    $ ProductProduct.fields_view_get(132, 'tree', {})
+
+
+Call old wizards:
+
+    $ inv = AccountInvoice.find(4)
+    $ wizard = inv.old_wizard_step('account.invoice.pay') #tip: you can inspect the wizard fields, arch and datas
+    $ wizard.reconcile({:journal_id => 6, :name =>"from_rails"}) #if you want to pay all; will give you a reloaded invoice
+    $ #or if you want a payment with a write off:
+    $ wizard.writeoff_check({"amount" => 12, "journal_id" => 6, "name" =>'from_rails'}) #use the button name as the wizard method
+    $ wizard.reconcile({required missing write off fields...}) #will give you a reloaded invoice because state is 'end'
+    $ TODO test and document new osv_memory wizards API
 
 
 Change logged user:
