@@ -5,7 +5,7 @@ module Ooor
 
   class << self
 
-    attr_accessor :logger, :config, :all_loaded_models, :binding, :common_url, :object_url, :global_context
+    attr_accessor :logger, :config, :all_loaded_models, :binding, :base_url, :global_context
 
     #load the custom configuration
     def load_config(config_file=nil, env=nil)
@@ -28,7 +28,7 @@ module Ooor
       begin
       Ooor.config[:username] = user
       Ooor.config[:password] = password
-      client = OpenObjectResource.client(Ooor.common_url)
+      client = OpenObjectResource.client(Ooor.base_url + "/common")
       OpenObjectResource.try_with_pretty_error_log { client.call("login", Ooor.config[:database], user, password)}
       rescue SocketError => error
         Ooor.logger.error """login to OpenERP server failed:
@@ -42,8 +42,7 @@ module Ooor
       Ooor.config = config.is_a?(Hash) && config or keep_config && Ooor.config or self.load_config(config, env)
       Ooor.config.symbolize_keys!
       Ooor.logger.level = Ooor.config[:log_level] if Ooor.config[:log_level]
-      Ooor.common_url = Ooor.config[:url].gsub(/\/$/,'') + "/common"
-      Ooor.object_url = Ooor.config[:url].gsub(/\/$/,'') + "/object"
+      Ooor.base_url = Ooor.config[:url].gsub(/\/$/,'')
       Ooor.global_context = Ooor.config[:global_context] || {}
       Ooor.config[:user_id] = global_login(Ooor.config[:username] || 'admin', Ooor.config[:password] || 'admin')
 

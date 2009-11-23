@@ -50,7 +50,7 @@ class OpenObjectResource < ActiveResource::Base
       logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{model_key} model"
       definition = "
       class #{model_class_name} < OpenObjectResource
-        self.site = '#{url || Ooor.object_url}'
+        self.site = '#{url || Ooor.base_url}'
         self.user = #{user_id}
         self.password = #{pass || false}
         self.openerp_database = '#{database}'
@@ -101,7 +101,7 @@ class OpenObjectResource < ActiveResource::Base
         args[-1] = Ooor.global_context.merge(args[-1])
       end
       logger.debug "rpc_execute_with_all: rpc_methods: 'execute', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, method: #{method}, *args: #{args.inspect}"
-      try_with_pretty_error_log { client(@database && @site || Ooor.object_url).call("execute",  db, uid, pass, obj, method, *args) }
+      try_with_pretty_error_log { client((@database && @site || Ooor.base_url) + "/object").call("execute",  db, uid, pass, obj, method, *args) }
     end
 
      #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
@@ -118,16 +118,15 @@ class OpenObjectResource < ActiveResource::Base
         args[-1] = Ooor.global_context.merge(args[-1])
       end
       logger.debug "rpc_execute_with_all: rpc_methods: 'exec_workflow', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, action #{action}, *args: #{args.inspect}"
-      try_with_pretty_error_log { client(@database && @site || Ooor.object_url).call("exec_workflow", db, uid, pass, obj, action, *args) }
+      try_with_pretty_error_log { client((@database && @site || Ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args) }
     end
 
     def old_wizard_step(wizard_name, ids, step='init', wizard_id=nil, form={}, context={}, report_type='pdf')
       context = Ooor.global_context.merge(context)
       unless wizard_id
-        #TODO deal with service URL, refactor all URL's
-        wizard_id = try_with_pretty_error_log { client("http://localhost:8069/xmlrpc/wizard").call("create",  @database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], wizard_name) }
+        wizard_id = try_with_pretty_error_log { client((@database && @site || Ooor.base_url) + "/wizard").call("create",  @database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], wizard_name) }
       end
-      [wizard_id, try_with_pretty_error_log { client("http://localhost:8069/xmlrpc/wizard").call("execute",  @database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], wizard_id, {'model' => @openerp_model, 'form' => form, 'id' => ids[0], 'report_type' => report_type, 'ids' => ids}, step, context) }]
+      [wizard_id, try_with_pretty_error_log { client((@database && @site || Ooor.base_url) + "/wizard").call("execute",  @database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], wizard_id, {'model' => @openerp_model, 'form' => form, 'id' => ids[0], 'report_type' => report_type, 'ids' => ids}, step, context) }]
     end
 
     #grab the eventual error log from OpenERP response as OpenERP doesn't enforce carefuly
