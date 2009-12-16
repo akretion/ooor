@@ -220,11 +220,15 @@ class OpenObjectResource < ActiveResource::Base
     @attributes.each {|k, v| @attributes[k] = ((v.is_a? BigDecimal) ? Float(v) : v)}
   end
 
-  def load(attributes)
+  def reload_from_record!(record)
+    load(record.attributes, record.relations)
+  end
+
+  def load(attributes, relations={})
     self.class.reload_fields_definition unless self.class.field_defined
     raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
     @prefix_options, attributes = split_options(attributes)
-    @relations = {}
+    @relations = relations
     @loaded_relations = {}
     attributes.each do |key, value|
       case value
@@ -245,14 +249,14 @@ class OpenObjectResource < ActiveResource::Base
   def create(context={})
     self.pre_cast_attributes
     self.id = self.class.rpc_execute('create', @attributes, context)
-    load(self.class.find(self.id, :context => context).attributes)
+    reload_from_record!(self.class.find(self.id, :context => context))
   end
 
   #compatible with the Rails way but also supports OpenERP context
   def update(context={})
     self.pre_cast_attributes
     self.class.rpc_execute('write', self.id, @attributes.reject{|k, v| k == 'id'}, context)
-    load(self.class.find(self.id, :context => context).attributes)
+    reload_from_record!(self.class.find(self.id, :context => context))
   end
 
   #compatible with the Rails way but also supports OpenERP context
@@ -281,7 +285,7 @@ class OpenObjectResource < ActiveResource::Base
   #wrapper for OpenERP exec_workflow Business Process Management engine
   def wkf_action(action, context={})
     self.class.rpc_exec_workflow(action, self.id) #FIXME looks like OpenERP exec_workflow doesn't accept context but it might be a bug
-    load(self.class.find(self.id, :context => context).attributes)
+    reload_from_record!(self.class.find(self.id, :context => context))
   end
 
   def old_wizard_step(wizard_name, step='init', wizard_id=nil, form={}, context={})
