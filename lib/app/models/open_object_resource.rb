@@ -253,14 +253,18 @@ class OpenObjectResource < ActiveResource::Base
   #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
   def create(context={})
     self.pre_cast_attributes
-    self.id = self.class.rpc_execute('create', @attributes.merge(@relations.reject {|key, value| !self.class.many2one_relations.has_key?(key)}), context)
+    m2o = @relations.reject{|k, v| !self.class.many2one_relations.has_key?(k)}
+    vals = @attributes.merge(m2o.merge(m2o){|k, v| v.is_a?(Array) ? v[0] : v})
+    self.id = self.class.rpc_execute('create', vals, context)
     reload_from_record!(self.class.find(self.id, :context => context))
   end
 
   #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
   def update(context={})
     self.pre_cast_attributes
-    self.class.rpc_execute('write', self.id, @attributes.reject {|key, value| key == 'id'}.merge(@relations.reject {|key, value| !self.class.many2one_relations.has_key?(key)}), context)
+    m2o = @relations.reject{|k, v| !self.class.many2one_relations.has_key?(k)}
+    vals = @attributes.reject {|key, value| key == 'id'}.merge(m2o.merge(m2o){|k, v| v.is_a?(Array) ? v[0] : v})
+    self.class.rpc_execute('write', self.id, vals, context)
     reload_from_record!(self.class.find(self.id, :context => context))
   end
 
