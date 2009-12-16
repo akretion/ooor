@@ -231,14 +231,19 @@ class OpenObjectResource < ActiveResource::Base
     @relations = relations
     @loaded_relations = {}
     attributes.each do |key, value|
-      case value
-        when Array
-           relations[key.to_s] = value #the relation because we want the method to load the association through method missing
-        when Hash
-          resource = find_or_create_resource_for(key) #TODO check!
-          @attributes[key.to_s] = resource@attributes[key.to_s].new(value)
-        else
-          @attributes[key.to_s] = value.dup rescue value
+      skey = key.to_s
+      if self.class.many2one_relations.has_key?(skey) || self.class.one2many_relations.has_key?(skey) || self.class.many2many_relations.has_key?(skey)
+        relations[skey] = value #the relation because we want the method to load the association through method missing
+      else
+        case value
+          when self.class.many2one_relations.has_key?(skey) || self.class.one2many_relations.has_key?(skey) || self.class.many2many_relations.has_key?(skey)
+             relations[skey] = value #the relation because we want the method to load the association through method missing
+          when Hash
+            resource = find_or_create_resource_for(key) #TODO check!
+            @attributes[skey] = resource@attributes[skey].new(value)
+          else
+            @attributes[skey] = value.dup rescue value
+        end
       end
     end
 
@@ -312,18 +317,22 @@ class OpenObjectResource < ActiveResource::Base
   def method_missing(method_symbol, *arguments)
     method_name = method_symbol.to_s
     return @loaded_relations[method_name] if @loaded_relations.has_key?(method_name)
-    result = relationnal_result(method_name, *arguments)
-    if result
-      @loaded_relations[method_name] = result
-      return result 
-    elsif @relations and @relations.has_key?(method_name) and !self.class.many2one_relations.empty?
-      #maybe the relation is inherited or could be inferred from a related field
-      self.class.many2one_relations.each do |k, field|
-        model = self.class.load_relation(field.relation, @relations[method_name][0], *arguments)
-        result = model.relationnal_result(method_name, *arguments)
-        return result if result
+    if @relations.has_key?(method_name) and !@relations[method_name]
+      return false
+    else
+      result = relationnal_result(method_name, *arguments)
+      if result
+        @loaded_relations[method_name] = result
+        return result
+      elsif @relations and @relations.has_key?(method_name) and !self.class.many2one_relations.empty?
+        #maybe the relation is inherited or could be inferred from a related field
+        self.class.many2one_relations.each do |k, field|
+          model = self.class.load_relation(field.relation, @relations[method_name][0], *arguments)
+          result = model.relationnal_result(method_name, *arguments)
+          return result if result
+        end
+        super
       end
-      super
     end
     super
   end
