@@ -27,7 +27,7 @@ class OpenObjectWizard < OpenObjectLayoutedFields
       open_object_resource = @open_object_resources[0]
       data = open_object_resource.class.old_wizard_step(@name, [open_object_resource.id], method_symbol, @id, values, context)
       if data[1]['state'] == 'end'
-        return open_object_resource.load(open_object_resource.class.find(open_object_resource.id, :context => context).attributes)
+        return open_object_resource.reload_from_record!(open_object_resource.class.find(open_object_resource.id, :context => context))
       end
       @arch = data[1]['arch']
       @fields = data[1]['fields']
