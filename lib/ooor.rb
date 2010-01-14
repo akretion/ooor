@@ -1,11 +1,12 @@
 require 'logger'
 require 'xmlrpc/client'
+require 'app/models/open_object_resource'
 
 module Ooor
 
   class << self
 
-    attr_accessor :logger, :config, :all_loaded_models, :binding, :base_url, :global_context
+    attr_accessor :logger, :config, :all_loaded_models, :base_url, :global_context
 
     #load the custom configuration
     def load_config(config_file=nil, env=nil)
@@ -50,8 +51,8 @@ module Ooor
 
       Ooor.all_loaded_models = []
       OpenObjectResource.logger = Ooor.logger
-      OpenObjectResource.define_openerp_model("ir.model", nil, nil, nil, nil, Ooor.binding)
-      OpenObjectResource.define_openerp_model("ir.model.fields", nil, nil, nil, nil, Ooor.binding)
+      OpenObjectResource.define_openerp_model("ir.model", nil, nil, nil, nil)
+      OpenObjectResource.define_openerp_model("ir.model.fields", nil, nil, nil, nil)
 
       if Ooor.config[:models] #we load only a customized subset of the OpenERP models
         models = IrModel.find(:all, :domain => [['model', 'in', Ooor.config[:models]]])
@@ -59,7 +60,7 @@ module Ooor
         models = IrModel.find(:all)
       end
 
-      models.each {|openerp_model| OpenObjectResource.define_openerp_model(openerp_model, nil, nil, nil, nil, Ooor.binding)}
+      models.each {|openerp_model| OpenObjectResource.define_openerp_model(openerp_model, nil, nil, nil, nil)}
 
     end
 
@@ -69,9 +70,6 @@ end
 
 
 Ooor.logger = ((defined?(RAILS_ENV) and RAILS_ENV != "development") ? Rails.logger : Logger.new(STDOUT))
-Ooor.binding = lambda {}
-
-require 'app/models/open_object_resource'
 
 if defined?(Rails)
   include Ooor

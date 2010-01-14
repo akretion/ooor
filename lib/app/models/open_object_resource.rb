@@ -15,7 +15,7 @@ class OpenObjectResource < ActiveResource::Base
                   :openerp_database, :user_id
 
     def class_name_from_model_key(model_key)
-      model_key.split('.').collect {|name_part| name_part[0..0].upcase + name_part[1..-1]}.join
+      model_key.split('.').collect {|name_part| name_part.capitalize}.join
     end
 
     def reload_fields_definition(force = false)
@@ -42,30 +42,32 @@ class OpenObjectResource < ActiveResource::Base
       @field_defined = true
     end
 
-    def define_openerp_model(arg, url, database, user_id, pass, binding)
+    def define_openerp_model(arg, url, database, user_id, pass)
       param = (arg.is_a? OpenObjectResource) ? arg.attributes.merge(arg.relations) : {'model' => arg}
       model_key = param['model']
       Ooor.all_loaded_models.push(model_key)
       model_class_name = class_name_from_model_key(model_key)
       logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{model_key} model"
-      definition = "
-      class #{model_class_name} < OpenObjectResource
-        self.site = '#{url || Ooor.base_url}'
-        self.user = #{user_id}
-        self.password = #{pass || false}
-        self.openerp_database = '#{database}'
-        self.openerp_model = '#{model_key}'
-        self.openerp_id = #{param['id'] || false}
-        self.info = '#{(param['info'] || '').gsub("'",' ')}'
-        self.name = '#{param['name']}'
-        self.state = '#{param['state']}'
-        self.field_ids = #{(param['field_id'] and '[' + param['field_id'].join(',') + ']') || false}
-        self.access_ids = #{(param['access_ids'] and '[' + param['access_ids'].join(',') + ']') || false}
-        self.many2one_relations = {}
-        self.one2many_relations = {}
-        self.many2many_relations = {}
-      end"
-      eval definition, binding
+      klass = Class.new(OpenObjectResource)
+      klass.class_eval do
+        attr_accessor :site, :user, :password, :openerp_database, :openerp_model, :openerp_id, :info,
+                       :name, :state, :field_ids, :access_ids, :many2one_relations, :one2many_relations, :many2many_relations
+      end
+      klass.site = url || Ooor.base_url
+      klass.user = user_id
+      klass.password = pass
+      klass.openerp_database = database
+      klass.openerp_model = model_key
+      klass.openerp_id = url || param['id']
+      klass.info = (param['info'] || '').gsub("'",' ')
+      klass.name = param['name']
+      klass.state = param['state']
+      klass.field_ids = param['field_id']
+      klass.access_ids = param['access_ids']
+      klass.many2one_relations = {}
+      klass.one2many_relations = {}
+      klass.many2many_relations = {}
+      Object.const_set(model_class_name, klass)
     end
 
 
@@ -83,7 +85,6 @@ class OpenObjectResource < ActiveResource::Base
         @client ||= XMLRPC::Client.new2(url)
         @clients[url] = @client
       end
-      return @client
     end
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
