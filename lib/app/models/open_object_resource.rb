@@ -221,7 +221,7 @@ class OpenObjectResource < ActiveResource::Base
     attributes.each do |key, value|
       skey = key.to_s
       if self.class.many2one_relations.has_key?(skey) || self.class.one2many_relations.has_key?(skey) ||
-         self.class.many2many_relations.has_key?(skey) || (value.is_a? Array)
+         self.class.many2many_relations.has_key?(skey) || value.is_a?(Array)
         relations[skey] = value #the relation because we want the method to load the association through method missing
       else
         case value
@@ -240,17 +240,17 @@ class OpenObjectResource < ActiveResource::Base
   #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
   def create(context={})
     self.pre_cast_attributes
-    m2o = @relations.reject{|k, v| !self.class.many2one_relations.has_key?(k)}
-    vals = @attributes.merge(m2o.merge(m2o){|k, v| v.is_a?(Array) ? v[0] : v})
-    self.id = self.class.rpc_execute('create', vals, context)
+    #strip out m2o with names:
+    vals = @attributes.merge(@relations.reject{|k, v| v.is_a?(Array) && v[1].is_a?(String)})
+    self.id = self.class.rpc_execute('create', @attributes, context)
     reload_from_record!(self.class.find(self.id, :context => context))
   end
 
   #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
   def update(context={})
     self.pre_cast_attributes
-    m2o = @relations.reject{|k, v| !self.class.many2one_relations.has_key?(k)}
-    vals = @attributes.reject {|key, value| key == 'id'}.merge(m2o.merge(m2o){|k, v| v.is_a?(Array) ? v[0] : v})
+    #strip out m2o with names:
+    vals = @attributes.reject {|key, value| key == 'id'}.merge(@relations.reject{|k, v| v.is_a?(Array) && v[1].is_a?(String)})
     self.class.rpc_execute('write', self.id, vals, context)
     reload_from_record!(self.class.find(self.id, :context => context))
   end
@@ -319,9 +319,11 @@ class OpenObjectResource < ActiveResource::Base
         return result
       elsif !self.class.many2one_relations.empty? #maybe the relation is inherited or could be inferred from a related field
         self.class.many2one_relations.each do |k, field|
-          model = self.class.load_relation(field.relation, @relations[k][0], *arguments)
-          result = model.relationnal_result(method_name, *arguments)
-          return result if result
+          if @relations[k]
+            model = self.class.load_relation(field.relation, @relations[k][0], *arguments)
+            result = model.relationnal_result(method_name, *arguments)
+            return result if result
+          end
         end
         super
       end
