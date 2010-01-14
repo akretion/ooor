@@ -267,7 +267,7 @@ class OpenObjectResource < ActiveResource::Base
 
   #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
   def create(context={})
-    self.cast_attributes_to_openerp!
+    cast_attributes_to_openerp!
     #strip out m2o with names:
     vals = @attributes.merge(@relations.reject{|k, v| v.is_a?(Array) && v[1].is_a?(String)})
     self.id = self.class.rpc_execute('create', @attributes, context)
@@ -276,7 +276,7 @@ class OpenObjectResource < ActiveResource::Base
 
   #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
   def update(context={})
-    self.cast_attributes_to_openerp!
+    cast_attributes_to_openerp!
     #strip out m2o with names:
     @relations.reject!{|k, v| v.is_a?(Array) && v[1].is_a?(String)}
     vals = @attributes.reject {|key, value| key == 'id'}.merge(@relations)
@@ -300,8 +300,10 @@ class OpenObjectResource < ActiveResource::Base
   #Generic OpenERP on_change method
   def on_change(on_change_method, *args)
     result = self.class.rpc_execute(on_change_method, *args)
-    self.classlogger.info result["warning"]["title"] if result["warning"]
-    self.class.logger.info result["warning"]["message"] if result["warning"]
+    if result["warning"]
+      self.class.logger.info result["warning"]["title"]
+      self.class.logger.info result["warning"]["message"]
+    end
     load(result["value"])
   end
 
