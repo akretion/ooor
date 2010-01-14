@@ -21,9 +21,7 @@ module Ooor
       raise
     end
 
-    def loaded?
-      Ooor.all_loaded_models.size > 0
-    end
+    def loaded?; Ooor.all_loaded_models.empty?; end
 
     def global_login(user, password)
       begin
@@ -59,13 +57,9 @@ module Ooor
       else #we load all the models
         models = IrModel.find(:all)
       end
-
       models.each {|openerp_model| OpenObjectResource.define_openerp_model(openerp_model, nil, nil, nil, nil)}
-
     end
-
   end
-
 end
 
 

@@ -147,9 +147,7 @@ class OpenObjectResource < ActiveResource::Base
         raise
     end
 
-    def method_missing(method_symbol, *arguments)
-      return self.rpc_execute(method_symbol.to_s, *arguments)
-    end
+    def method_missing(method_symbol, *arguments) return self.rpc_execute(method_symbol.to_s, *arguments) end
 
     def load_relation(model_key, ids, *arguments)
       options = arguments.extract_options!
@@ -181,9 +179,7 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     #TODO, make sense?
-    def find_one
-      raise "Not implemented yet, go on!"
-    end
+    def find_one; raise"Not implemented yet, go on!"; end
 
     # Find a single resource from the default URL
     def find_single(scope, options)
@@ -221,9 +217,7 @@ class OpenObjectResource < ActiveResource::Base
     @attributes.each {|k, v| @attributes[k] = ((v.is_a? BigDecimal) ? Float(v) : v)}
   end
 
-  def reload_from_record!(record)
-    load(record.attributes, record.relations)
-  end
+  def reload_from_record!(record) load(record.attributes, record.relations) end
 
   def load(attributes, relations={})
     self.class.reload_fields_definition unless self.class.field_defined
@@ -280,9 +274,7 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   #Generic OpenERP rpc method call
-  def call(method, *args)
-    self.class.rpc_execute(method, *args)
-  end
+  def call(method, *args) self.class.rpc_execute(method, *args) end
 
   #Generic OpenERP on_change method
   def on_change(on_change_method, *args)
