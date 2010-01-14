@@ -61,12 +61,6 @@ module Ooor
 
       models.each {|openerp_model| OpenObjectResource.define_openerp_model(openerp_model, nil, nil, nil, nil, Ooor.binding)}
 
-      # *************** load the models REST controllers
-      if defined?(ActionController)
-        OpenObjectsController.logger = Ooor.logger
-        models.each {|openerp_model| OpenObjectsController.define_openerp_controller(openerp_model.model, Ooor.binding) }
-      end
-
     end
 
   end
@@ -78,8 +72,6 @@ Ooor.logger = ((defined?(RAILS_ENV) and RAILS_ENV != "development") ? Rails.logg
 Ooor.binding = lambda {}
 
 require 'app/models/open_object_resource'
-require 'app/controllers/open_objects_controller'
-
 
 if defined?(Rails)
   include Ooor
