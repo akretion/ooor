@@ -22,9 +22,6 @@ class OpenObjectResource < ActiveResource::Base
       if self != IrModel and self != IrModelFields and (force or not @field_defined)#TODO have a way to force reloading @field_ids too eventually
         fields = IrModelFields.find(@field_ids)
         @fields = {}
-        @many2one_relations = {}
-        @one2many_relations = {}
-        @many2many_relations = {}
         fields.each do |field|
           case field.attributes['ttype']
           when 'many2one'
@@ -153,7 +150,7 @@ class OpenObjectResource < ActiveResource::Base
       options = arguments.extract_options!
       unless Ooor.all_loaded_models.index(model_key)
         model = IrModel.find(:first, :domain => [['model', '=', model_key]])
-        define_openerp_model(model, nil, nil, nil, nil, Ooor.binding)
+        define_openerp_model(model, nil, nil, nil, nil)
       end
       relation_model_class = eval class_name_from_model_key(model_key)
       relation_model_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
