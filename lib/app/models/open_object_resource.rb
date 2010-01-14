@@ -229,9 +229,9 @@ class OpenObjectResource < ActiveResource::Base
       if self.class.fields[k]
         case self.class.fields[k].ttype
           when 'datetime'
-            @attributes[k] = "#{v.year}-#{v.month}-#{v.day} #{v.hour}:#{v.min}:#{v.sec}"
+            @attributes[k] = "#{v.year}-#{v.month}-#{v.day} #{v.hour}:#{v.min}:#{v.sec}" if v.respond_to?(:sec)
           when 'date'
-            @attributes[k] = "#{v.year}-#{v.month}-#{v.day}"
+            @attributes[k] = "#{v.year}-#{v.month}-#{v.day}" if v.is_a?(Date)
         end
       end
     end
@@ -256,9 +256,15 @@ class OpenObjectResource < ActiveResource::Base
 
       @relations.each do |k, v| #see OpenERP awkward relations API
         if self.class.one2many_relations[k] || (related_classes.select {|clazz| clazz.one2many_relations[k]}).size > 0
-          @relations[k].collect! {|id| [[1, id, {}]]}
+          @relations[k].collect! do |value|
+            if value.is_a?(OpenObjectResource) #on the fly creation as in the GTK client
+              [0, 0, value.to_openerp_hash!]
+            else
+              [1, value, {}]
+            end
+          end
         elsif self.class.many2many_relations[k] || (related_classes.select {|clazz| clazz.many2many_relations[k]}).size > 0
-          @relations[k] = [[6, 0, v]]
+          @relations[k] = [6, 0, v]
         end
       end
     end
@@ -289,28 +295,24 @@ class OpenObjectResource < ActiveResource::Base
       end
     end
     cast_attributes_to_ruby!
-
     self
   end
 
-  #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
-  def create(context={})
+  def to_openerp_hash!
     cast_attributes_to_openerp!
     cast_relations_to_openerp!
-    #strip out m2o with names:
-    vals = @attributes.merge(@relations)
-    self.id = self.class.rpc_execute('create', vals, context)
+    @attributes.reject {|key, value| key == 'id'}.merge(@relations)
+  end
+
+  #compatible with the Rails way but also supports OpenERP context
+  def create(context={})
+    self.id = self.class.rpc_execute('create', to_openerp_hash!, context)
     reload_from_record!(self.class.find(self.id, :context => context))
   end
 
-  #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
+  #compatible with the Rails way but also supports OpenERP context
   def update(context={})
-    cast_attributes_to_openerp!
-    cast_relations_to_openerp!
-    #strip out m2o with names:
-    #@relations.reject!{|k, v| v.is_a?(Array) && v[1].is_a?(String)}
-    vals = @attributes.reject {|key, value| key == 'id'}.merge(@relations)
-    self.class.rpc_execute('write', self.id, vals, context)
+    self.class.rpc_execute('write', self.id, to_openerp_hash!, context)
     reload_from_record!(self.class.find(self.id, :context => context))
   end
 
