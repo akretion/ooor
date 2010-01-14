@@ -11,7 +11,7 @@ class OpenObjectResource < ActiveResource::Base
 
     cattr_accessor :logger
     attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes assotiated to the OpenERP ir.model
-                  :field_defined, :many2one_relations, :one2many_relations, :many2many_relations,
+                  :fields, :field_defined, :many2one_relations, :one2many_relations, :many2many_relations,
                   :openerp_database, :user_id
 
     def class_name_from_model_key(model_key)
@@ -64,6 +64,7 @@ class OpenObjectResource < ActiveResource::Base
       klass.many2one_relations = {}
       klass.one2many_relations = {}
       klass.many2many_relations = {}
+      klass.fields = {}
       Object.const_set(model_class_name, klass)
     end
 
@@ -206,8 +207,33 @@ class OpenObjectResource < ActiveResource::Base
 
   attr_accessor :relations, :loaded_relations
 
-  def pre_cast_attributes
-    @attributes.each {|k, v| @attributes[k] = ((v.is_a? BigDecimal) ? Float(v) : v)}
+  def cast_attributes_to_ruby!
+    @attributes.each do |k, v|
+      if self.class.fields[k]
+        if v.is_a?(String)
+          case self.class.fields[k].ttype
+            when 'datetime'
+              @attributes[k] = Time.parse(v)
+            when 'date'
+              @attributes[k] = Date.parse(v)
+          end
+        end
+      end
+    end
+  end
+
+  def cast_attributes_to_openerp!
+    @attributes.each do |k, v|
+      @attributes[k] = ((v.is_a? BigDecimal) ? Float(v) : v)
+      if self.class.fields[k]
+        case self.class.fields[k].ttype
+          when 'datetime'
+            @attributes[k] = "#{v.year}-#{v.month}-#{v.day} #{v.hour}:#{v.min}:#{v.sec}"
+          when 'date'
+            @attributes[k] = "#{v.year}-#{v.month}-#{v.day}"
+        end
+      end
+    end
   end
 
   def reload_from_record!(record) load(record.attributes, record.relations) end
@@ -217,6 +243,7 @@ class OpenObjectResource < ActiveResource::Base
     raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
     @prefix_options, attributes = split_options(attributes)
     @relations = relations
+    @attributes = {}
     @loaded_relations = {}
     attributes.each do |key, value|
       skey = key.to_s
@@ -233,13 +260,14 @@ class OpenObjectResource < ActiveResource::Base
         end
       end
     end
+    cast_attributes_to_ruby!
 
     self
   end
 
   #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
   def create(context={})
-    self.pre_cast_attributes
+    self.cast_attributes_to_openerp!
     #strip out m2o with names:
     vals = @attributes.merge(@relations.reject{|k, v| v.is_a?(Array) && v[1].is_a?(String)})
     self.id = self.class.rpc_execute('create', @attributes, context)
@@ -248,9 +276,10 @@ class OpenObjectResource < ActiveResource::Base
 
   #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
   def update(context={})
-    self.pre_cast_attributes
+    self.cast_attributes_to_openerp!
     #strip out m2o with names:
-    vals = @attributes.reject {|key, value| key == 'id'}.merge(@relations.reject{|k, v| v.is_a?(Array) && v[1].is_a?(String)})
+    @relations.reject!{|k, v| v.is_a?(Array) && v[1].is_a?(String)}
+    vals = @attributes.reject {|key, value| key == 'id'}.merge(@relations)
     self.class.rpc_execute('write', self.id, vals, context)
     reload_from_record!(self.class.find(self.id, :context => context))
   end
@@ -305,6 +334,9 @@ class OpenObjectResource < ActiveResource::Base
 
   def method_missing(method_symbol, *arguments)
     method_name = method_symbol.to_s
+    if attributes.has_key?(method_name) or attributes.has_key?(method_name.first(-1))
+      return super
+    end
     if method_name.end_with?('=')
       @relations[method_name.sub('=', '')] = *arguments
       return
