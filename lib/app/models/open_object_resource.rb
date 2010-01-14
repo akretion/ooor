@@ -336,32 +336,30 @@ class OpenObjectResource < ActiveResource::Base
 
   def method_missing(method_symbol, *arguments)
     method_name = method_symbol.to_s
-    if attributes.has_key?(method_name) or attributes.has_key?(method_name.first(-1))
-      return super
-    end
+    return super if attributes.has_key?(method_name) or attributes.has_key?(method_name.first(-1))
     if method_name.end_with?('=')
       @relations[method_name.sub('=', '')] = *arguments
       return
     end
     return @loaded_relations[method_name] if @loaded_relations.has_key?(method_name)
-    if @relations.has_key?(method_name) and !@relations[method_name]
-      return false
-    else
-      result = relationnal_result(method_name, *arguments)
-      if result
-        @loaded_relations[method_name] = result
-        return result
-      elsif !self.class.many2one_relations.empty? #maybe the relation is inherited or could be inferred from a related field
-        self.class.many2one_relations.each do |k, field|
-          if @relations[k]
-            model = self.class.load_relation(field.relation, @relations[k][0], *arguments)
-            result = model.relationnal_result(method_name, *arguments)
-            return result if result
-          end
+    return false if @relations.has_key?(method_name) and !@relations[method_name]
+
+    result = relationnal_result(method_name, *arguments)
+    if result
+      @loaded_relations[method_name] = result
+      return result
+    elsif !self.class.many2one_relations.empty? #maybe the relation is inherited or could be inferred from a related field
+      self.class.many2one_relations.each do |k, field|
+        if @relations[k]
+          @loaded_relations[k] ||= self.class.load_relation(field.relation, @relations[k][0], *arguments)
+          model = @loaded_relations[k]
+          model.loaded_relations[method_name] ||= model.relationnal_result(method_name, *arguments)
+          return model.loaded_relations[method_name] if model.loaded_relations[method_name]
         end
-        super
       end
+      super
     end
+
     super
   end
 
