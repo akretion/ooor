@@ -66,6 +66,7 @@ class OpenObjectResource < ActiveResource::Base
       klass.many2many_relations = {}
       klass.fields = {}
       Object.const_set(model_class_name, klass)
+      klass
     end
 
 
@@ -236,6 +237,33 @@ class OpenObjectResource < ActiveResource::Base
     end
   end
 
+  def cast_relations_to_openerp!
+    @relations.reject!{|k, v| v.is_a?(Array) && v[1].is_a?(String)} #non asigned many2one
+
+    if (@relations.select {|k2, v2| v2.is_a?(Array)}).size > 0
+      #given a list of ids, we need to make sure from the inherited fields if that's a one2many or many2many:
+      related_classes = []
+      self.class.many2one_relations.each do |k, field|
+        if Ooor.all_loaded_models.index(field.relation)
+          linked_class = Object.const_get(self.class.class_name_from_model_key(field.relation))
+        else
+          model = IrModel.find(:first, :domain => [['model', '=', field.relation]])
+          linked_class = self.class.define_openerp_model(model, nil, nil, nil, nil)
+        end
+        linked_class.reload_fields_definition if linked_class.fields.empty?
+        related_classes.push linked_class
+      end
+
+      @relations.each do |k, v| #see OpenERP awkward relations API
+        if self.class.one2many_relations[k] || (related_classes.select {|clazz| clazz.one2many_relations[k]}).size > 0
+          @relations[k].collect! {|id| [[1, id, {}]]}
+        elsif self.class.many2many_relations[k] || (related_classes.select {|clazz| clazz.many2many_relations[k]}).size > 0
+          @relations[k] = [[6, 0, v]]
+        end
+      end
+    end
+  end
+
   def reload_from_record!(record) load(record.attributes, record.relations) end
 
   def load(attributes, relations={})
@@ -268,17 +296,19 @@ class OpenObjectResource < ActiveResource::Base
   #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
   def create(context={})
     cast_attributes_to_openerp!
+    cast_relations_to_openerp!
     #strip out m2o with names:
-    vals = @attributes.merge(@relations.reject{|k, v| v.is_a?(Array) && v[1].is_a?(String)})
-    self.id = self.class.rpc_execute('create', @attributes, context)
+    vals = @attributes.merge(@relations)
+    self.id = self.class.rpc_execute('create', vals, context)
     reload_from_record!(self.class.find(self.id, :context => context))
   end
 
   #compatible with the Rails way but also supports OpenERP context; TODO: properly pass one2many and many2many object graph like GTK client
   def update(context={})
     cast_attributes_to_openerp!
+    cast_relations_to_openerp!
     #strip out m2o with names:
-    @relations.reject!{|k, v| v.is_a?(Array) && v[1].is_a?(String)}
+    #@relations.reject!{|k, v| v.is_a?(Array) && v[1].is_a?(String)}
     vals = @attributes.reject {|key, value| key == 'id'}.merge(@relations)
     self.class.rpc_execute('write', self.id, vals, context)
     reload_from_record!(self.class.find(self.id, :context => context))
