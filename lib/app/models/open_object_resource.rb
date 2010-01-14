@@ -298,6 +298,21 @@ class OpenObjectResource < ActiveResource::Base
     self
   end
 
+  def display_available_fields
+    self.class.logger.debug ""
+    self.class.logger.debug "*** DIRECTLY AVAILABLE FIELDS ON OBJECT #{self} ARE: ***\n"
+    self.class.fields.sort {|a,b| a[1].ttype<=>b[1].ttype}.each {|i| self.class.logger.debug "#{i[1].ttype} --- #{i[0]}"}
+    self.class.logger.debug ""
+    self.class.many2one_relations.each {|k, v| self.class.logger.debug "many2one --- #{v.relation} --- #{k}"}
+    self.class.logger.debug ""
+    self.class.one2many_relations.each {|k, v| self.class.logger.debug "one2many --- #{v.relation} --- #{k}"}
+    self.class.logger.debug ""
+    self.class.many2many_relations.each {|k, v| self.class.logger.debug "many2many --- #{v.relation} --- #{k}"}
+    self.class.logger.debug ""
+    self.class.logger.debug "YOU CAN ALSO USE THE INHERITED FIELDS FROM THE INHERITANCE MANY2ONE RELATIONS OR THE OBJECT METHODS..."
+    self.class.logger.debug ""
+  end
+
   def to_openerp_hash!
     cast_attributes_to_openerp!
     cast_relations_to_openerp!
@@ -391,6 +406,9 @@ class OpenObjectResource < ActiveResource::Base
       end
       super
     end
+
+  rescue
+    display_available_fields
 
     super
   end
