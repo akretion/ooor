@@ -58,7 +58,7 @@ module UML
           edge [
                   arrowhead = "none"
                   fontname = "Bitstream Vera Sans"
-                  fontsize = 8
+                  fontsize = 9
           ]
       eos
 
