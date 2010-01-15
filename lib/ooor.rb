@@ -62,12 +62,6 @@ module Ooor
   end
 end
 
-
+#Optionnal Rails settings:
 Ooor.logger = ((defined?(RAILS_ENV) and RAILS_ENV != "development") ? Rails.logger : Logger.new(STDOUT))
-
-if defined?(Rails)
-  include Ooor
-  if Ooor.load_config['bootstrap']
-    Ooor.reload!(false, false, true)
-  end
-end
+Ooor.reload!(false, false, true) if defined?(Rails) && Ooor.load_config['bootstrap']
