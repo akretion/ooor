@@ -42,7 +42,6 @@ class OpenObjectResource < ActiveResource::Base
     def define_openerp_model(arg, url, database, user_id, pass)
       param = (arg.is_a? OpenObjectResource) ? arg.attributes.merge(arg.relations) : {'model' => arg}
       model_key = param['model']
-      Ooor.all_loaded_models.push(model_key)
       model_class_name = class_name_from_model_key(model_key)
       logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{model_key} model"
       klass = Class.new(OpenObjectResource)
@@ -66,7 +65,7 @@ class OpenObjectResource < ActiveResource::Base
       klass.many2many_relations = {}
       klass.fields = {}
       Object.const_set(model_class_name, klass)
-      klass
+      Ooor.all_loaded_models.push(klass)
     end
 
 
@@ -248,7 +247,7 @@ class OpenObjectResource < ActiveResource::Base
           linked_class = Object.const_get(self.class.class_name_from_model_key(field.relation))
         else
           model = IrModel.find(:first, :domain => [['model', '=', field.relation]])
-          linked_class = self.class.define_openerp_model(model, nil, nil, nil, nil)
+          linked_class = self.class.define_openerp_model(model, nil, nil, nil, nil).last
         end
         linked_class.reload_fields_definition if linked_class.fields.empty?
         related_classes.push linked_class
