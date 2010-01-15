@@ -55,7 +55,7 @@ module Ooor
       if Ooor.config[:models] #we load only a customized subset of the OpenERP models
         models = IrModel.find(:all, :domain => [['model', 'in', Ooor.config[:models]]])
       else #we load all the models
-        models = IrModel.find(:all)
+        models = IrModel.find(:all).reject {|model| model.model == "ir.model" || model.model == "ir.model.fields"}
       end
       models.each {|openerp_model| OpenObjectResource.define_openerp_model(openerp_model, nil, nil, nil, nil)}
     end

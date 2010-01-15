@@ -1,10 +1,12 @@
 require 'xmlrpc/client'
 require 'activeresource'
 require 'app/models/open_object_ui'
+require 'app/models/uml'
 
 #TODO implement passing session credentials to RPC methods (concurrent access of different user credentials in Rails)
 
 class OpenObjectResource < ActiveResource::Base
+  include UML
 
   # ******************** class methods ********************
   class << self
@@ -40,6 +42,9 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def define_openerp_model(arg, url, database, user_id, pass)
+      if arg.is_a?(String)  && arg != 'ir.model' && arg != 'ir.model.fields'
+        arg = IrModel.find(:first, :domain => [['model', '=', arg]])
+      end
       param = (arg.is_a? OpenObjectResource) ? arg.attributes.merge(arg.relations) : {'model' => arg}
       model_key = param['model']
       model_class_name = class_name_from_model_key(model_key)
@@ -146,8 +151,7 @@ class OpenObjectResource < ActiveResource::Base
     def load_relation(model_key, ids, *arguments)
       options = arguments.extract_options!
       unless Ooor.all_loaded_models.index(model_key)
-        model = IrModel.find(:first, :domain => [['model', '=', model_key]])
-        define_openerp_model(model, nil, nil, nil, nil)
+        define_openerp_model(model_key, nil, nil, nil, nil)
       end
       relation_model_class = eval class_name_from_model_key(model_key)
       relation_model_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
@@ -243,11 +247,10 @@ class OpenObjectResource < ActiveResource::Base
       #given a list of ids, we need to make sure from the inherited fields if that's a one2many or many2many:
       related_classes = []
       self.class.many2one_relations.each do |k, field|
-        if Ooor.all_loaded_models.index(field.relation)
+        if Object.const_defined?(OpenObjectResource.class_name_from_model_key(field.relation))
           linked_class = Object.const_get(self.class.class_name_from_model_key(field.relation))
         else
-          model = IrModel.find(:first, :domain => [['model', '=', field.relation]])
-          linked_class = self.class.define_openerp_model(model, nil, nil, nil, nil).last
+          linked_class = self.class.define_openerp_model(field.relation, nil, nil, nil, nil).last
         end
         linked_class.reload_fields_definition if linked_class.fields.empty?
         related_classes.push linked_class
