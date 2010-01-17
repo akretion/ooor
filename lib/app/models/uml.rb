@@ -16,7 +16,7 @@ module UML
   def self.display_fields(clazz)
     s = ""
     clazz.reload_fields_definition if clazz.fields.empty?
-    clazz.fields.sort {|a,b| a[1].ttype<=>b[1].ttype}.each {|i| s << "+ #{i[1].ttype} : #{i[0]}\\l\\n"}
+    clazz.fields.sort {|a,b| a[1].ttype <=> b[1].ttype}.each {|i| s << "+ #{i[1].ttype} : #{i[0]}\\l\\n"}
     s
   end
 
@@ -25,7 +25,6 @@ module UML
       classes = options.slice!(0)
     else
       classes = Ooor.config[:models] && Ooor.config[:models].collect {|key| Object.const_get(OpenObjectResource.class_name_from_model_key(key))} || Ooor.all_loaded_models
-      #options = options[0]
     end
     options = options[0] if options[0].is_a?(Array)
     local = (options.index(:all) == nil)
@@ -64,11 +63,7 @@ module UML
 
       #UML nodes definitions
       ((connex_classes - classes) + classes - [IrModel, IrModelFields]).each do |model|
-        f << <<-eos
-            #{model} [
-                 label = "{#{model.name}#{detailed ? '|' + display_fields(model) : ''}}"
-            ]
-        eos
+        f << " #{model} [ label = \"{#{model.name}#{detailed ? '|' + display_fields(model) : ''}}\" ]"
       end
 
       #many2one:
@@ -79,12 +74,8 @@ module UML
           ]
           eos
       m2o_edges.each do |k, v|
-        f << "edge [label = \"#{v[2].join("\\n")}"
-        if v[3].size > 0
-          f << "\\n/#{v[3].join("\\n")}\"]\n"
-        else
-          f << "\"]\n"
-        end
+        reverse_part = v[3].size > 0 ? "\\n/#{v[3].join("\\n")}\"]\n" : "\"]\n"
+        f << "edge [label = \"#{v[2].join("\\n")}#{reverse_part}"
         f << "#{v[0]} -> #{v[1]}\n"
       end
 
@@ -108,12 +99,8 @@ module UML
           ]
           eos
       m2m_edges.each do |k, v|
-        f << "edge [label = \"#{v[2].join("\\n")}"
-        if v[3].size > 0
-          f << "\\n/#{v[3].join("\\n")}\"]\n"
-        else
-          f << "\"]\n"
-        end
+        reverse_part = v[3].size > 0 ? "\\n/#{v[3].join("\\n")}\"]\n" : "\"]\n"
+        f << "edge [label = \"#{v[2].join("\\n")}}#{reverse_part}"
         f << "#{v[0]} -> #{v[1]}\n"
       end
 
@@ -188,7 +175,7 @@ module UML
   private
 
   def self.get_target(is_reverse, local, enabled_targets, field)
-    if (is_reverse && !local) || (!enabled_targets) || enabled_targets.index(field.relation) #(!is_reverse && !local) || (!enabled_targets) || enabled_targets.index(field.relation)
+    if (is_reverse && !local) || (!enabled_targets) || enabled_targets.index(field.relation)
       target_name = OpenObjectResource.class_name_from_model_key(field.relation)
       return Object.const_defined?(target_name) ? Object.const_get(target_name) : OpenObjectResource.define_openerp_model(field.relation, nil, nil, nil, nil).last
     end
