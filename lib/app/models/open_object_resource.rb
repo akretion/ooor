@@ -1,5 +1,5 @@
 require 'xmlrpc/client'
-require 'activeresource'
+require 'active_resource'
 require 'app/models/open_object_ui'
 require 'app/models/uml'
 
