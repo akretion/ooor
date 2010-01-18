@@ -195,6 +195,7 @@ Create:
     $ pc = ProductCategory.new(:name => 'Categ From Rails!')
     $ #<ProductCategory:0xb702c42c @prefix_options={}, @attributes={"name"=>"Categ From Rails!"}>
     $ pc.create
+    $ pc.id
     $ => 14
 
 
