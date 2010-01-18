@@ -76,7 +76,7 @@ OOOR also extends ActiveResource a bit with special request parameters (like :do
 Installation
 ------------
 
-You can use OOOR in a standalone (J)Ruby application, or in a Rails application.
+You can use OOOR in a standalone (J)Ruby application, or in a Rails application, it only depends on the activeresource gem.
 For both example we assume that you already started some OpenERP server on localhost, with XML/RPC on port 8069 (default),
 with a database called 'mybase', with username 'admin' and password 'admin'.
 
@@ -91,8 +91,7 @@ In all case, you first need to install the ooor gem:
 Let's test OOOR in an irb console (irb command):
     $ require 'rubygems'
     $ require 'ooor'
-    $ include Ooor
-    $ Ooor.reload!({:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
+    $ Ooor.new({:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
 This should load all your OpenERP models into Ruby proxy Activeresource objects. Of course there are option to load only some models.
 Let's try to retrieve the user with id 1:
     $ ResUsers.find(1)
@@ -117,12 +116,7 @@ A good way to start playing with OOOR is inside the console, using:
     $ ruby script/console #or jruby script/console on JRuby of course
 
 Enabling REST HTTP routes to your OpenERP models:
-in your config/route.rb, you can alternatively enable routes to all your OpenERP models by addding:
-    $ OpenObjectsController.load_all_controllers(map)
-
-Or only enable the route to some specific model instead (here partners):
-    $ map.resources :res_partner
-
+The REST Controller layer of OOOR has been moved as a thin separate gem called [OooREST](http://github.com/rvalyi/ooorest).
 
 
 API usage
@@ -140,15 +134,15 @@ Basic finders:
     $ ProductProduct.find(:last)
 
 
-OpenERP domain support:
+OpenERP domain support (same as OpenERP):
 
     $ ResPartner.find(:all, :domain=>[['supplier', '=', 1],['active','=',1]])
-More subbtle now, remember OpenERP use a kind of inverse polish notation for complex domains,
+More subtle now, remember OpenERP use a kind of inverse polish notation for complex domains,
 here we look for a product in category 1 AND which name is either 'PC1' OR 'PC2':
     $ ProductProduct.find(:all, :domain=>[['categ_id','=',1],'|',['name', '=', 'PC1'],['name','=','PC2']])
 
 
-OpenERP context support:
+OpenERP context support (same as OpenERP):
 
     $ ProductProduct.find(1, :context => {:my_key => 'value'})
 
@@ -166,10 +160,11 @@ Arguments are: domain, offset=0, limit=false, order=false, context={}, count=fal
 
 Relations (many2one, one2many, many2many) support:
 
-    $ SaleOrder.find(1).order_line
+    $ SaleOrder.find(1).order_line #one2many relation
     $ p = ProductProduct.find(1)
     $ p.product_tmpl_id #many2one relation
-    $ p.product_tmpl_id.taxes_id = [6, 0, [1,2]] #create many2many associations,
+    $ p.taxes_id #automagically reads man2many relation inherited via the product_tmpl_id inheritance relation
+    $ p.taxes_id = [1,2] #save a many2many relation, notice how we bypass the awkward OpenERP syntax for many2many (would require [6,0, [1,2]]) ,
     $ p.save #assigns taxes with id 1 and 2 as sale taxes,
 see [the official OpenERP documentation](http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many)
 
@@ -180,9 +175,6 @@ Inherited relations support:
 
 Please notice that loaded relations are cached (to avoid  hitting OpenERP over and over)
 until the root object is reloaded (after save/update for instance).
-Currently, save/update doesn't save the whole object graph but only the current object.
-We might change this in the future to match the way OpenERP clients are working which
-is supported by the OpenERP ORM, see issue: http://github.com/rvalyi/ooor/issues/#issue/3
 
 
 Load only specific fields support (faster than loading all fields):
@@ -229,26 +221,48 @@ Call workflow:
 
 On Change methods:
 
-    $ l=SaleOrderLine.new
-    $ l.on_change('product_id_change', 1, 1, false, false, false, false, false, false, 1)
-    $ => #<Ooor::SaleOrderLine:0x10c2cfe1 @prefix_options={}, @attributes={"product_packaging"=>false, "product_uos_qty"=>false, "th_weight"=>0}>
+Note: currently OOOR doesn't deal with the View layer, or has a very limited support for forms for the wizards.
+So, it's not possible so far for OOOR to know an on_change signature. Because of this, the on_change syntax is  bit awkward
+as you will see: you need to explicitely tell the on_change name, the parameter name that changed, the new value and finally
+enfore the on_change syntax (looking at the OpenERP model code or view or XML/RPC logs will help you to find out). But
+ultimately it works:
+
+    $ l = SaleOrderLine.new
+    $ l.on_change('product_id_change', :product_id, 20, 1, 20, 1, false, 1, false, false, 7, 'en_US', true, false, false, false)
+    $ => #<SaleOrderLine:0x7f76118b4348 @prefix_options={}, @relations={"product_uos"=>false, "product_id"=>20, "product_uom"=>1, "tax_id"=>[]}, @loaded_relations={}, @attributes={"name"=>"[TOW1] ATX Mid-size Tower", "product_uos_qty"=>1, "delay"=>1.0, "price_unit"=>37.5, "type"=>"make_to_stock", "th_weight"=>0}>
 Notice that it reloads the Objects attrs and print warning message accordingly
+
+
+On the fly one2many object graph update/creation:
+
+Just like the OpenERP GTK client (and unlike the web client), in OOOR you can pass create/update
+one2many relation in place directly. For instance:
+    $ so = SaleOrder.new
+    $ so.on_change('onchange_partner_id', :partner_id, 1, 1, false) #auto-complete the address and other data based on the partner
+    $ so.order_line = [SaleOrderLine.new(:name => 'sl1', :product_id => 1, :price_unit => 42, :product_uom => 1)] #create one order line
+    $ so.save
+    $ so.amount_total
+    $ => 42.0
 
 
 Call aribtrary method:
 
     $ use static ObjectClass.rpc_execute_with_all method
     $ or object.call(method_name, args*) #were args is an aribtrary list of arguments
-    $ or use the method missing wrapper that will proxy any OpenERP osv.py/orm.py method, see fo instance:
+
+Class methods from are osv.py/orm.py proxied to OpenERP directly (as the web client does):
     $ ResPartner.name_search('ax', [], 'ilike', {})
     $ ProductProduct.fields_view_get(132, 'tree', {})
 
 
-Call old wizards:
+Call old style wizards:
 
     $ inv = AccountInvoice.find(4)
+    $ #in case the inv.state is 'draft', do inv.wkf_action('invoice_open')
     $ wizard = inv.old_wizard_step('account.invoice.pay') #tip: you can inspect the wizard fields, arch and datas
     $ wizard.reconcile({:journal_id => 6, :name =>"from_rails"}) #if you want to pay all; will give you a reloaded invoice
+    $ inv.state
+    $ => "paid"
     $ #or if you want a payment with a write off:
     $ wizard.writeoff_check({"amount" => 12, "journal_id" => 6, "name" =>'from_rails'}) #use the button name as the wizard method
     $ wizard.reconcile({required missing write off fields...}) #will give you a reloaded invoice because state is 'end'
@@ -275,22 +289,6 @@ However you might want to change that. 2 solutions:
 
 
 
-REST HTTP API:
-
-    $ http://localhost:3000/res_partner
-    $ http://localhost:3000/res_partner.xml
-    $ http://localhost:3000/res_partner.json
-    $ http://localhost:3000/res_partner/2
-    $ http://localhost:3000/res_partner/2.json
-    $ http://localhost:3000/res_partner/2.xml
-    $ http://localhost:3000/res_partner/[2,3,4].xml
-    $ http://localhost:3000/res_partner/[2,3,4].json
-
-    $ TODO http://localhost:3000/res_partner.xml?active=1
-
-    $ TODO http://localhost:3000/res_partner.xml?domain=TODO
-
-
 FAQ
 ------------
 
@@ -302,16 +300,15 @@ Then create indents in the log before doing some action and watch your logs care
 
 ### How can I load/reload my OpenERP models into my Ruby application?
 
-You can load/reload your models at any time (even in console), using the Ooor.reload! method, for instance:
-    $ Ooor.reload!({:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
+You can load/reload your models at any time (even in console), creating a new Ooor instance that will override the class definitions:
+    $ Ooor.new({:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
 or using a config YAML file instead:
-    $ Ooor.reload!("config/ooor.yml")
+    $ Ooor.new("config/ooor.yml")
 
 ### Do I need to load all the OpenERP models in my Ruby application?
 
 You can load only some OpenERP models (not all), which is faster and better in term of memory/security:
     $ Ooor.reload!({:models => [res.partner, product.template, product.product], :url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
-
 
 ### Isn't OOOR slow?
 
@@ -339,17 +336,3 @@ In you app/model directory, create a product_product.rb file with inside, the re
     $ end
 
 Now a ProductProduct resource got a method foo, returning "bar".
-
-### Can I extend the OOOR controllers?
-
-Yes, you can do that, see the "how to extends models" section as it's very similar. Instead, in the app/controllers directory, you'll re-open defined controllers,
-for the product.product controllers, it means creating a product_product_controller.rb file with:
-
-    $ class ProductProduct < OpenObjectsController
-    $   def foo
-    $     render :text => "bar"
-    $   end
-    $ end
-
-Now, if you register that new method in your route.rb file GET /product_product/1/foo will render "bar" on your browser screen.
-You could instead just customize the existing CRUD methods so you don't need to regiter any other route in route.rb.
