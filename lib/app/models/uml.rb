@@ -5,11 +5,13 @@ module UML
 
   def self.included(base) base.extend(ClassMethods) end
 
-  def print_uml(*options) UML.print_uml([self.class], options) end
+  def print_uml(*options)
+    UML.print_uml(@config[:models] && @all_loaded_models.select {|model| @config[:models].index(model.openerp_model)} || @all_loaded_models, options)
+  end
 
   module ClassMethods
     def print_uml(*options)
-      UML.print_uml([self], options)
+      UML.print_uml([self], options) if self.is_a?(OpenObjectResource)
     end
   end
 
@@ -20,18 +22,12 @@ module UML
     s
   end
 
-  def self.print_uml(*options)
-    if options.slice(0).is_a?(Array)
-      classes = options.slice!(0)
-    else
-      classes = Ooor.config[:models] && Ooor.config[:models].collect {|key| Object.const_get(OpenObjectResource.class_name_from_model_key(key, Ooor.config[:scope_prefix]))} || Ooor.all_loaded_models
-    end
+  def self.print_uml(classes, *options)
     options = options[0] if options[0].is_a?(Array)
     local = (options.index(:all) == nil)
-    detailed = (options.index(:detailed) != nil) || local
+    detailed = (options.index(:detailed) != nil) || local && (options.index(:nodetail) == nil)
 
-
-    enabled_targets = Ooor.config[:models] #defines the scope of the UML for option local
+    enabled_targets = classes[0].ooor.config[:models] #defines the scope of the UML for option local
     m2o_edges = {}
     o2m_edges = {}
     m2m_edges = {}
@@ -124,7 +120,7 @@ module UML
 
       #many2one:
       model.many2one_relations.each do |k, field|
-        target = UML.get_target(is_reverse, local, enabled_targets, field, k)
+        target = UML.get_target(is_reverse, local, enabled_targets, field, model)
         if target
           connex_classes.add(target)
           if m2o_edges["#{model}-#{target}"]
@@ -140,7 +136,7 @@ module UML
    classes.each do |model|
       #one2many:
       model.one2many_relations.each do |k, field|
-        target = UML.get_target(is_reverse, local, enabled_targets, field, k)
+        target = UML.get_target(is_reverse, local, enabled_targets, field, model)
         if target
           connex_classes.add(target)
           if m2o_edges["#{target}-#{model}"]
@@ -155,7 +151,7 @@ module UML
 
       #many2many:
       model.many2many_relations.each do |k, field|
-        target = UML.get_target(is_reverse, local, enabled_targets, field, k)
+        target = UML.get_target(is_reverse, local, enabled_targets, field, model)
         if target
           connex_classes.add(target)
           if m2m_edges["#{model}-#{target}"]
@@ -176,8 +172,8 @@ module UML
 
   def self.get_target(is_reverse, local, enabled_targets, field, model)
     if (is_reverse && !local) || (!enabled_targets) || enabled_targets.index(field.relation)
-      target_name = OpenObjectResource.class_name_from_model_key(field.relation, model.scope_prefix)
-      return Object.const_defined?(target_name) ? Object.const_get(target_name) : OpenObjectResource.define_openerp_model(field.relation, nil, nil, nil, nil, model.scope_prefix).last
+      target_name = model.class_name_from_model_key(field.relation)
+      return Object.const_defined?(target_name) ? Object.const_get(target_name) : model.ooor.define_openerp_model(field.relation, nil, nil, nil, nil, model.scope_prefix)
     end
     return false
   end

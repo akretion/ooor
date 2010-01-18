@@ -1,8 +1,10 @@
 require 'logger'
 require 'xmlrpc/client'
 require 'app/models/open_object_resource'
+require 'app/models/uml'
 
 class Ooor
+  include UML
 
   attr_accessor :logger, :config, :all_loaded_models, :base_url, :global_context, :ir_model_class
 
