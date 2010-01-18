@@ -208,7 +208,7 @@ class OpenObjectResource < ActiveResource::Base
 
   def cast_relations_to_openerp!
     @relations.reject! do |k, v| #reject non asigned many2one or empty list
-      !v.is_a?(Array) or v.is_a?(Array) && v[1].is_a?(String) or v.size == 0
+      v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String))
     end
 
     if @relations.size > 0
@@ -313,13 +313,13 @@ class OpenObjectResource < ActiveResource::Base
   def call(method, *args) self.class.rpc_execute(method, *args) end
 
   #Generic OpenERP on_change method
-  def on_change(on_change_method, *args)
-    result = self.class.rpc_execute(on_change_method, *args)
+  def on_change(on_change_method, field_name, field_value, *args)
+    result = self.class.rpc_execute(on_change_method, self.id && [id] || [], *args)
     if result["warning"]
       self.class.logger.info result["warning"]["title"]
       self.class.logger.info result["warning"]["message"]
     end
-    load(result["value"])
+    load({field_name => field_value}.merge(result["value"]))
   end
 
   #wrapper for OpenERP exec_workflow Business Process Management engine
@@ -330,7 +330,7 @@ class OpenObjectResource < ActiveResource::Base
 
   def old_wizard_step(wizard_name, step='init', wizard_id=nil, form={}, context={})
     result = self.class.old_wizard_step(wizard_name, [self.id], step, wizard_id, form, {})
-    OpenObjectWizard.new(wizard_name, result[0], result[1], [self])
+    OpenObjectWizard.new(wizard_name, result[0], result[1], [self], self.class.ooor.global_context)
   end
 
 

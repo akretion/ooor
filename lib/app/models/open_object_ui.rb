@@ -10,7 +10,7 @@ end
 class OpenObjectWizard < OpenObjectLayoutedFields
   attr_accessor :name, :id, :datas, :arch, :fields, :type, :state, :open_object_resources
 
-  def initialize(name, id, data, open_object_resources)
+  def initialize(name, id, data, open_object_resources, wizard_context)
     super(data['arch'], data['fields'])
     @name = name
     @id = id
@@ -18,11 +18,12 @@ class OpenObjectWizard < OpenObjectLayoutedFields
     @datas = data['datas'].symbolize_keys!
     @type = data['type']
     @state = data['state']
+    @wizard_context = wizard_context
   end
 
   def method_missing(method_symbol, *arguments)
     values = @datas.merge((arguments[0] || {}).symbolize_keys!)
-    context = Ooor.global_context.merge(arguments[1] || {})
+    context = @wizard_context.merge(arguments[1] || {})
     if @open_object_resources.size == 1
       open_object_resource = @open_object_resources[0]
       data = open_object_resource.class.old_wizard_step(@name, [open_object_resource.id], method_symbol, @id, values, context)

@@ -91,5 +91,5 @@ end
 #Optionnal Rails settings:
 if defined?(Rails)
   config = Ooor.load_config(false, RAILS_ENV)
-  Ooor.new(config) if config['bootstrap']
+  OOOR = Ooor.new(config) if config['bootstrap']
 end
