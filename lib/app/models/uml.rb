@@ -24,7 +24,7 @@ module UML
     if options.slice(0).is_a?(Array)
       classes = options.slice!(0)
     else
-      classes = Ooor.config[:models] && Ooor.config[:models].collect {|key| Object.const_get(OpenObjectResource.class_name_from_model_key(key))} || Ooor.all_loaded_models
+      classes = Ooor.config[:models] && Ooor.config[:models].collect {|key| Object.const_get(OpenObjectResource.class_name_from_model_key(key, Ooor.config[:scope_prefix]))} || Ooor.all_loaded_models
     end
     options = options[0] if options[0].is_a?(Array)
     local = (options.index(:all) == nil)
@@ -124,7 +124,7 @@ module UML
 
       #many2one:
       model.many2one_relations.each do |k, field|
-        target = UML.get_target(is_reverse, local, enabled_targets, field)
+        target = UML.get_target(is_reverse, local, enabled_targets, field, k)
         if target
           connex_classes.add(target)
           if m2o_edges["#{model}-#{target}"]
@@ -140,7 +140,7 @@ module UML
    classes.each do |model|
       #one2many:
       model.one2many_relations.each do |k, field|
-        target = UML.get_target(is_reverse, local, enabled_targets, field)
+        target = UML.get_target(is_reverse, local, enabled_targets, field, k)
         if target
           connex_classes.add(target)
           if m2o_edges["#{target}-#{model}"]
@@ -155,7 +155,7 @@ module UML
 
       #many2many:
       model.many2many_relations.each do |k, field|
-        target = UML.get_target(is_reverse, local, enabled_targets, field)
+        target = UML.get_target(is_reverse, local, enabled_targets, field, k)
         if target
           connex_classes.add(target)
           if m2m_edges["#{model}-#{target}"]
@@ -174,10 +174,10 @@ module UML
 
   private
 
-  def self.get_target(is_reverse, local, enabled_targets, field)
+  def self.get_target(is_reverse, local, enabled_targets, field, model)
     if (is_reverse && !local) || (!enabled_targets) || enabled_targets.index(field.relation)
-      target_name = OpenObjectResource.class_name_from_model_key(field.relation)
-      return Object.const_defined?(target_name) ? Object.const_get(target_name) : OpenObjectResource.define_openerp_model(field.relation, nil, nil, nil, nil).last
+      target_name = OpenObjectResource.class_name_from_model_key(field.relation, model.scope_prefix)
+      return Object.const_defined?(target_name) ? Object.const_get(target_name) : OpenObjectResource.define_openerp_model(field.relation, nil, nil, nil, nil, model.scope_prefix).last
     end
     return false
   end

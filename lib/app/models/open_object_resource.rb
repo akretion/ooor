@@ -13,16 +13,16 @@ class OpenObjectResource < ActiveResource::Base
 
     cattr_accessor :logger
     attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes assotiated to the OpenERP ir.model
-                  :fields, :field_defined, :many2one_relations, :one2many_relations, :many2many_relations,
-                  :openerp_database, :user_id
+                  :fields, :fields_defined, :many2one_relations, :one2many_relations, :many2many_relations,
+                  :openerp_database, :user_id, :scope_prefix, :ooor
 
-    def class_name_from_model_key(model_key)
-      model_key.split('.').collect {|name_part| name_part.capitalize}.join
+    def class_name_from_model_key(model_key=self.openerp_model)
+      self.scope_prefix + model_key.split('.').collect {|name_part| name_part.capitalize}.join
     end
 
     def reload_fields_definition(force = false)
-      if self != IrModel and self != IrModelFields and (force or not @field_defined)#TODO have a way to force reloading @field_ids too eventually
-        fields = IrModelFields.find(@field_ids)
+      if not (self.to_s.match('IrModel') || self.to_s.match('IrModelFields')) and (force or not @fields_defined)#TODO have a way to force reloading @field_ids too eventually
+        fields = Object.const_get(self.scope_prefix + 'IrModelFields').find(@field_ids)
         @fields = {}
         fields.each do |field|
           case field.attributes['ttype']
@@ -36,43 +36,10 @@ class OpenObjectResource < ActiveResource::Base
             @fields[field.attributes['name']] = field
           end
         end
-        logger.info "#{fields.size} fields loaded"
+        logger.info "#{fields.size} fields loaded in model #{self.class}"
       end
-      @field_defined = true
+      @fields_defined = true
     end
-
-    def define_openerp_model(arg, url, database, user_id, pass)
-      if arg.is_a?(String)  && arg != 'ir.model' && arg != 'ir.model.fields'
-        arg = IrModel.find(:first, :domain => [['model', '=', arg]])
-      end
-      param = (arg.is_a? OpenObjectResource) ? arg.attributes.merge(arg.relations) : {'model' => arg}
-      model_key = param['model']
-      model_class_name = class_name_from_model_key(model_key)
-      logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{model_key} model"
-      klass = Class.new(OpenObjectResource)
-      klass.class_eval do
-        attr_accessor :site, :user, :password, :openerp_database, :openerp_model, :openerp_id, :info,
-                       :name, :state, :field_ids, :access_ids, :many2one_relations, :one2many_relations, :many2many_relations
-      end
-      klass.site = url || Ooor.base_url
-      klass.user = user_id
-      klass.password = pass
-      klass.openerp_database = database
-      klass.openerp_model = model_key
-      klass.openerp_id = url || param['id']
-      klass.info = (param['info'] || '').gsub("'",' ')
-      klass.name = param['name']
-      klass.state = param['state']
-      klass.field_ids = param['field_id']
-      klass.access_ids = param['access_ids']
-      klass.many2one_relations = {}
-      klass.one2many_relations = {}
-      klass.many2many_relations = {}
-      klass.fields = {}
-      Object.const_set(model_class_name, klass)
-      Ooor.all_loaded_models.push(klass)
-    end
-
 
     # ******************** remote communication ********************
 
@@ -92,16 +59,16 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def rpc_execute_with_object(object, method, *args)
-      rpc_execute_with_all(@database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], object, method, *args)
+      rpc_execute_with_all(@database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], object, method, *args)
     end
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
     def rpc_execute_with_all(db, uid, pass, obj, method, *args)
       if args[-1].is_a? Hash
-        args[-1] = Ooor.global_context.merge(args[-1])
+        args[-1] = @ooor.global_context.merge(args[-1])
       end
       logger.debug "rpc_execute_with_all: rpc_methods: 'execute', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, method: #{method}, *args: #{args.inspect}"
-      try_with_pretty_error_log { client((@database && @site || Ooor.base_url) + "/object").call("execute",  db, uid, pass, obj, method, *args) }
+      try_with_pretty_error_log { client((@database && @site || @ooor.base_url) + "/object").call("execute",  db, uid, pass, obj, method, *args) }
     end
 
      #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
@@ -110,23 +77,23 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def rpc_exec_workflow_with_object(object, action, *args)
-      rpc_exec_workflow_with_all(@database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], object, action, *args)
+      rpc_exec_workflow_with_all(@database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], object, action, *args)
     end
 
     def rpc_exec_workflow_with_all(db, uid, pass, obj, action, *args)
       if args[-1].is_a? Hash
-        args[-1] = Ooor.global_context.merge(args[-1])
+        args[-1] = @ooor.global_context.merge(args[-1])
       end
       logger.debug "rpc_execute_with_all: rpc_methods: 'exec_workflow', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, action #{action}, *args: #{args.inspect}"
-      try_with_pretty_error_log { client((@database && @site || Ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args) }
+      try_with_pretty_error_log { client((@database && @site || @ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args) }
     end
 
     def old_wizard_step(wizard_name, ids, step='init', wizard_id=nil, form={}, context={}, report_type='pdf')
-      context = Ooor.global_context.merge(context)
+      context = @ooor.global_context.merge(context)
       unless wizard_id
-        wizard_id = try_with_pretty_error_log { client((@database && @site || Ooor.base_url) + "/wizard").call("create",  @database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], wizard_name) }
+        wizard_id = try_with_pretty_error_log { client((@database && @site || @ooor.base_url) + "/wizard").call("create",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_name) }
       end
-      [wizard_id, try_with_pretty_error_log { client((@database && @site || Ooor.base_url) + "/wizard").call("execute",  @database || Ooor.config[:database], @user_id || Ooor.config[:user_id], @password || Ooor.config[:password], wizard_id, {'model' => @openerp_model, 'form' => form, 'id' => ids[0], 'report_type' => report_type, 'ids' => ids}, step, context) }]
+      [wizard_id, try_with_pretty_error_log { client((@database && @site || @ooor.base_url) + "/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, {'model' => @openerp_model, 'form' => form, 'id' => ids[0], 'report_type' => report_type, 'ids' => ids}, step, context) }]
     end
 
     #grab the eventual error log from OpenERP response as OpenERP doesn't enforce carefuly
@@ -148,12 +115,11 @@ class OpenObjectResource < ActiveResource::Base
 
     def method_missing(method_symbol, *arguments) return self.rpc_execute(method_symbol.to_s, *arguments) end
 
-    def load_relation(model_key, ids, *arguments)
+    def load_relation(model_key, ids, scope_prefix, *arguments)
       options = arguments.extract_options!
-      unless Ooor.all_loaded_models.index(model_key)
-        define_openerp_model(model_key, nil, nil, nil, nil)
-      end
-      relation_model_class = eval class_name_from_model_key(model_key)
+      class_name = class_name_from_model_key(model_key)
+      @ooor.define_openerp_model(model_key, nil, nil, nil, nil, scope_prefix) unless Object.const_defined?(class_name)
+      relation_model_class = Object.const_get(class_name)
       relation_model_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
     end
 
@@ -247,12 +213,12 @@ class OpenObjectResource < ActiveResource::Base
       #given a list of ids, we need to make sure from the inherited fields if that's a one2many or many2many:
       related_classes = []
       self.class.many2one_relations.each do |k, field|
-        if Object.const_defined?(OpenObjectResource.class_name_from_model_key(field.relation))
+        if Object.const_defined?(self.class.class_name_from_model_key(field.relation))
           linked_class = Object.const_get(self.class.class_name_from_model_key(field.relation))
         else
-          linked_class = self.class.define_openerp_model(field.relation, nil, nil, nil, nil).last
+          linked_class = self.class.ooor.define_openerp_model(field.relation, nil, nil, nil, nil, self.class.scope_prefix)
         end
-        linked_class.reload_fields_definition if linked_class.fields.empty?
+        linked_class.reload_fields_definition unless linked_class.fields_defined
         related_classes.push linked_class
       end
 
@@ -275,7 +241,7 @@ class OpenObjectResource < ActiveResource::Base
   def reload_from_record!(record) load(record.attributes, record.relations) end
 
   def load(attributes, relations={})
-    self.class.reload_fields_definition unless self.class.field_defined
+    self.class.reload_fields_definition() unless self.class.fields_defined
     raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
     @prefix_options, attributes = split_options(attributes)
     @relations = relations
@@ -371,13 +337,13 @@ class OpenObjectResource < ActiveResource::Base
   # ******************** fake associations like much like ActiveRecord according to the cached OpenERP data model ********************
 
   def relationnal_result(method_name, *arguments)
-    self.class.reload_fields_definition unless self.class.field_defined
+    self.class.reload_fields_definition unless self.class.fields_defined
     if self.class.many2one_relations.has_key?(method_name)
-      self.class.load_relation(self.class.many2one_relations[method_name].relation, @relations[method_name][0], *arguments)
+      self.class.load_relation(self.class.many2one_relations[method_name].relation, @relations[method_name][0], self.class.scope_prefix, *arguments)
     elsif self.class.one2many_relations.has_key?(method_name)
-      self.class.load_relation(self.class.one2many_relations[method_name].relation, @relations[method_name], *arguments)
+      self.class.load_relation(self.class.one2many_relations[method_name].relation, @relations[method_name], self.class.scope_prefix, *arguments)
     elsif self.class.many2many_relations.has_key?(method_name)
-      self.class.load_relation(self.class.many2many_relations[method_name].relation, @relations[method_name], *arguments)
+      self.class.load_relation(self.class.many2many_relations[method_name].relation, @relations[method_name], self.class.scope_prefix, *arguments)
     else
       false
     end
@@ -400,7 +366,7 @@ class OpenObjectResource < ActiveResource::Base
     elsif !self.class.many2one_relations.empty? #maybe the relation is inherited or could be inferred from a related field
       self.class.many2one_relations.each do |k, field|
         if @relations[k]
-          @loaded_relations[k] ||= self.class.load_relation(field.relation, @relations[k][0], *arguments)
+          @loaded_relations[k] ||= self.class.load_relation(field.relation, @relations[k][0], self.class.scope_prefix, *arguments)
           model = @loaded_relations[k]
           model.loaded_relations[method_name] ||= model.relationnal_result(method_name, *arguments)
           return model.loaded_relations[method_name] if model.loaded_relations[method_name]
