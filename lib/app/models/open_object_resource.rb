@@ -207,17 +207,17 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   def cast_relations_to_openerp!
-    @relations.reject!{|k, v| v.is_a?(Array) && v[1].is_a?(String)} #non asigned many2one
+    @relations.reject! do |k, v| #reject non asigned many2one or empty list
+      !v.is_a?(Array) or v.is_a?(Array) && v[1].is_a?(String) or v.size == 0
+    end
 
-    if (@relations.select {|k2, v2| v2.is_a?(Array)}).size > 0
+    if @relations.size > 0
       #given a list of ids, we need to make sure from the inherited fields if that's a one2many or many2many:
       related_classes = []
       self.class.many2one_relations.each do |k, field|
-        if Object.const_defined?(self.class.class_name_from_model_key(field.relation))
-          linked_class = Object.const_get(self.class.class_name_from_model_key(field.relation))
-        else
-          linked_class = self.class.ooor.define_openerp_model(field.relation, nil, nil, nil, nil, self.class.scope_prefix)
-        end
+        class_name = self.class.class_name_from_model_key(field.relation)
+        self.class.ooor.define_openerp_model(field.relation, nil, nil, nil, nil, self.class.scope_prefix) unless Object.const_defined?(class_name)
+        linked_class = Object.const_get(class_name)
         linked_class.reload_fields_definition unless linked_class.fields_defined
         related_classes.push linked_class
       end
@@ -232,7 +232,7 @@ class OpenObjectResource < ActiveResource::Base
             end
           end
         elsif self.class.many2many_relations[k] || (related_classes.select {|clazz| clazz.many2many_relations[k]}).size > 0
-          @relations[k] = [6, 0, v]
+          @relations[k] = [[6, 0, v]]
         end
       end
     end
