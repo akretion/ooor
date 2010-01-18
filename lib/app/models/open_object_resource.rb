@@ -211,28 +211,32 @@ class OpenObjectResource < ActiveResource::Base
       v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String))
     end
 
-    if @relations.size > 0
-      #given a list of ids, we need to make sure from the inherited fields if that's a one2many or many2many:
-      related_classes = []
-      self.class.many2one_relations.each do |k, field|
-        class_name = self.class.class_name_from_model_key(field.relation)
-        self.class.ooor.define_openerp_model(field.relation, nil, nil, nil, nil, self.class.scope_prefix) unless Object.const_defined?(class_name)
-        linked_class = Object.const_get(class_name)
-        linked_class.reload_fields_definition unless linked_class.fields_defined
-        related_classes.push linked_class
-      end
-
-      @relations.each do |k, v| #see OpenERP awkward relations API
-        if self.class.one2many_relations[k] || (related_classes.select {|clazz| clazz.one2many_relations[k]}).size > 0
-          @relations[k].collect! do |value|
-            if value.is_a?(OpenObjectResource) #on the fly creation as in the GTK client
-              [0, 0, value.to_openerp_hash!]
-            else
-              [1, value, {}]
-            end
+    def cast_relation(k, v, one2many_relations, many2many_relations)
+      if one2many_relations[k]
+        return v.collect! do |value|
+          if value.is_a?(OpenObjectResource) #on the fly creation as in the GTK client
+            [0, 0, value.to_openerp_hash!]
+          else
+            [1, value, {}]
           end
-        elsif self.class.many2many_relations[k] || (related_classes.select {|clazz| clazz.many2many_relations[k]}).size > 0
-          @relations[k] = [[6, 0, v]]
+        end
+      elsif many2many_relations[k]
+        return v = [[6, 0, v]]
+      end
+    end
+
+    @relations.each do |k, v| #see OpenERP awkward relations API
+      new_rel = self.cast_relation(k, v, self.class.one2many_relations, self.class.many2many_relations)
+      if new_rel #matches a known o2m or m2m
+        @relations[k] = new_rel
+      else
+        self.class.many2one_relations.each do |k2, field| #try to cast the relation to na inherited o2m or m2m:
+          class_name = self.class.class_name_from_model_key(field.relation)
+          self.class.ooor.define_openerp_model(field.relation, nil, nil, nil, nil, self.class.scope_prefix) unless Object.const_defined?(class_name)
+          linked_class = Object.const_get(class_name)
+          linked_class.reload_fields_definition unless linked_class.fields_defined
+          new_rel = self.cast_relation(k, v, linked_class.one2many_relations, linked_class.many2many_relations)
+          @relations[k] = new_rel and break if new_rel
         end
       end
     end
