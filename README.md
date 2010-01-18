@@ -115,6 +115,9 @@ You can then use all the OOOR API upon all loaded OpenERP models in your regular
 A good way to start playing with OOOR is inside the console, using:
     $ ruby script/console #or jruby script/console on JRuby of course
 
+Note: when boostraping Ooor in a Rails application, the default Ooor instance is stored in the OOOR constant.
+So for instance you can know all loaded models doing OOOR.all_loaded_models; this is used by [OooREST](http://github.com/rvalyi/ooorest) to register all the REST controllers.
+
 Enabling REST HTTP routes to your OpenERP models:
 The REST Controller layer of OOOR has been moved as a thin separate gem called [OooREST](http://github.com/rvalyi/ooorest).
 
