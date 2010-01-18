@@ -291,6 +291,8 @@ However you might want to change that. 2 solutions:
     $ In the config yaml file or hash, set the :log_level parameter
 
 
+[Drawing OpenERP UML diagrams with OOOR](http://wiki.github.com/rvalyi/ooor/drawing-openerp-uml-diagrams-with-ooor)
+
 
 FAQ
 ------------
