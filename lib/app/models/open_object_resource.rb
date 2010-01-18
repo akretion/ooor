@@ -305,7 +305,7 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   #OpenERP copy method, load persisted copied Object
-  def copy(defaults=[], context={})
+  def copy(defaults={}, context={})
     self.class.find(self.class.rpc_execute('copy', self.id, defaults, context), :context => context)
   end
 
