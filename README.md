@@ -293,6 +293,8 @@ However you might want to change that. 2 solutions:
 
 [Drawing OpenERP UML diagrams with OOOR](http://wiki.github.com/rvalyi/ooor/drawing-openerp-uml-diagrams-with-ooor)
 
+[Finger in the nose multi-OpenERP instances migration/management with OOOR](http://wiki.github.com/rvalyi/ooor/howto-connect-ooor-to-multiple-openerp-instance-easy-data-migration)
+
 
 FAQ
 ------------
