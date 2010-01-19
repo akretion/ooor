@@ -200,7 +200,7 @@ class OpenObjectResource < ActiveResource::Base
           when 'datetime'
             @attributes[k] = "#{v.year}-#{v.month}-#{v.day} #{v.hour}:#{v.min}:#{v.sec}" if v.respond_to?(:sec)
           when 'date'
-            @attributes[k] = "#{v.year}-#{v.month}-#{v.day}" if v.is_a?(Date)
+            @attributes[k] = "#{v.year}-#{v.month}-#{v.day}" if v.respond_to?(:day)
         end
       end
     end
