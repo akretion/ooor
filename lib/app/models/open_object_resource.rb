@@ -356,7 +356,7 @@ class OpenObjectResource < ActiveResource::Base
   def method_missing(method_symbol, *arguments)
     method_name = method_symbol.to_s
     return super if attributes.has_key?(method_name) or attributes.has_key?(method_name.first(-1))
-    if method_name.end_with?('=')
+    if method_name.end_with?('=') && @relations[method_name.sub('=', '')]
       @relations[method_name.sub('=', '')] = *arguments
       return
     end
