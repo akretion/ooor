@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = %q{ooor}
-  s.version = "1.2.2"
+  s.version = "1.2.3"
   s.date = %q{2010-01-19}
   s.authors = ["Raphael Valyi - www.akretion.com"]
   s.email = %q{rvalyi@akretion.com}
