@@ -227,6 +227,7 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     @relations.each do |k, v| #see OpenERP awkward relations API
+      next if v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array) #already casted, possibly before server error!
       new_rel = self.cast_relation(k, v, self.class.one2many_relations, self.class.many2many_relations)
       if new_rel #matches a known o2m or m2m
         @relations[k] = new_rel
@@ -364,8 +365,8 @@ class OpenObjectResource < ActiveResource::Base
     method_key = method_name.sub('=', '')
     return super if attributes.has_key?(method_key)
     
-    @relations[method_key] = arguments and return if is_assign && self.class.relations_keys.index(method_key)
-    @attributes[method_key] = arguments and return if is_assign && self.class.fields.keys.index(method_key)
+    @relations[method_key] = arguments[0] and return if is_assign && self.class.relations_keys.index(method_key)
+    @attributes[method_key] = arguments[0] and return if is_assign && self.class.fields.keys.index(method_key)
 
     return @loaded_relations[method_name] if @loaded_relations.has_key?(method_name)
     return false if @relations.has_key?(method_name) and !@relations[method_name]
@@ -382,8 +383,8 @@ class OpenObjectResource < ActiveResource::Base
         return model.loaded_relations[method_key] if model.loaded_relations[method_key]
       elsif is_assign
         klazz = self.class.const_get(field.relation)
-        @relations[method_key] = arguments and return if klazz.relations_keys.index(method_key)
-        @attributes[method_key] = arguments and return if klazz.fields.keys.index(method_key)
+        @relations[method_key] = arguments[0] and return if klazz.relations_keys.index(method_key)
+        @attributes[method_key] = arguments[0] and return if klazz.fields.keys.index(method_key)
       end
     end
 
