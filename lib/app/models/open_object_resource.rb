@@ -116,14 +116,6 @@ class OpenObjectResource < ActiveResource::Base
 
     def method_missing(method_symbol, *arguments) return self.rpc_execute(method_symbol.to_s, *arguments) end
 
-    def load_relation(model_key, ids, scope_prefix, *arguments)
-      options = arguments.extract_options!
-      class_name = class_name_from_model_key(model_key)
-      @ooor.define_openerp_model(model_key, nil, nil, nil, nil, scope_prefix) unless Object.const_defined?(class_name)
-      relation_model_class = Object.const_get(class_name)
-      relation_model_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
-    end
-
 
     # ******************** finders low level implementation ********************
 
@@ -270,6 +262,14 @@ class OpenObjectResource < ActiveResource::Base
     self
   end
 
+  def load_relation(model_key, ids, *arguments)
+    options = arguments.extract_options!
+    class_name = self.class.class_name_from_model_key(model_key)
+    self.class.ooor.define_openerp_model(model_key, nil, nil, nil, nil, self.class.scope_prefix) unless Object.const_defined?(class_name)
+    relation_model_class = Object.const_get(class_name)
+    relation_model_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
+  end
+
   def display_available_fields
     self.class.logger.debug ""
     self.class.logger.debug "*** DIRECTLY AVAILABLE FIELDS ON OBJECT #{self} ARE: ***\n"
@@ -343,11 +343,11 @@ class OpenObjectResource < ActiveResource::Base
   def relationnal_result(method_name, *arguments)
     self.class.reload_fields_definition unless self.class.fields_defined
     if self.class.many2one_relations.has_key?(method_name)
-      self.class.load_relation(self.class.many2one_relations[method_name].relation, @relations[method_name][0], self.class.scope_prefix, *arguments)
+      load_relation(self.class.many2one_relations[method_name].relation, @relations[method_name][0], *arguments)
     elsif self.class.one2many_relations.has_key?(method_name)
-      self.class.load_relation(self.class.one2many_relations[method_name].relation, @relations[method_name], self.class.scope_prefix, *arguments)
+      load_relation(self.class.one2many_relations[method_name].relation, @relations[method_name], *arguments)
     elsif self.class.many2many_relations.has_key?(method_name)
-      self.class.load_relation(self.class.many2many_relations[method_name].relation, @relations[method_name], self.class.scope_prefix, *arguments)
+      load_relation(self.class.many2many_relations[method_name].relation, @relations[method_name], *arguments)
     else
       false
     end
@@ -370,7 +370,7 @@ class OpenObjectResource < ActiveResource::Base
     elsif !self.class.many2one_relations.empty? #maybe the relation is inherited or could be inferred from a related field
       self.class.many2one_relations.each do |k, field|
         if @relations[k]
-          @loaded_relations[k] ||= self.class.load_relation(field.relation, @relations[k][0], self.class.scope_prefix, *arguments)
+          @loaded_relations[k] ||= load_relation(field.relation, @relations[k][0], *arguments)
           model = @loaded_relations[k]
           model.loaded_relations[method_name] ||= model.relationnal_result(method_name, *arguments)
           return model.loaded_relations[method_name] if model.loaded_relations[method_name]
