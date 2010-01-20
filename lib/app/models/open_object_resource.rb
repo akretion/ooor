@@ -360,28 +360,31 @@ class OpenObjectResource < ActiveResource::Base
 
   def method_missing(method_symbol, *arguments)
     method_name = method_symbol.to_s
-    return super if attributes.has_key?(method_name) or attributes.has_key?(method_name.first(-1))
-    if method_name.end_with?('=') && self.class.relations_keys.index(method_name.sub('=', ''))
-      @relations[method_name.sub('=', '')] = *arguments
-      return
-    end
+    is_assign = method_name.end_with?('=')
+    method_key = method_name.sub('=', '')
+    return super if attributes.has_key?(method_key)
+    
+    @relations[method_key] = arguments and return if is_assign && self.class.relations_keys.index(method_key)
+    @attributes[method_key] = arguments and return if is_assign && self.class.fields.keys.index(method_key)
+
     return @loaded_relations[method_name] if @loaded_relations.has_key?(method_name)
     return false if @relations.has_key?(method_name) and !@relations[method_name]
 
     result = relationnal_result(method_name, *arguments)
-    if result
-      @loaded_relations[method_name] = result
-      return result
-    elsif !self.class.many2one_relations.empty? #maybe the relation is inherited or could be inferred from a related field
-      self.class.many2one_relations.each do |k, field|
-        if @relations[k]
-          @loaded_relations[k] ||= load_relation(field.relation, @relations[k][0], *arguments)
-          model = @loaded_relations[k]
-          model.loaded_relations[method_name] ||= model.relationnal_result(method_name, *arguments)
-          return model.loaded_relations[method_name] if model.loaded_relations[method_name]
-        end
+    @loaded_relations[method_name] = result and return result if result
+
+    #maybe the relation is inherited or could be inferred from a related field
+    self.class.many2one_relations.each do |k, field| #TODO could be recursive eventually
+      if @relations[k]
+        @loaded_relations[k] ||= load_relation(field.relation, @relations[k][0], *arguments)
+        model = @loaded_relations[k]
+        model.loaded_relations[method_key] ||= model.relationnal_result(method_key, *arguments)
+        return model.loaded_relations[method_key] if model.loaded_relations[method_key]
+      elsif is_assign
+        klazz = self.class.const_get(field.relation)
+        @relations[method_key] = arguments and return if klazz.relations_keys.index(method_key)
+        @attributes[method_key] = arguments and return if klazz.fields.keys.index(method_key)
       end
-      super
     end
 
   rescue
