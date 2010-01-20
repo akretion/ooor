@@ -20,6 +20,14 @@ class OpenObjectResource < ActiveResource::Base
       self.scope_prefix + model_key.split('.').collect {|name_part| name_part.capitalize}.join
     end
 
+    #similar to Object#const_get but for OpenERP model key
+    def const_get(model_key)
+      klass_name = class_name_from_model_key(model_key)
+      klass = Object.const_defined?(klass_name) ? Object.const_get(klass_name) : @ooor.define_openerp_model(model_key, nil, nil, nil, nil, self.scope_prefix)
+      klass.reload_fields_definition unless klass.fields_defined
+      klass
+    end
+
     def reload_fields_definition(force = false)
       if not (self.to_s.match('IrModel') || self.to_s.match('IrModelFields')) and (force or not @fields_defined)#TODO have a way to force reloading @field_ids too eventually
         fields = Object.const_get(self.scope_prefix + 'IrModelFields').find(@field_ids)
@@ -224,10 +232,7 @@ class OpenObjectResource < ActiveResource::Base
         @relations[k] = new_rel
       else
         self.class.many2one_relations.each do |k2, field| #try to cast the relation to na inherited o2m or m2m:
-          class_name = self.class.class_name_from_model_key(field.relation)
-          self.class.ooor.define_openerp_model(field.relation, nil, nil, nil, nil, self.class.scope_prefix) unless Object.const_defined?(class_name)
-          linked_class = Object.const_get(class_name)
-          linked_class.reload_fields_definition unless linked_class.fields_defined
+          linked_class = self.class.const_get(field.relation)
           new_rel = self.cast_relation(k, v, linked_class.one2many_relations, linked_class.many2many_relations)
           @relations[k] = new_rel and break if new_rel
         end
@@ -264,10 +269,8 @@ class OpenObjectResource < ActiveResource::Base
 
   def load_relation(model_key, ids, *arguments)
     options = arguments.extract_options!
-    class_name = self.class.class_name_from_model_key(model_key)
-    self.class.ooor.define_openerp_model(model_key, nil, nil, nil, nil, self.class.scope_prefix) unless Object.const_defined?(class_name)
-    relation_model_class = Object.const_get(class_name)
-    relation_model_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
+    related_class = self.class.const_get(model_key)
+    related_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
   end
 
   def display_available_fields
@@ -337,7 +340,7 @@ class OpenObjectResource < ActiveResource::Base
     OpenObjectWizard.new(wizard_name, result[0], result[1], [self], self.class.ooor.global_context)
   end
 
-  def type() method_missing(:type) end #skip deprecated Object#type method
+  def type() method_missing(:type) end #skips deprecated Object#type method
 
 
   # ******************** fake associations like much like ActiveRecord according to the cached OpenERP data model ********************

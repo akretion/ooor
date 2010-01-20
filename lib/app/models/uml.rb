@@ -172,9 +172,9 @@ module UML
 
   def self.get_target(is_reverse, local, enabled_targets, field, model)
     if (is_reverse && !local) || (!enabled_targets) || enabled_targets.index(field.relation)
-      target_name = model.class_name_from_model_key(field.relation)
-      return Object.const_defined?(target_name) ? Object.const_get(target_name) : model.ooor.define_openerp_model(field.relation, nil, nil, nil, nil, model.scope_prefix)
+      model.const_get(field.relation)
+    else
+      false
     end
-    return false
   end
 end
