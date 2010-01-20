@@ -13,7 +13,7 @@ class OpenObjectResource < ActiveResource::Base
 
     cattr_accessor :logger
     attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes assotiated to the OpenERP ir.model
-                  :fields, :fields_defined, :many2one_relations, :one2many_relations, :many2many_relations,
+                  :fields, :fields_defined, :many2one_relations, :one2many_relations, :many2many_relations, :relations_keys,
                   :openerp_database, :user_id, :scope_prefix, :ooor
 
     def class_name_from_model_key(model_key=self.openerp_model)
@@ -36,6 +36,7 @@ class OpenObjectResource < ActiveResource::Base
             @fields[field.attributes['name']] = field
           end
         end
+        @relations_keys = @many2one_relations.merge(@one2many_relations).merge(@many2many_relations).keys
         logger.info "#{fields.size} fields loaded in model #{self.class}"
       end
       @fields_defined = true
@@ -244,7 +245,7 @@ class OpenObjectResource < ActiveResource::Base
 
   def reload_from_record!(record) load(record.attributes, record.relations) end
 
-  def load(attributes, relations={})
+  def load(attributes, relations={})#an attribute might actually be a relation too, will be determined here
     self.class.reload_fields_definition() unless self.class.fields_defined
     raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
     @prefix_options, attributes = split_options(attributes)
@@ -253,8 +254,7 @@ class OpenObjectResource < ActiveResource::Base
     @loaded_relations = {}
     attributes.each do |key, value|
       skey = key.to_s
-      if self.class.many2one_relations.has_key?(skey) || self.class.one2many_relations.has_key?(skey) ||
-         self.class.many2many_relations.has_key?(skey) || value.is_a?(Array)
+      if self.class.relations_keys.index(skey) || value.is_a?(Array)
         relations[skey] = value #the relation because we want the method to load the association through method missing
       else
         case value
@@ -323,7 +323,7 @@ class OpenObjectResource < ActiveResource::Base
       self.class.logger.info result["warning"]["title"]
       self.class.logger.info result["warning"]["message"]
     end
-    load({field_name => field_value}.merge(result["value"]))
+    load(@attributes.merge({field_name => field_value}).merge(result["value"]), @relations)
   end
 
   #wrapper for OpenERP exec_workflow Business Process Management engine
@@ -356,7 +356,7 @@ class OpenObjectResource < ActiveResource::Base
   def method_missing(method_symbol, *arguments)
     method_name = method_symbol.to_s
     return super if attributes.has_key?(method_name) or attributes.has_key?(method_name.first(-1))
-    if method_name.end_with?('=') && @relations[method_name.sub('=', '')]
+    if method_name.end_with?('=') && self.class.relations_keys.index(method_name.sub('=', ''))
       @relations[method_name.sub('=', '')] = *arguments
       return
     end

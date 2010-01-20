@@ -77,6 +77,7 @@ class Ooor
     klass.many2one_relations = {}
     klass.one2many_relations = {}
     klass.many2many_relations = {}
+    klass.relations_keys = []
     klass.fields = {}
     klass.scope_prefix = scope_prefix
     model_class_name = klass.class_name_from_model_key
