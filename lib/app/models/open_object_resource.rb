@@ -114,7 +114,7 @@ class OpenObjectResource < ActiveResource::Base
         raise
     end
 
-    def method_missing(method_symbol, *arguments) return self.rpc_execute(method_symbol.to_s, *arguments) end
+    def method_missing(method_symbol, *arguments) self.rpc_execute(method_symbol.to_s, *arguments) end
 
 
     # ******************** finders low level implementation ********************
@@ -336,6 +336,8 @@ class OpenObjectResource < ActiveResource::Base
     result = self.class.old_wizard_step(wizard_name, [self.id], step, wizard_id, form, {})
     OpenObjectWizard.new(wizard_name, result[0], result[1], [self], self.class.ooor.global_context)
   end
+
+  def type() method_missing(:type) end #skip deprecated Object#type method
 
 
   # ******************** fake associations like much like ActiveRecord according to the cached OpenERP data model ********************
