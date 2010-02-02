@@ -152,7 +152,7 @@ OpenERP context support (same as OpenERP):
 
 Request params or ActiveResource equivalence of OpenERP domain (but degraded as only the = operator is supported, else use domain):
 
-    $ Partners.find(:all, :params => {:supplier => true})
+    $ ResPartner.find(:all, :params => {:supplier => true})
 
 
 OpenERP search method:
