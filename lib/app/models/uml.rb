@@ -1,17 +1,16 @@
-require 'set'
-
 module UML
   #usage: UML.print_uml or with options: UML.print_uml(:all, : detailed) or MyOpenObjectResource.print_uml or UML.print_uml([list_of_classes], :all, :detailed)
 
   def self.included(base) base.extend(ClassMethods) end
 
   def print_uml(*options)
-    UML.print_uml(@config[:models] && @all_loaded_models.select {|model| @config[:models].index(model.openerp_model)} || @all_loaded_models, options)
+    ooor = self.class.ooor
+    UML.print_uml(ooor.config[:models] && ooor.all_loaded_models.select {|model| ooor.config[:models].index(model.openerp_model)} || ooor.all_loaded_models, options)
   end
 
   module ClassMethods
     def print_uml(*options)
-      UML.print_uml([self], options) if self.is_a?(OpenObjectResource)
+      UML.print_uml([self], options)
     end
   end
 
