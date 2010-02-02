@@ -2,6 +2,7 @@ require 'xmlrpc/client'
 require 'active_resource'
 require 'app/models/open_object_ui'
 require 'app/models/uml'
+require 'set'
 
 #TODO implement passing session credentials to RPC methods (concurrent access of different user credentials in Rails)
 
@@ -295,6 +296,20 @@ class OpenObjectResource < ActiveResource::Base
     @attributes.reject {|key, value| key == 'id'}.merge(@relations)
   end
 
+  def initialize(attributes = {}, default_get_list=false, context={})
+    @attributes     = {}
+    @prefix_options = {}
+    if ['ir.model', 'ir.model.fields'].index(self.class.openerp_model)
+      load(attributes)
+    else
+      self.class.reload_fields_definition() unless self.class.fields_defined
+      #FIXME: until OpenObject explicits inheritances, we load all default values of all related fields
+      #so we don't miss inherited fields if default_get_list is not specified; it's a bit brutal.
+      default_get_list ||= Set.new(self.class.many2one_relations.collect {|k, field| self.class.const_get(field.relation).fields.keys}.flatten + self.class.fields.keys).to_a
+      load(self.class.rpc_execute("default_get", default_get_list, context).merge(attributes))
+    end
+  end
+
   #compatible with the Rails way but also supports OpenERP context
   def create(context={})
     self.id = self.class.rpc_execute('create', to_openerp_hash!, context)
@@ -364,9 +379,16 @@ class OpenObjectResource < ActiveResource::Base
     is_assign = method_name.end_with?('=')
     method_key = method_name.sub('=', '')
     return super if attributes.has_key?(method_key)
-    
-    @relations[method_key] = arguments[0] and return if is_assign && self.class.relations_keys.index(method_key)
-    @attributes[method_key] = arguments[0] and return if is_assign && self.class.fields.keys.index(method_key)
+    return self.class.rpc_execute(method_name, *arguments) unless arguments.empty? || is_assign
+
+    self.class.reload_fields_definition() unless self.class.fields_defined
+
+    if is_assign
+      know_relations = self.class.relations_keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field.relation).relations_keys}.flatten
+      @relations[method_key] = arguments[0] and return if know_relations.index(method_key)
+      know_fields = self.class.fields.keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field.relation).fields.keys}.flatten
+      @attributes[method_key] = arguments[0] and return if know_fields.index(method_key)
+    end
 
     return @loaded_relations[method_name] if @loaded_relations.has_key?(method_name)
     return false if @relations.has_key?(method_name) and !@relations[method_name]
@@ -387,10 +409,10 @@ class OpenObjectResource < ActiveResource::Base
         @attributes[method_key] = arguments[0] and return if klazz.fields.keys.index(method_key)
       end
     end
+    super
 
   rescue
     display_available_fields
-
     super
   end
 
