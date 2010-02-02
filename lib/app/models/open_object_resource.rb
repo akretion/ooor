@@ -94,7 +94,7 @@ class OpenObjectResource < ActiveResource::Base
       if args[-1].is_a? Hash
         args[-1] = @ooor.global_context.merge(args[-1])
       end
-      logger.debug "rpc_execute_with_all: rpc_methods: 'exec_workflow', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, action #{action}, *args: #{args.inspect}"
+      logger.debug "rpc_execute_with_all: rpc_methods: 'exec_workflow', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, action: #{action}, *args: #{args.inspect}"
       try_with_pretty_error_log { client((@database && @site || @ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args) }
     end
 
@@ -170,6 +170,13 @@ class OpenObjectResource < ActiveResource::Base
         return active_resources[0]
       end
       return active_resources
+    end
+
+    #overriden because loading default fields is all the rage but we don't want them when reading a record
+    def instantiate_record(record, prefix_options = {})
+      new(record, [], {}).tap do |resource|
+        resource.prefix_options = prefix_options
+      end
     end
 
   end
@@ -296,15 +303,15 @@ class OpenObjectResource < ActiveResource::Base
     @attributes.reject {|key, value| key == 'id'}.merge(@relations)
   end
 
+  #takes care of reading OpenERP default field values.
+  #FIXME: until OpenObject explicits inheritances, we load all default values of all related fields, unless specified in default_get_list
   def initialize(attributes = {}, default_get_list=false, context={})
     @attributes     = {}
     @prefix_options = {}
-    if ['ir.model', 'ir.model.fields'].index(self.class.openerp_model)
+    if ['ir.model', 'ir.model.fields'].index(self.class.openerp_model) || default_get_list == []
       load(attributes)
     else
       self.class.reload_fields_definition() unless self.class.fields_defined
-      #FIXME: until OpenObject explicits inheritances, we load all default values of all related fields
-      #so we don't miss inherited fields if default_get_list is not specified; it's a bit brutal.
       default_get_list ||= Set.new(self.class.many2one_relations.collect {|k, field| self.class.const_get(field.relation).fields.keys}.flatten + self.class.fields.keys).to_a
       load(self.class.rpc_execute("default_get", default_get_list, context).merge(attributes))
     end
