@@ -21,17 +21,16 @@ class Ooor
   end
 
   def global_login(user, password)
-    begin
     @config[:username] = user
     @config[:password] = password
     client = OpenObjectResource.client(@base_url + "/common")
     OpenObjectResource.try_with_pretty_error_log { client.call("login", @config[:database], user, password)}
-    rescue SocketError => error
+    rescue Exception => error
       @logger.error """login to OpenERP server failed:
        #{error.inspect}
        Are your sure the server is started? Are your login parameters correct? Can this server ping the OpenERP server?
        login XML/RPC url was #{@config[:url].gsub(/\/$/,'') + "/common"}"""
-    end
+      raise
   end
 
   def initialize(config, env=false)
