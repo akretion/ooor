@@ -74,10 +74,8 @@ class OpenObjectResource < ActiveResource::Base
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
     def rpc_execute_with_all(db, uid, pass, obj, method, *args)
-      if args[-1].is_a? Hash
-        args[-1] = @ooor.global_context.merge(args[-1])
-      end
-      logger.debug "rpc_execute_with_all: rpc_methods: 'execute', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, method: #{method}, *args: #{args.inspect}"
+      args[-1] = @ooor.global_context.merge(args[-1]) if args[-1].is_a? Hash
+      logger.debug "rpc_execute_with_all: rpc_method: 'execute', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, method: #{method}, *args: #{args.inspect}"
       try_with_pretty_error_log { client((@database && @site || @ooor.base_url) + "/object").call("execute",  db, uid, pass, obj, method, *args) }
     end
 
@@ -91,10 +89,8 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def rpc_exec_workflow_with_all(db, uid, pass, obj, action, *args)
-      if args[-1].is_a? Hash
-        args[-1] = @ooor.global_context.merge(args[-1])
-      end
-      logger.debug "rpc_execute_with_all: rpc_methods: 'exec_workflow', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, action: #{action}, *args: #{args.inspect}"
+      args[-1] = @ooor.global_context.merge(args[-1]) if args[-1].is_a? Hash
+      logger.debug "rpc_execute_with_all: rpc_method: 'exec_workflow', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, action: #{action}, *args: #{args.inspect}"
       try_with_pretty_error_log { client((@database && @site || @ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args) }
     end
 
@@ -115,12 +111,14 @@ class OpenObjectResource < ActiveResource::Base
           openerp_error_hash = eval("#{ e }".gsub("wrong fault-structure: ", ""))
           if openerp_error_hash.is_a? Hash
             logger.error "*********** OpenERP Server ERROR:
-            #{openerp_error_hash["faultString"]}
-            ***********"
+            #{openerp_error_hash["faultString"]}***********"
+            e.backtrace.each {|line| logger.error line if line.index("ooor")} and return nil
+          else
+            raise
           end
         rescue
+          raise
         end
-        raise
     end
 
     def method_missing(method_symbol, *arguments) self.rpc_execute(method_symbol.to_s, *arguments) end
@@ -418,9 +416,11 @@ class OpenObjectResource < ActiveResource::Base
     end
     super
 
-  rescue
+  rescue RuntimeError
+    raise
+  rescue NoMethodError
     display_available_fields
-    super
+    raise
   end
 
 end
