@@ -112,7 +112,7 @@ class OpenObjectResource < ActiveResource::Base
           if openerp_error_hash.is_a? Hash
             logger.error "*********** OpenERP Server ERROR:
             #{openerp_error_hash["faultString"]}***********"
-            e.backtrace.each {|line| logger.error line if line.index("ooor")} and return nil
+            e.backtrace.each {|line| logger.error line unless line.index("lib/ruby")} and return nil
           else
             raise
           end
