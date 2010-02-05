@@ -231,12 +231,15 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     @relations.each do |k, v| #see OpenERP awkward relations API
-      next if v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array) #already casted, possibly before server error!
+      #already casted, possibly before server error!
+      next if (v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array)) \
+              || self.class.many2one_relations[k] \
+              || !v.is_a?(Array)
       new_rel = self.cast_relation(k, v, self.class.one2many_relations, self.class.many2many_relations)
       if new_rel #matches a known o2m or m2m
         @relations[k] = new_rel
       else
-        self.class.many2one_relations.each do |k2, field| #try to cast the relation to na inherited o2m or m2m:
+        self.class.many2one_relations.each do |k2, field| #try to cast the relation to an inherited o2m or m2m:
           linked_class = self.class.const_get(field.relation)
           new_rel = self.cast_relation(k, v, linked_class.one2many_relations, linked_class.many2many_relations)
           @relations[k] = new_rel and break if new_rel
