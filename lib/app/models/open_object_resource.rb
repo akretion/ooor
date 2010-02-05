@@ -186,14 +186,12 @@ class OpenObjectResource < ActiveResource::Base
 
   def cast_attributes_to_ruby!
     @attributes.each do |k, v|
-      if self.class.fields[k]
-        if v.is_a?(String)
-          case self.class.fields[k].ttype
-            when 'datetime'
-              @attributes[k] = Time.parse(v)
-            when 'date'
-              @attributes[k] = Date.parse(v)
-          end
+      if self.class.fields[k] && v.is_a?(String) && !v.empty?
+        case self.class.fields[k].ttype
+          when 'datetime'
+            @attributes[k] = Time.parse(v)
+          when 'date'
+            @attributes[k] = Date.parse(v)
         end
       end
     end
