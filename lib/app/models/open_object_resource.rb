@@ -390,8 +390,12 @@ class OpenObjectResource < ActiveResource::Base
     self.class.reload_fields_definition() unless self.class.fields_defined
 
     if is_assign
-      know_relations = self.class.relations_keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field.relation).relations_keys}.flatten
-      @relations[method_key] = arguments[0] and return if know_relations.index(method_key)
+      known_relations = self.class.relations_keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field.relation).relations_keys}.flatten
+      if known_relations.index(method_key)
+        @relations[method_key] = arguments[0]
+        @loaded_relations[method_key] = arguments[0]
+        return
+      end
       know_fields = self.class.fields.keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field.relation).fields.keys}.flatten
       @attributes[method_key] = arguments[0] and return if know_fields.index(method_key)
     end
