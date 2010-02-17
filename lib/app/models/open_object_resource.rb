@@ -139,7 +139,7 @@ class OpenObjectResource < ActiveResource::Base
         end
       end
       ids = rpc_execute('search', domain, context)
-      find_single(ids, options)
+      !ids.empty? && ids[0].is_a?(Integer) && find_single(ids, options) || []
     end
 
     #TODO, make sense?
