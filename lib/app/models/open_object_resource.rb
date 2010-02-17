@@ -401,7 +401,7 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     return @loaded_relations[method_name] if @loaded_relations.has_key?(method_name)
-    return false if @relations.has_key?(method_name) and !@relations[method_name]
+    return false if @relations.has_key?(method_name) and (!@relations[method_name] || @relations[method_name].is_a?(Array) && !@relations[method_name][0])
 
     result = relationnal_result(method_name, *arguments)
     @loaded_relations[method_name] = result and return result if result
