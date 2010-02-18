@@ -40,19 +40,26 @@ class Ooor
     @logger.level = config[:log_level] if config[:log_level]
     @base_url = config[:url].gsub(/\/$/,'')
     @global_context = config[:global_context] || {}
+
+    scope = Module.new and Object.const_set(config[:scope_prefix], scope) if config[:scope_prefix]
+
     config[:user_id] = global_login(config[:username] || 'admin', config[:password] || 'admin')
 
     @all_loaded_models = []
     OpenObjectResource.logger = @logger
-    @ir_model_class = define_openerp_model("ir.model", nil, nil, nil, nil, config[:scope_prefix] || '')
-    define_openerp_model("ir.model.fields", nil, nil, nil, nil, config[:scope_prefix] || '')
+    @ir_model_class = define_openerp_model("ir.model", nil, nil, nil, nil, config[:scope_prefix])
+    define_openerp_model("ir.model.fields", nil, nil, nil, nil, config[:scope_prefix])
 
     if config[:models] #we load only a customized subset of the OpenERP models
       models = @ir_model_class.find(:all, :domain => [['model', 'in', config[:models]]])
     else #we load all the models
       models = @ir_model_class.find(:all).reject {|model| model.model == "ir.model" || model.model == "ir.model.fields"}
     end
-    models.each {|openerp_model| define_openerp_model(openerp_model, nil, nil, nil, nil, config[:scope_prefix] || '')}
+    models.each {|openerp_model| define_openerp_model(openerp_model, nil, nil, nil, nil, config[:scope_prefix])}
+  end
+
+  module Test
+    
   end
 
   def define_openerp_model(arg, url, database, user_id, pass, scope_prefix)
@@ -81,7 +88,7 @@ class Ooor
     klass.scope_prefix = scope_prefix
     model_class_name = klass.class_name_from_model_key
     @logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{param['model']} model"
-    Object.const_set(model_class_name, klass)
+    (scope_prefix ? Object.const_get(scope_prefix) : Object).const_set(model_class_name, klass)
     @all_loaded_models.push(klass)
     klass
   end

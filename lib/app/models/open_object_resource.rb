@@ -18,20 +18,20 @@ class OpenObjectResource < ActiveResource::Base
                   :openerp_database, :user_id, :scope_prefix, :ooor
 
     def class_name_from_model_key(model_key=self.openerp_model)
-      self.scope_prefix + model_key.split('.').collect {|name_part| name_part.capitalize}.join
+      model_key.split('.').collect {|name_part| name_part.capitalize}.join
     end
 
     #similar to Object#const_get but for OpenERP model key
     def const_get(model_key)
       klass_name = class_name_from_model_key(model_key)
-      klass = Object.const_defined?(klass_name) ? Object.const_get(klass_name) : @ooor.define_openerp_model(model_key, nil, nil, nil, nil, self.scope_prefix)
+      klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : @ooor.define_openerp_model(model_key, nil, nil, nil, nil, self.scope_prefix)
       klass.reload_fields_definition unless klass.fields_defined
       klass
     end
 
     def reload_fields_definition(force = false)
       if not (self.to_s.match('IrModel') || self.to_s.match('IrModelFields')) and (force or not @fields_defined)#TODO have a way to force reloading @field_ids too eventually
-        fields = Object.const_get(self.scope_prefix + 'IrModelFields').find(@field_ids)
+        fields = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get('IrModelFields').find(@field_ids)
         @fields = {}
         fields.each do |field|
           case field.attributes['ttype']
@@ -74,9 +74,9 @@ class OpenObjectResource < ActiveResource::Base
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
     def rpc_execute_with_all(db, uid, pass, obj, method, *args)
-      args[-1] = @ooor.global_context.merge(args[-1]) if args[-1].is_a? Hash
+      clean_request_args!(args)
       logger.debug "rpc_execute_with_all: rpc_method: 'execute', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, method: #{method}, *args: #{args.inspect}"
-      try_with_pretty_error_log { client((@database && @site || @ooor.base_url) + "/object").call("execute",  db, uid, pass, obj, method, *args) }
+      try_with_pretty_error_log { cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("execute",  db, uid, pass, obj, method, *args)) }
     end
 
      #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
@@ -89,17 +89,20 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def rpc_exec_workflow_with_all(db, uid, pass, obj, action, *args)
-      args[-1] = @ooor.global_context.merge(args[-1]) if args[-1].is_a? Hash
+      clean_request_args!(args)
       logger.debug "rpc_execute_with_all: rpc_method: 'exec_workflow', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, action: #{action}, *args: #{args.inspect}"
-      try_with_pretty_error_log { client((@database && @site || @ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args) }
+      try_with_pretty_error_log { cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args)) }
     end
 
     def old_wizard_step(wizard_name, ids, step='init', wizard_id=nil, form={}, context={}, report_type='pdf')
       context = @ooor.global_context.merge(context)
+      cast_request_to_openerp!(form)
       unless wizard_id
-        wizard_id = try_with_pretty_error_log { client((@database && @site || @ooor.base_url) + "/wizard").call("create",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_name) }
+        logger.debug "rpc_execute_with_all: rpc_method: 'create old_wizard_step' #{wizard_name}"
+        wizard_id = try_with_pretty_error_log { cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("create",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_name)) }
       end
-      [wizard_id, try_with_pretty_error_log { client((@database && @site || @ooor.base_url) + "/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, {'model' => @openerp_model, 'form' => form, 'id' => ids[0], 'report_type' => report_type, 'ids' => ids}, step, context) }]
+      logger.debug "rpc_execute_with_all: rpc_method: 'execute old_wizard_step' #{wizard_id}, #{{'model' => @openerp_model, 'form' => form, 'id' => ids[0], 'report_type' => report_type, 'ids' => ids}.inspect}, #{step}, #{context}"
+      [wizard_id, try_with_pretty_error_log { cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, {'model' => @openerp_model, 'form' => form, 'id' => ids[0], 'report_type' => report_type, 'ids' => ids}, step, context)) }]
     end
 
     #grab the eventual error log from OpenERP response as OpenERP doesn't enforce carefuly
@@ -119,6 +122,52 @@ class OpenObjectResource < ActiveResource::Base
         rescue
           raise
         end
+    end
+
+    def clean_request_args!(args)
+      if args[-1].is_a? Hash
+        args[-1] = @ooor.global_context.merge(args[-1])
+      elsif args.is_a?(Array)
+        args += [@ooor.global_context]
+      end
+      cast_request_to_openerp!(args[-2]) if args[-2].is_a? Hash
+    end
+
+    def cast_request_to_openerp!(map)
+      map.each do |k, v|
+        if !v.is_a?(Integer) && !v.is_a?(Float) && v.is_a?(Numeric) && v.respond_to?(:to_f)
+          map[k] = v.to_f
+        elsif !v.is_a?(Numeric) && !v.is_a?(Integer) && v.respond_to?(:sec) && v.respond_to?(:year)#really ensure that's a datetime type
+          map[k] = "#{v.year}-#{v.month}-#{v.day} #{v.hour}:#{v.min}:#{v.sec}"
+        elsif !v.is_a?(Numeric) && !v.is_a?(Integer) && v.respond_to?(:day) && v.respond_to?(:year)#really ensure that's a date type
+          map[k] = "#{v.year}-#{v.month}-#{v.day}"
+        end
+      end
+    end
+
+    def cast_answer_to_ruby!(answer)
+      reload_fields_definition() unless self.fields_defined
+
+      def cast_map_to_ruby!(map)
+        map.each do |k, v|
+          if self.fields[k] && v.is_a?(String) && !v.empty?
+            case self.fields[k].ttype
+              when 'datetime'
+                map[k] = Time.parse(v)
+              when 'date'
+                map[k] = Date.parse(v)
+            end
+          end
+        end
+      end
+
+      if answer.is_a?(Array)
+        answer.each {|item| self.cast_map_to_ruby!(item) if item.is_a? Hash}
+      elsif answer.is_a?(Hash)
+        self.cast_map_to_ruby!(answer)
+      else
+        answer
+      end
     end
 
     def method_missing(method_symbol, *arguments) self.rpc_execute(method_symbol.to_s, *arguments) end
@@ -142,7 +191,7 @@ class OpenObjectResource < ActiveResource::Base
       !ids.empty? && ids[0].is_a?(Integer) && find_single(ids, options) || []
     end
 
-    #TODO, make sense?
+    #TODO, makes sense?
     def find_one; raise"Not implemented yet, go on!"; end
 
     # Find a single resource from the default URL
@@ -183,33 +232,6 @@ class OpenObjectResource < ActiveResource::Base
   # ******************** instance methods ********************
 
   attr_accessor :relations, :loaded_relations
-
-  def cast_attributes_to_ruby!
-    @attributes.each do |k, v|
-      if self.class.fields[k] && v.is_a?(String) && !v.empty?
-        case self.class.fields[k].ttype
-          when 'datetime'
-            @attributes[k] = Time.parse(v)
-          when 'date'
-            @attributes[k] = Date.parse(v)
-        end
-      end
-    end
-  end
-
-  def cast_attributes_to_openerp!
-    @attributes.each do |k, v|
-      @attributes[k] = ((v.is_a? BigDecimal) ? Float(v) : v)
-      if self.class.fields[k]
-        case self.class.fields[k].ttype
-          when 'datetime'
-            @attributes[k] = "#{v.year}-#{v.month}-#{v.day} #{v.hour}:#{v.min}:#{v.sec}" if v.respond_to?(:sec)
-          when 'date'
-            @attributes[k] = "#{v.year}-#{v.month}-#{v.day}" if v.respond_to?(:day)
-        end
-      end
-    end
-  end
 
   def cast_relations_to_openerp!
     @relations.reject! do |k, v| #reject non asigned many2one or empty list
@@ -271,7 +293,6 @@ class OpenObjectResource < ActiveResource::Base
         end
       end
     end
-    cast_attributes_to_ruby!
     self
   end
 
@@ -297,7 +318,6 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   def to_openerp_hash!
-    cast_attributes_to_openerp!
     cast_relations_to_openerp!
     @attributes.reject {|key, value| key == 'id'}.merge(@relations)
   end
@@ -403,6 +423,7 @@ class OpenObjectResource < ActiveResource::Base
     return @loaded_relations[method_name] if @loaded_relations.has_key?(method_name)
     return false if @relations.has_key?(method_name) and (!@relations[method_name] || @relations[method_name].is_a?(Array) && !@relations[method_name][0])
 
+    return false if self.class.relations_keys.index(method_name) && !@relations[method_name]
     result = relationnal_result(method_name, *arguments)
     @loaded_relations[method_name] = result and return result if result
 
