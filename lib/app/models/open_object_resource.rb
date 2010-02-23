@@ -433,7 +433,9 @@ class OpenObjectResource < ActiveResource::Base
     return @loaded_relations[method_name] if @loaded_relations.has_key?(method_name)
     return false if @relations.has_key?(method_name) and (!@relations[method_name] || @relations[method_name].is_a?(Array) && !@relations[method_name][0])
 
-    return false if self.class.relations_keys.index(method_name) && !@relations[method_name]
+    if self.class.relations_keys.index(method_name) && !@relations[method_name]
+      return self.class.many2one_relations.index(method_name) ? nil : []
+    end
     result = relationnal_result(method_name, *arguments)
     @loaded_relations[method_name] = result and return result if result
 
