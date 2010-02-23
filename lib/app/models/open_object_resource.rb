@@ -360,7 +360,7 @@ class OpenObjectResource < ActiveResource::Base
 
   #compatible with the Rails way but also supports OpenERP context
   def destroy(context={})
-    self.class.rpc_execute('unlink', self.id, context)
+    self.class.rpc_execute('unlink', [self.id], context)
   end
 
   #OpenERP copy method, load persisted copied Object
