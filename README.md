@@ -273,6 +273,18 @@ Call old style wizards:
     $ TODO test and document new osv_memory wizards API
 
 
+Absolute OpeNERP ids aka ir_model_data:
+
+just like Rails fixtures, OpenERP supports absolute ids for its records, especially those imported from XML or CSV.
+We are here speaking about the string id of the XML or CSV records, eventually prefixed by the module name.
+Using those ids rather than the SQL ids is a good idea to avoid relying on a particular installation.
+In OOOR, you can both retrieve one or several records using those ids, like for instance:
+    $ ProductCategory.find('product.product_category_3')
+Notice that the 'product.' module prefix is optional here but important if you have similar ids in different module scopes.
+You can also create a resource and it's ir_model_data record alltogether using the ir_mode_data_id param:
+    $ ProductCategory.create(:name => 'rails_categ', :ir_model_data_id =>['product', 'categ_x']) #1st tab element is the module, 2nd the id in the module
+
+
 Change logged user:
 
     $ Ooor.global_login('demo', 'demo')
