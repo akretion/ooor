@@ -200,10 +200,18 @@ class OpenObjectResource < ActiveResource::Base
       context = options[:context] || {}
       prefix_options, query_options = split_options(options[:params])
       is_collection = true
-      if !scope.is_a? Array
-        scope = [scope]
-        is_collection = false
-      end
+      scope = [scope] and is_collection = false if !scope.is_a? Array
+      scope.map! do |item|
+        if item.is_a? String #triggers ir_model_data absolute reference lookup
+          tab = item.split(".")
+          domain = [['name', '=', tab[-1]]]
+          domain += [['module', '=', tab[-2]]] if tab[-2]
+          ir_model_data = IrModelData.find(:first, :domain => domain)
+          ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]])[0]
+        else
+          item
+        end
+      end.reject! {|item| !item}
       records = rpc_execute('read', scope, fields, context)
       active_resources = []
       records.each do |record|
@@ -231,7 +239,7 @@ class OpenObjectResource < ActiveResource::Base
 
   # ******************** instance methods ********************
 
-  attr_accessor :relations, :loaded_relations
+  attr_accessor :relations, :loaded_relations, :ir_model_data_id
 
   def cast_relations_to_openerp!
     @relations.reject! do |k, v| #reject non asigned many2one or empty list
@@ -327,6 +335,7 @@ class OpenObjectResource < ActiveResource::Base
   def initialize(attributes = {}, default_get_list=false, context={})
     @attributes     = {}
     @prefix_options = {}
+    @ir_model_data_id = attributes.delete(:ir_model_data_id)
     if ['ir.model', 'ir.model.fields'].index(self.class.openerp_model) || default_get_list == []
       load(attributes)
     else
@@ -339,6 +348,7 @@ class OpenObjectResource < ActiveResource::Base
   #compatible with the Rails way but also supports OpenERP context
   def create(context={}, reload=true)
     self.id = self.class.rpc_execute('create', to_openerp_hash!, context)
+    IrModelData.create(:model => self.class.openerp_model, :module => @ir_model_data_id[0], :name=> @ir_model_data_id[1], :res_id => self.id) if @ir_model_data_id
     reload_from_record!(self.class.find(self.id, :context => context)) if reload
   end
 

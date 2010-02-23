@@ -49,6 +49,7 @@ class Ooor
     OpenObjectResource.logger = @logger
     @ir_model_class = define_openerp_model("ir.model", nil, nil, nil, nil, config[:scope_prefix])
     define_openerp_model("ir.model.fields", nil, nil, nil, nil, config[:scope_prefix])
+    define_openerp_model("ir.model.data", nil, nil, nil, nil, config[:scope_prefix])
 
     if config[:models] #we load only a customized subset of the OpenERP models
       models = @ir_model_class.find(:all, :domain => [['model', 'in', config[:models]]])
