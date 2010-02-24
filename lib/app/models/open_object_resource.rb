@@ -112,16 +112,12 @@ class OpenObjectResource < ActiveResource::Base
       rescue RuntimeError => e
         begin
           openerp_error_hash = eval("#{ e }".gsub("wrong fault-structure: ", ""))
-          if openerp_error_hash.is_a? Hash
-            logger.error "*********** OpenERP Server ERROR:
-            #{openerp_error_hash["faultString"]}***********"
-            e.backtrace.each {|line| logger.error line unless line.index("lib/ruby")} and return nil
-          else
-            raise
-          end
-        rescue
-          raise
+        rescue SyntaxError
+          raise e
         end
+        raise e unless openerp_error_hash.is_a? Hash
+        logger.error "*********** OpenERP Server ERROR:\n#{openerp_error_hash["faultString"]}***********"
+        raise RuntimeError.new('OpenERP server error')
     end
 
     def clean_request_args!(args)
@@ -170,7 +166,10 @@ class OpenObjectResource < ActiveResource::Base
       end
     end
 
-    def method_missing(method_symbol, *arguments) self.rpc_execute(method_symbol.to_s, *arguments) end
+    def method_missing(method_symbol, *arguments)
+      raise RuntimeError.new("Invalid RPC method:  #{method_symbol}") if [:type!, :allowed!].index(method_symbol)
+      self.rpc_execute(method_symbol.to_s, *arguments)
+    end
 
 
     # ******************** finders low level implementation ********************
