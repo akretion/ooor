@@ -205,7 +205,7 @@ class OpenObjectResource < ActiveResource::Base
           tab = item.split(".")
           domain = [['name', '=', tab[-1]]]
           domain += [['module', '=', tab[-2]]] if tab[-2]
-          ir_model_data = IrModelData.find(:first, :domain => domain)
+          ir_model_data = const_get('ir.model.data').find(:first, :domain => domain)
           ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]])[0]
         else
           item
