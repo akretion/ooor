@@ -340,7 +340,7 @@ class OpenObjectResource < ActiveResource::Base
     else
       self.class.reload_fields_definition() unless self.class.fields_defined
       default_get_list ||= Set.new(self.class.many2one_relations.collect {|k, field| self.class.const_get(field.relation).fields.keys}.flatten + self.class.fields.keys).to_a
-      load(self.class.rpc_execute("default_get", default_get_list, context).merge(attributes))
+      load(self.class.rpc_execute("default_get", default_get_list, context).symbolize_keys!.merge(attributes.symbolize_keys!))
     end
   end
 
