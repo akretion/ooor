@@ -131,7 +131,9 @@ class OpenObjectResource < ActiveResource::Base
 
     def cast_request_to_openerp!(map)
       map.each do |k, v|
-        if !v.is_a?(Integer) && !v.is_a?(Float) && v.is_a?(Numeric) && v.respond_to?(:to_f)
+        if v == nil
+          map[k] = false
+        elsif !v.is_a?(Integer) && !v.is_a?(Float) && v.is_a?(Numeric) && v.respond_to?(:to_f)
           map[k] = v.to_f
         elsif !v.is_a?(Numeric) && !v.is_a?(Integer) && v.respond_to?(:sec) && v.respond_to?(:year)#really ensure that's a datetime type
           map[k] = "#{v.year}-#{v.month}-#{v.day} #{v.hour}:#{v.min}:#{v.sec}"
