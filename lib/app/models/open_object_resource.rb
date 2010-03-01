@@ -296,7 +296,7 @@ class OpenObjectResource < ActiveResource::Base
             resource = find_or_create_resource_for(key) #TODO check!
             @attributes[skey] = resource@attributes[skey].new(value)
           else
-            @attributes[skey] = value.dup rescue value
+            @attributes[skey] = value
         end
       end
     end
