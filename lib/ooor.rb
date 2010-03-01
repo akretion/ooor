@@ -36,7 +36,7 @@ class Ooor
   def initialize(config, env=false)
     @config = config.is_a?(String) ? Ooor.load_config(config, env) : config
     @config.symbolize_keys!
-    @logger = ((defined?(RAILS_ENV) and RAILS_ENV != "development") ? Rails.logger : Logger.new(STDOUT))
+    @logger = ((defined?(RAILS_ENV) && $0 != 'irb') ? Rails.logger : Logger.new(STDOUT))
     @logger.level = config[:log_level] if config[:log_level]
     @base_url = config[:url].gsub(/\/$/,'')
     @global_context = config[:global_context] || {}
