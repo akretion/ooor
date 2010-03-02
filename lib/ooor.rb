@@ -54,7 +54,7 @@ class Ooor
     if config[:models] #we load only a customized subset of the OpenERP models
       models = @ir_model_class.find(:all, :domain => [['model', 'in', config[:models]]])
     else #we load all the models
-      models = @ir_model_class.find(:all).reject {|model| model.model == "ir.model" || model.model == "ir.model.fields"}
+      models = @ir_model_class.find(:all).reject {|model| ["ir.model", "ir.model.fields", "ir.model.data"].index model.model}
     end
     models.each {|openerp_model| define_openerp_model(openerp_model, nil, nil, nil, nil, config[:scope_prefix])}
   end
