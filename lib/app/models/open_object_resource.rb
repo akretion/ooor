@@ -46,6 +46,13 @@ class OpenObjectResource < ActiveResource::Base
           end
         end
         @relations_keys = @many2one_relations.merge(@one2many_relations).merge(@many2many_relations).keys
+        (@fields.keys + @relations_keys).each do |meth| #generates method handlers for autompletion tools such as jirb_swing
+          self.instance_eval do
+            define_method meth do |*args|
+              self.send :method_missing, *[meth, *args]
+            end
+          end
+        end
         logger.info "#{fields.size} fields loaded in model #{self.class}"
       end
       @fields_defined = true
