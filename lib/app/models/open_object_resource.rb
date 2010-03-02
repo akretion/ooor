@@ -199,9 +199,6 @@ class OpenObjectResource < ActiveResource::Base
       !ids.empty? && ids[0].is_a?(Integer) && find_single(ids, options) || []
     end
 
-    #TODO, makes sense?
-    def find_one; raise"Not implemented yet, go on!"; end
-
     # Find a single resource from the default URL
     def find_single(scope, options)
       fields = options[:fields] || []
@@ -319,18 +316,17 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   def display_available_fields
-    self.class.logger.debug ""
-    self.class.logger.debug "*** DIRECTLY AVAILABLE FIELDS ON OBJECT #{self} ARE: ***\n"
-    self.class.fields.sort {|a,b| a[1].ttype<=>b[1].ttype}.each {|i| self.class.logger.debug "#{i[1].ttype} --- #{i[0]}"}
-    self.class.logger.debug ""
-    self.class.many2one_relations.each {|k, v| self.class.logger.debug "many2one --- #{v.relation} --- #{k}"}
-    self.class.logger.debug ""
-    self.class.one2many_relations.each {|k, v| self.class.logger.debug "one2many --- #{v.relation} --- #{k}"}
-    self.class.logger.debug ""
-    self.class.many2many_relations.each {|k, v| self.class.logger.debug "many2many --- #{v.relation} --- #{k}"}
-    self.class.logger.debug ""
-    self.class.logger.debug "YOU CAN ALSO USE THE INHERITED FIELDS FROM THE INHERITANCE MANY2ONE RELATIONS OR THE OBJECT METHODS..."
-    self.class.logger.debug ""
+    msg = "\n*** DIRECTLY AVAILABLE FIELDS ON OBJECT #{self} ARE: ***\n"
+    self.class.fields.sort {|a,b| a[1].ttype<=>b[1].ttype}.each {|i| msg << "#{i[1].ttype} --- #{i[0]}"}
+    msg << ""
+    self.class.many2one_relations.each {|k, v| msg << "many2one --- #{v.relation} --- #{k}"}
+    msg << ""
+    self.class.one2many_relations.each {|k, v| msg << "one2many --- #{v.relation} --- #{k}"}
+    msg << ""
+    self.class.many2many_relations.each {|k, v| msg << "many2many --- #{v.relation} --- #{k}"}
+    msg << ""
+    msg << "YOU CAN ALSO USE THE INHERITED FIELDS FROM THE INHERITANCE MANY2ONE RELATIONS OR THE OBJECT METHODS..."
+    self.class.logger.debug msg
   end
 
   def to_openerp_hash!
