@@ -316,16 +316,12 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   def display_available_fields
-    msg = "\n*** DIRECTLY AVAILABLE FIELDS ON OBJECT #{self} ARE: ***\n"
-    self.class.fields.sort {|a,b| a[1].ttype<=>b[1].ttype}.each {|i| msg << "#{i[1].ttype} --- #{i[0]}"}
-    msg << ""
-    self.class.many2one_relations.each {|k, v| msg << "many2one --- #{v.relation} --- #{k}"}
-    msg << ""
-    self.class.one2many_relations.each {|k, v| msg << "one2many --- #{v.relation} --- #{k}"}
-    msg << ""
-    self.class.many2many_relations.each {|k, v| msg << "many2many --- #{v.relation} --- #{k}"}
-    msg << ""
-    msg << "YOU CAN ALSO USE THE INHERITED FIELDS FROM THE INHERITANCE MANY2ONE RELATIONS OR THE OBJECT METHODS..."
+    msg = "\n*** DIRECTLY AVAILABLE FIELDS ON OBJECT #{self} ARE: ***"
+    msg << "\n\n" << self.class.fields.sort {|a,b| a[1].ttype<=>b[1].ttype}.map {|i| "#{i[1].ttype} --- #{i[0]}"}.join("\n")
+    msg << "\n\n" << self.class.many2one_relations.map {|k, v| "many2one --- #{v.relation} --- #{k}"}.join("\n")
+    msg << "\n\n" << self.class.one2many_relations.map {|k, v| "one2many --- #{v.relation} --- #{k}"}.join("\n")
+    msg << "\n\n" << self.class.many2many_relations.map {|k, v| "many2many --- #{v.relation} --- #{k}"}.join("\n")
+    msg << "\n\nYOU CAN ALSO USE THE INHERITED FIELDS FROM THE INHERITANCE MANY2ONE RELATIONS OR THE OBJECT METHODS...\n\n"
     self.class.logger.debug msg
   end
 
