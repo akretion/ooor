@@ -2,9 +2,15 @@ require 'logger'
 require 'xmlrpc/client'
 require 'app/models/open_object_resource'
 require 'app/models/uml'
+require 'app/models/db_service'
+require 'app/models/common_service'
+require 'app/models/client'
 
 class Ooor
   include UML
+  include DbService
+  include CommonService
+  include Client
 
   attr_accessor :logger, :config, :all_loaded_models, :base_url, :global_context, :ir_model_class
 
@@ -20,47 +26,33 @@ class Ooor
     raise
   end
 
-  def global_login(user, password)
-    @config[:username] = user
-    @config[:password] = password
-    client = OpenObjectResource.client(@base_url + "/common")
-    OpenObjectResource.try_with_pretty_error_log { client.call("login", @config[:database], user, password)}
-    rescue Exception => error
-      @logger.error """login to OpenERP server failed:
-       #{error.inspect}
-       Are your sure the server is started? Are your login parameters correct? Can this server ping the OpenERP server?
-       login XML/RPC url was #{@config[:url].gsub(/\/$/,'') + "/common"}"""
-      raise
-  end
-
   def initialize(config, env=false)
     @config = config.is_a?(String) ? Ooor.load_config(config, env) : config
     @config.symbolize_keys!
     @logger = ((defined?(RAILS_ENV) && $0 != 'irb') ? Rails.logger : Logger.new(STDOUT))
     @logger.level = config[:log_level] if config[:log_level]
-    @base_url = config[:url].gsub(/\/$/,'')
-    @global_context = config[:global_context] || {}
-
-    scope = Module.new and Object.const_set(config[:scope_prefix], scope) if config[:scope_prefix]
-
-    config[:user_id] = global_login(config[:username] || 'admin', config[:password] || 'admin')
-
-    @all_loaded_models = []
     OpenObjectResource.logger = @logger
-    @ir_model_class = define_openerp_model("ir.model", nil, nil, nil, nil, config[:scope_prefix])
-    define_openerp_model("ir.model.fields", nil, nil, nil, nil, config[:scope_prefix])
-    define_openerp_model("ir.model.data", nil, nil, nil, nil, config[:scope_prefix])
+    @base_url = config[:url].gsub(/\/$/,'')
+    @all_loaded_models = []
+    scope = Module.new and Object.const_set(config[:scope_prefix], scope) if config[:scope_prefix]
+    if config[:database]
+      load_models()
+    end
+  end
 
-    if config[:models] #we load only a customized subset of the OpenERP models
-      models = @ir_model_class.find(:all, :domain => [['model', 'in', config[:models]]])
+  def load_models(to_load_models=@config[:models])
+    @global_context = @config[:global_context] || {}
+    global_login(@config[:username] || 'admin', @config[:password] || 'admin')
+    @ir_model_class = define_openerp_model("ir.model", nil, nil, nil, nil, @config[:scope_prefix])
+    define_openerp_model("ir.model.fields", nil, nil, nil, nil, @config[:scope_prefix])
+    define_openerp_model("ir.model.data", nil, nil, nil, nil, @config[:scope_prefix])
+    if to_load_models #we load only a customized subset of the OpenERP models
+      models = @ir_model_class.find(:all, :domain => [['model', 'in', to_load_models]])
     else #we load all the models
       models = @ir_model_class.find(:all).reject {|model| ["ir.model", "ir.model.fields", "ir.model.data"].index model.model}
     end
-    models.each {|openerp_model| define_openerp_model(openerp_model, nil, nil, nil, nil, config[:scope_prefix])}
-  end
-
-  module Test
-    
+    @global_context.merge!({}).merge!(@config[:global_context] || {})
+    models.each {|openerp_model| define_openerp_model(openerp_model, nil, nil, nil, nil, @config[:scope_prefix])}
   end
 
   def define_openerp_model(arg, url, database, user_id, pass, scope_prefix)

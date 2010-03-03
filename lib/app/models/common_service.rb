@@ -4,8 +4,7 @@ module CommonService
     @config[:username] = user
     @config[:password] = password
     client = OpenObjectResource.client(@base_url + "/common")
-    @config[:user_id] = OpenObjectResource.try_with_pretty_error_log { client.call("login", @config[:database], user, password)}
-    @global_context = @ir_model_class.const_get('res_users').contex_get().merge(config[:global_context] || {})
+    @config[:user_id] = OpenObjectResource.try_with_pretty_error_log { client.call("login", @config[:database], user, password) }
     rescue Exception => error
       @logger.error """login to OpenERP server failed:
        #{error.inspect}
