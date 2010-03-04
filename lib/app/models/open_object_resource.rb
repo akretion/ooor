@@ -69,7 +69,7 @@ class OpenObjectResource < ActiveResource::Base
 
     def client(url)
       @clients ||= {}
-      @clients[url] ||= XMLRPC::Client.new2(url)
+      @clients[url] ||= XMLRPC::Client.new2(url, nil, 180)
     end
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
@@ -456,7 +456,13 @@ class OpenObjectResource < ActiveResource::Base
         @attributes[method_key] = arguments[0] and return if klazz.fields.keys.index(method_key)
       end
     end
-    super
+
+    if id
+      arguments += [{}] unless arguments.last.is_a?(Hash)
+      self.class.rpc_execute(method_key, [id], *arguments) #we assume that's an action
+    else
+      super
+    end
 
   rescue RuntimeError
     raise
