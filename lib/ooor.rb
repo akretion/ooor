@@ -55,7 +55,7 @@ class Ooor
     models.each {|openerp_model| define_openerp_model(openerp_model, @config[:scope_prefix])}
   end
 
-  def define_openerp_model(arg, scope_prefix, url=nil, database=nil, user_id=nil, pass=nil)
+  def define_openerp_model(arg, scope_prefix=nil, url=nil, database=nil, user_id=nil, pass=nil)
     if arg.is_a?(String) && arg != 'ir.model' && arg != 'ir.model.fields'
       arg = @ir_model_class.find(:first, :domain => [['model', '=', arg]])
     end

@@ -1,9 +1,14 @@
 #proxies all 'db' class of OpenERP server/bin/service/web_service.py properly
 module DbService
-  def create(password=@config[:db_password], db_name='ooor_db', demo=true, lang='en-US', user_password='admin')
-    OpenObjectResource.try_with_pretty_error_log { OpenObjectResource.client(@base_url + "/db").call("create", password, db_name, demo, lang, user_password) }
+  def create(password=@config[:db_password], db_name='ooor_db', demo=true, lang='en-US', user_password=@config[:password])
+    process_id = OpenObjectResource.try_with_pretty_error_log { OpenObjectResource.client(@base_url + "/db").call("create", password, db_name, demo, lang, user_password) }
     @config[:database] = db_name
     @config[:username] = user_password
+    while get_progress('admin', process_id) == [0, []]
+      @logger.info "..."
+      sleep(0.5)
+    end
+    load_models()
   end
 
   def drop(password=@config[:db_password], db_name='ooor_db')

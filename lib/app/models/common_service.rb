@@ -4,6 +4,7 @@ module CommonService
     @config[:username] = user
     @config[:password] = password
     client = OpenObjectResource.client(@base_url + "/common")
+    p "**********", "login", @config[:database], user, password
     @config[:user_id] = OpenObjectResource.try_with_pretty_error_log { client.call("login", @config[:database], user, password) }
     rescue Exception => error
       @logger.error """login to OpenERP server failed:
