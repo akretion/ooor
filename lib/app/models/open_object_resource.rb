@@ -24,7 +24,7 @@ class OpenObjectResource < ActiveResource::Base
     #similar to Object#const_get but for OpenERP model key
     def const_get(model_key)
       klass_name = class_name_from_model_key(model_key)
-      klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : @ooor.define_openerp_model(model_key, nil, nil, nil, nil, self.scope_prefix)
+      klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : @ooor.define_openerp_model(model_key, self.scope_prefix)
       klass.reload_fields_definition unless klass.fields_defined
       klass
     end

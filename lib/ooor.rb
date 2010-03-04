@@ -43,19 +43,19 @@ class Ooor
   def load_models(to_load_models=@config[:models])
     @global_context = @config[:global_context] || {}
     global_login(@config[:username] || 'admin', @config[:password] || 'admin')
-    @ir_model_class = define_openerp_model("ir.model", nil, nil, nil, nil, @config[:scope_prefix])
-    define_openerp_model("ir.model.fields", nil, nil, nil, nil, @config[:scope_prefix])
-    define_openerp_model("ir.model.data", nil, nil, nil, nil, @config[:scope_prefix])
+    @ir_model_class = define_openerp_model("ir.model", @config[:scope_prefix])
+    define_openerp_model("ir.model.fields", @config[:scope_prefix])
+    define_openerp_model("ir.model.data", @config[:scope_prefix])
     if to_load_models #we load only a customized subset of the OpenERP models
       models = @ir_model_class.find(:all, :domain => [['model', 'in', to_load_models]])
     else #we load all the models
       models = @ir_model_class.find(:all).reject {|model| ["ir.model", "ir.model.fields", "ir.model.data"].index model.model}
     end
     @global_context.merge!({}).merge!(@config[:global_context] || {})
-    models.each {|openerp_model| define_openerp_model(openerp_model, nil, nil, nil, nil, @config[:scope_prefix])}
+    models.each {|openerp_model| define_openerp_model(openerp_model, @config[:scope_prefix])}
   end
 
-  def define_openerp_model(arg, url, database, user_id, pass, scope_prefix)
+  def define_openerp_model(arg, scope_prefix, url=nil, database=nil, user_id=nil, pass=nil)
     if arg.is_a?(String) && arg != 'ir.model' && arg != 'ir.model.fields'
       arg = @ir_model_class.find(:first, :domain => [['model', '=', arg]])
     end
