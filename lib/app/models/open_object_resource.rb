@@ -110,8 +110,10 @@ class OpenObjectResource < ActiveResource::Base
         logger.debug "rpc_execute_with_all: rpc_method: 'create old_wizard_step' #{wizard_name}"
         wizard_id = try_with_pretty_error_log { cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("create",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_name)) }
       end
-      logger.debug "rpc_execute_with_all: rpc_method: 'execute old_wizard_step' #{wizard_id}, #{{'model' => @openerp_model, 'form' => form, 'id' => ids[0], 'report_type' => report_type, 'ids' => ids}.inspect}, #{step}, #{context}"
-      [wizard_id, try_with_pretty_error_log { cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, {'model' => @openerp_model, 'form' => form, 'id' => ids[0], 'report_type' => report_type, 'ids' => ids}, step, context)) }]
+      params = {'model' => @openerp_model, 'form' => form, 'report_type' => report_type}
+      params.merge!({'id' => ids[0], 'ids' => ids}) if ids
+      logger.debug "rpc_execute_with_all: rpc_method: 'execute old_wizard_step' #{wizard_id}, #{params.inspect}, #{step}, #{context}"
+      [wizard_id, try_with_pretty_error_log { cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, params, step, context)) }]
     end
 
     #grab the eventual error log from OpenERP response as OpenERP doesn't enforce carefuly
@@ -391,7 +393,7 @@ class OpenObjectResource < ActiveResource::Base
 
   def old_wizard_step(wizard_name, step='init', wizard_id=nil, form={}, context={})
     result = self.class.old_wizard_step(wizard_name, [self.id], step, wizard_id, form, {})
-    OpenObjectWizard.new(wizard_name, result[0], result[1], [self], self.class.ooor.global_context)
+    OpenObjectFormModel.new(wizard_name, result[0], result[1], [self], self.class.ooor.global_context)
   end
 
   def type() method_missing(:type) end #skips deprecated Object#type method

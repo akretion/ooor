@@ -2,6 +2,8 @@
 module DbService
   def create(password=@config[:db_password], db_name='ooor_db', demo=true, lang='en-US', user_password='admin')
     OpenObjectResource.try_with_pretty_error_log { OpenObjectResource.client(@base_url + "/db").call("create", password, db_name, demo, lang, user_password) }
+    @config[:database] = db_name
+    @config[:username] = user_password
   end
 
   def drop(password=@config[:db_password], db_name='ooor_db')
