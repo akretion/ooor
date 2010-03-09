@@ -397,8 +397,7 @@ class OpenObjectResource < ActiveResource::Base
 
   def old_wizard_step(wizard_name, step='init', wizard_id=nil, form={}, context={})
     result = self.class.old_wizard_step(wizard_name, [self.id], step, wizard_id, form, {})
-    p "************", result
-    FormModel.new(wizard_name, result[0], result[1], [self], self.class.ooor.global_context) #TODO set arch and fields
+    FormModel.new(wizard_name, result[0], nil, nil, result[1], [self], self.class.ooor.global_context)
   end
 
   def type() method_missing(:type) end #skips deprecated Object#type method

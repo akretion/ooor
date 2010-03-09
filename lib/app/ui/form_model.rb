@@ -1,11 +1,11 @@
 class FormModel
-  attr_accessor :name, :id, :datas, :arch, :fields, :type, :state, :view_id, :open_object_resources, :view_context
+  attr_accessor :name, :wizard_id, :datas, :arch, :fields, :type, :state, :view_id, :open_object_resources, :view_context
 
-  def initialize(name, id, arch, fields, data, open_object_resources, view_context, view_id=nil)
+  def initialize(name, wizard_id, arch, fields, data, open_object_resources, view_context, view_id=nil)
     @arch = arch
     @fields = fields
     @name = name
-    @id = id
+    @wizard_id = wizard_id
     @open_object_resources = open_object_resources
     @view_context = view_context
     if data #it's a wizard
@@ -42,9 +42,9 @@ class FormModel
     if @open_object_resources.size == 1
       open_object_resource = @open_object_resources[0]
       if open_object_resource.is_a? Ooor
-        data = open_object_resource.ir_model_class.old_wizard_step(@name, nil, method_symbol, @id, values, context)
+        data = open_object_resource.ir_model_class.old_wizard_step(@name, nil, method_symbol, @wizard_id, values, context)
       else
-        data = open_object_resource.class.old_wizard_step(@name, [open_object_resource.id], method_symbol, @id, values, context)
+        data = open_object_resource.class.old_wizard_step(@name, [open_object_resource.id], method_symbol, @wizard_id, values, context)
       end
       if data[1]['state'] == 'end'
         if open_object_resource.is_a? Ooor
@@ -55,13 +55,13 @@ class FormModel
       end
       @arch = data[1]['arch']
       @fields = data[1]['fields']
-      @datas = data[1]['datas'].symbolize_keys! unless data[1]['datas'].empty?
+      @datas.merge!(data[1]['datas'].symbolize_keys!) unless data[1]['datas'].empty?
       @type = data[1]['type']
       update_wizard_state(data[1]['state']) #FIXME ideally we should remove old methods
       return self
     else
       ids = @open_object_resources.collect{ |open_object_resources| open_object_resources.id }
-      return open_object_resource.class.old_wizard_step(@name, ids, method_symbol, @id, values, context)
+      return open_object_resource.class.old_wizard_step(@name, ids, method_symbol, @wizard_id, values, context)
     end
   end
 

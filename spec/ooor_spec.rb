@@ -112,6 +112,10 @@ describe Ooor do
         m.date.should be_kind_of(Time)
       end
 
+      it "should be able to call any Class method" do
+        ResPartner.name_search('ax', [], 'ilike', {}).should_not be_nil
+      end
+
     end
 
     describe "Relations reading" do
@@ -207,8 +211,23 @@ describe Ooor do
     end
 
     describe "Old wizard management" do
-      it "should be possible to pay an invoice" do
-        #TODO
+      it "should be possible to pay an invoice in one step" do
+        inv = AccountInvoice.find(1).copy() #creates a draft invoice
+        inv.state.should == "draft"
+        inv.wkf_action('invoice_open')
+        inv.state.should == "open"
+        wizard = inv.old_wizard_step('account.invoice.pay') #tip: you can inspect the wizard fields, arch and datas
+        wizard.reconcile({:journal_id => 6, :name =>"from_rails"}) #if you want to pay all; will give you a reloaded invoice
+        inv.state.should == "paid"
+      end
+
+      it "should be possible to pay an invoice using an intermediary wizard step" do
+        inv = AccountInvoice.find(1).copy() #creates a draft invoice
+        inv.wkf_action('invoice_open')
+        wizard = inv.old_wizard_step('account.invoice.pay')
+        wizard.writeoff_check({"amount" => inv.amount_total - 1, "journal_id" => AccountJournal.search([['code', 'ilike', 'CHK']])[0], "name" =>'from_rails'}) #use the button name as the wizard method
+        inv = wizard.reconcile({:name => 'from_ooor', :writeoff_acc_id => 13, :writeoff_journal_id => AccountJournal.search([['code', 'ilike', 'EXJ']])[0], :journal_id => AccountJournal.search([['code', 'ilike', 'CHK']])[0]})
+        inv.state.should == "paid"
       end
     end
 
