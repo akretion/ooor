@@ -1,6 +1,7 @@
 require 'xmlrpc/client'
+require 'rubygems'
 require 'active_resource'
-require 'app/models/open_object_ui'
+require 'app/ui/form_model'
 require 'app/models/uml'
 require 'set'
 
@@ -14,7 +15,7 @@ class OpenObjectResource < ActiveResource::Base
 
     cattr_accessor :logger
     attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes assotiated to the OpenERP ir.model
-                  :fields, :fields_defined, :many2one_relations, :one2many_relations, :many2many_relations, :relations_keys,
+                  :fields, :fields_defined, :many2one_relations, :one2many_relations, :many2many_relations, :polymorphic_m2o_relations, :relations_keys,
                   :openerp_database, :user_id, :scope_prefix, :ooor
 
     def class_name_from_model_key(model_key=self.openerp_model)
@@ -41,11 +42,13 @@ class OpenObjectResource < ActiveResource::Base
             @one2many_relations[field.attributes['name']] = field
           when 'many2many'
             @many2many_relations[field.attributes['name']] = field
+          when 'reference'
+            @polymorphic_m2o_relations[field.attributes['name']] = field
           else
             @fields[field.attributes['name']] = field
           end
         end
-        @relations_keys = @many2one_relations.merge(@one2many_relations).merge(@many2many_relations).keys
+        @relations_keys = @many2one_relations.keys + @one2many_relations.keys + @many2many_relations.keys + @polymorphic_m2o_relations.keys
         (@fields.keys + @relations_keys).each do |meth| #generates method handlers for autompletion tools such as jirb_swing
           unless self.respond_to?(meth)
             self.instance_eval do
@@ -325,6 +328,7 @@ class OpenObjectResource < ActiveResource::Base
     msg << "\n\n" << self.class.many2one_relations.map {|k, v| "many2one --- #{v.relation} --- #{k}"}.join("\n")
     msg << "\n\n" << self.class.one2many_relations.map {|k, v| "one2many --- #{v.relation} --- #{k}"}.join("\n")
     msg << "\n\n" << self.class.many2many_relations.map {|k, v| "many2many --- #{v.relation} --- #{k}"}.join("\n")
+    msg << "\n\n" << self.class.polymorphic_m2o_relations.map {|k, v| "polymorphic_m2o --- #{v.relation} --- #{k}"}.join("\n")
     msg << "\n\nYOU CAN ALSO USE THE INHERITED FIELDS FROM THE INHERITANCE MANY2ONE RELATIONS OR THE OBJECT METHODS...\n\n"
     self.class.logger.debug msg
   end
@@ -393,7 +397,8 @@ class OpenObjectResource < ActiveResource::Base
 
   def old_wizard_step(wizard_name, step='init', wizard_id=nil, form={}, context={})
     result = self.class.old_wizard_step(wizard_name, [self.id], step, wizard_id, form, {})
-    OpenObjectFormModel.new(wizard_name, result[0], result[1], [self], self.class.ooor.global_context)
+    p "************", result
+    FormModel.new(wizard_name, result[0], result[1], [self], self.class.ooor.global_context) #TODO set arch and fields
   end
 
   def type() method_missing(:type) end #skips deprecated Object#type method
@@ -409,6 +414,9 @@ class OpenObjectResource < ActiveResource::Base
       load_relation(self.class.one2many_relations[method_name].relation, @relations[method_name], *arguments)
     elsif self.class.many2many_relations.has_key?(method_name)
       load_relation(self.class.many2many_relations[method_name].relation, @relations[method_name], *arguments)
+    elsif self.class.polymorphic_m2o_relations.has_key?(method_name)
+      values = @relations[method_name].split(',')
+      load_relation(values[0], values[1].to_i, *arguments)
     else
       false
     end

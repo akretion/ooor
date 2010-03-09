@@ -5,7 +5,7 @@ module UML
 
   def print_uml(*options)
     ooor = self.class.ooor
-    UML.print_uml(ooor.config[:models] && ooor.all_loaded_models.select {|model| ooor.config[:models].index(model.openerp_model)} || ooor.all_loaded_models, options)
+    UML.print_uml(ooor.config[:models] && ooor.loaded_models.select {|model| ooor.config[:models].index(model.openerp_model)} || ooor.loaded_models, options)
   end
 
   module ClassMethods

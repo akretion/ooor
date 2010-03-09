@@ -1,18 +1,18 @@
 require 'logger'
-require 'xmlrpc/client'
 require 'app/models/open_object_resource'
 require 'app/models/uml'
 require 'app/models/db_service'
 require 'app/models/common_service'
-require 'app/models/client'
+require 'app/ui/client_base'
 
 class Ooor
   include UML
   include DbService
   include CommonService
-  include Client
+  include ClientBase
 
-  attr_accessor :logger, :config, :all_loaded_models, :base_url, :global_context, :ir_model_class
+  cattr_accessor :default_ooor, :default_config
+  attr_accessor :logger, :config, :loaded_models, :base_url, :global_context, :ir_model_class
 
   #load the custom configuration
   def self.load_config(config_file=nil, env=nil)
@@ -29,15 +29,19 @@ class Ooor
   def initialize(config, env=false)
     @config = config.is_a?(String) ? Ooor.load_config(config, env) : config
     @config.symbolize_keys!
-    @logger = ((defined?(RAILS_ENV) && $0 != 'irb') ? Rails.logger : Logger.new(STDOUT))
+    @logger = ((defined?(Rails) && $0 != 'irb' || config[:force_rails_logger]) ? Rails.logger : Logger.new(STDOUT))
     @logger.level = config[:log_level] if config[:log_level]
     OpenObjectResource.logger = @logger
     @base_url = config[:url].gsub(/\/$/,'')
-    @all_loaded_models = []
+    @loaded_models = []
     scope = Module.new and Object.const_set(config[:scope_prefix], scope) if config[:scope_prefix]
     if config[:database]
       load_models()
     end
+  end
+
+  def const_get(model_key)
+    @ir_model_class.const_get(model_key)
   end
 
   def load_models(to_load_models=@config[:models])
@@ -45,11 +49,10 @@ class Ooor
     global_login(@config[:username] || 'admin', @config[:password] || 'admin')
     @ir_model_class = define_openerp_model("ir.model", @config[:scope_prefix])
     define_openerp_model("ir.model.fields", @config[:scope_prefix])
-    define_openerp_model("ir.model.data", @config[:scope_prefix])
     if to_load_models #we load only a customized subset of the OpenERP models
       models = @ir_model_class.find(:all, :domain => [['model', 'in', to_load_models]])
     else #we load all the models
-      models = @ir_model_class.find(:all).reject {|model| ["ir.model", "ir.model.fields", "ir.model.data"].index model.model}
+      models = @ir_model_class.find(:all).reject {|model| ["ir.model", "ir.model.fields"].index model.model}
     end
     @global_context.merge!({}).merge!(@config[:global_context] || {})
     models.each {|openerp_model| define_openerp_model(openerp_model, @config[:scope_prefix])}
@@ -76,20 +79,20 @@ class Ooor
     klass.many2one_relations = {}
     klass.one2many_relations = {}
     klass.many2many_relations = {}
+    klass.polymorphic_m2o_relations = {}
     klass.relations_keys = []
     klass.fields = {}
     klass.scope_prefix = scope_prefix
     model_class_name = klass.class_name_from_model_key
     @logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{param['model']} model"
     (scope_prefix ? Object.const_get(scope_prefix) : Object).const_set(model_class_name, klass)
-    @all_loaded_models.push(klass)
+    @loaded_models.push(klass)
     klass
   end
 
 end
 
-#Optionnal Rails settings:
-if defined?(Rails)
-  config = Ooor.load_config(false, RAILS_ENV)
-  OOOR = Ooor.new(config) if config['bootstrap']
+if defined?(Rails) #Optionnal autoload in Rails:
+  Ooor.default_config = Ooor.load_config(false, RAILS_ENV)
+  Ooor.default_ooor = Ooor.new(Ooor.default_config) if Ooor.default_config['bootstrap']
 end

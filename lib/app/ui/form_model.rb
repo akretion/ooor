@@ -1,16 +1,39 @@
-class OpenObjectFormModel
+class FormModel
   attr_accessor :name, :id, :datas, :arch, :fields, :type, :state, :view_id, :open_object_resources, :view_context
 
-  def initialize(name, id, data, open_object_resources, view_context, view_id=nil)
+  def initialize(name, id, arch, fields, data, open_object_resources, view_context, view_id=nil)
     @arch = arch
     @fields = fields
     @name = name
     @id = id
     @open_object_resources = open_object_resources
-    @datas = data['datas'].symbolize_keys!
-    @type = data['type']
     @view_context = view_context
-    update_wizard_state(data['state'])
+    if data #it's a wizard
+      @datas = data['datas'].symbolize_keys!
+      @type = data['type']
+      puts "states", data['state']
+      update_wizard_state(data['state'])
+    end
+  end
+
+  def to_html
+    "<div>not implemented in OOOR core gem!</div>"
+  end
+
+  def to_s
+    content = ""
+    content << @name
+    @open_object_resources.each do |resource|
+      content << "\n---------"
+      @fields.each do |k, v| #TODO no need for new call if many2one
+        if v['type'] == 'many2one'
+          content << "\n#{k}: #{resource.relations[k]}"
+        else
+          content << "\n#{k}: #{resource.send(k)}"
+        end
+      end
+    end
+    puts content
   end
 
   def old_wizard_step(method_symbol, *arguments)
@@ -48,6 +71,7 @@ class OpenObjectFormModel
     if state.is_a? Array
       @state = state
       @state.each do |state_item| #generates autocompletion handles
+        p "state_item", state_item
         self.class_eval do
           define_method state_item[0] do |*args|
             self.send :old_wizard_step, *[state_item[0], *args]
