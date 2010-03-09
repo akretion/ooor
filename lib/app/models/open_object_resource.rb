@@ -214,7 +214,7 @@ class OpenObjectResource < ActiveResource::Base
       is_collection = true
       scope = [scope] and is_collection = false if !scope.is_a? Array
       scope.map! do |item|
-        if item.is_a? String #triggers ir_model_data absolute reference lookup
+        if item.is_a?(String) && item.to_i == 0#triggers ir_model_data absolute reference lookup
           tab = item.split(".")
           domain = [['name', '=', tab[-1]]]
           domain += [['module', '=', tab[-2]]] if tab[-2]
@@ -452,11 +452,15 @@ class OpenObjectResource < ActiveResource::Base
 
     #maybe the relation is inherited or could be inferred from a related field
     self.class.many2one_relations.each do |k, field| #TODO could be recursive eventually
-      if @relations[k]
-        @loaded_relations[k] ||= load_relation(field.relation, @relations[k][0], *arguments)
-        model = @loaded_relations[k]
-        model.loaded_relations[method_key] ||= model.relationnal_result(method_key, *arguments)
-        return model.loaded_relations[method_key] if model.loaded_relations[method_key]
+      if @relations[k] #we only care if instance has a relation
+        related_model = self.class.const_get(field.relation)
+        related_model.reload_fields_definition() unless related_model.fields_defined
+        if related_model.relations_keys.index(method_key)
+          @loaded_relations[k] ||= load_relation(field.relation, @relations[k][0], *arguments)
+          model = @loaded_relations[k]
+          model.loaded_relations[method_key] ||= model.relationnal_result(method_key, *arguments)
+          return model.loaded_relations[method_key] if model.loaded_relations[method_key]
+        end
       elsif is_assign
         klazz = self.class.const_get(field.relation)
         @relations[method_key] = arguments[0] and return if klazz.relations_keys.index(method_key)

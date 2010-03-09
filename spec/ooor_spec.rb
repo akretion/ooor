@@ -188,7 +188,14 @@ describe Ooor do
 
     describe "Basic updates" do
       it "should cast properly from Ruby to OpenERP" do
-        #TODO
+        o = SaleOrder.find(1).copy()
+        o.date_order = 2.days.ago
+        o.save
+      end
+
+      it "should be able to reload resource" do
+        s = SaleOrder.find(1)
+        s.reload.should be_kind_of(SaleOrder)
       end
     end
 
@@ -202,7 +209,12 @@ describe Ooor do
       end
 
       it "should be able to create one2many relations on the fly" do
-        #TODO
+        so = SaleOrder.new
+        partner_id = ResPartner.search([['name', 'ilike', 'Agrolait']])[0]
+        so.on_change('onchange_partner_id', :partner_id, partner_id, partner_id) #auto-complete the address and other data based on the partner
+        so.order_line = [SaleOrderLine.new(:name => 'sl1', :product_id => 1, :price_unit => 21, :product_uom => 1), SaleOrderLine.new(:name => 'sl2', :product_id => 1, :price_unit => 21, :product_uom => 1)] #create one order line
+        so.save
+        so.amount_total.should == 42.0
       end
 
       it "should be able to assign a polymorphic relation" do
@@ -217,7 +229,7 @@ describe Ooor do
         inv.wkf_action('invoice_open')
         inv.state.should == "open"
         wizard = inv.old_wizard_step('account.invoice.pay') #tip: you can inspect the wizard fields, arch and datas
-        wizard.reconcile({:journal_id => 6, :name =>"from_rails"}) #if you want to pay all; will give you a reloaded invoice
+        inv = wizard.reconcile({:journal_id => 6, :name =>"from_rails"}) #if you want to pay all; will give you a reloaded invoice
         inv.state.should == "paid"
       end
 
@@ -229,10 +241,23 @@ describe Ooor do
         inv = wizard.reconcile({:name => 'from_ooor', :writeoff_acc_id => 13, :writeoff_journal_id => AccountJournal.search([['code', 'ilike', 'EXJ']])[0], :journal_id => AccountJournal.search([['code', 'ilike', 'CHK']])[0]})
         inv.state.should == "paid"
       end
+
+      it "should be possible to call resource actions and workflow actions" do
+        s = SaleOrder.find(1).copy()
+        s.wkf_action('order_confirm')
+        s.wkf_action('manual_invoice')
+        i = s.invoice_ids[0]
+        i.journal_id.update_posted = true
+        i.journal_id.save
+        i.wkf_action('invoice_open')
+        i.wkf_action('invoice_cancel')
+        i.action_cancel_draft
+        s.reload.state.should == "invoice_except"
+      end
     end
 
     describe "New style wizards" do
-      #TODO
+      #already tested, see database configuration test
     end
 
     describe "Delete resources" do
@@ -284,19 +309,34 @@ describe Ooor do
 
 
   describe "UML features" do
-    it "should be able to draw the UML of any class" do
-      #TODO
+    before(:all) do
+      @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database)
     end
 
-    it "should be able to draw the UML of sevaral classes" do
-      #TODO
+    it "should be able to draw the UML of any class" do
+      SaleOrder.print_uml.should be_true
+    end
+
+    it "should be able to draw the UML of several classes" do
+      UML.print_uml([SaleOrder, SaleShop]).should be_true
     end
   end
 
 
-  describe "Multi-instance" do
+  describe "Multi-instance and class name scoping" do
+    before(:all) do
+      @ooor1 = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database, :scope_prefix => 'OE1')
+      @ooor2 = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database, :scope_prefix => 'OE2')
+    end
+
+    it "should still be possible to find a ressource using an absolute id" do
+      OE1::ProductProduct.find('product_product_pc1').should be_kind_of(OE1::ProductProduct)
+    end
+
     it "should be able to read in one instance and write in an other" do
-      #TODO
+      p1 = OE1::ProductProduct.find(1)
+      p2 = OE2::ProductProduct.create(:name => p1.name, :categ_id => p1.categ_id.id)
+      p2.should be_kind_of(OE2::ProductProduct)
     end
   end
 
