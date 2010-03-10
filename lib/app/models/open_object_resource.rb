@@ -206,7 +206,7 @@ class OpenObjectResource < ActiveResource::Base
       !ids.empty? && ids[0].is_a?(Integer) && find_single(ids, options) || []
     end
 
-    # Find a single resource from the default URL
+    #actually finds many resources specified with scope = ids_array
     def find_single(scope, options)
       fields = options[:fields] || []
       context = options[:context] || {}

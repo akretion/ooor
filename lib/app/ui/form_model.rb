@@ -35,7 +35,7 @@ class FormModel
   end
 
   def old_wizard_step(method_symbol, *arguments)
-    values = @datas.merge((arguments[0] || {}).symbolize_keys!)
+    values = @datas.merge!((arguments[0] || {}).symbolize_keys!)
     context = @view_context.merge(arguments[1] || {})
     if @open_object_resources.size == 1
       open_object_resource = @open_object_resources[0]

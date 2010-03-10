@@ -35,11 +35,11 @@ describe Ooor do
 
     it "should be able to load a profile" do
       manufacturing_module_id = IrModuleModule.search([['name','=', 'profile_manufacturing']])[0]
-      unless IrModuleModule.find(manufacturing_module_id).state = "installed"
+      unless IrModuleModule.find(manufacturing_module_id).state == "installed"
         w = @ooor.old_wizard_step('base_setup.base_setup')
         w.company(:profile => manufacturing_module_id)
-        w.update(:name => 'Akretion.com')
-        w.finish(:state_id => false)
+        w.update(:name => 'Akretion.com', :state_id => false)
+        w.finish
         @ooor.load_models
         @ooor.loaded_models.should_not be_empty
       end
@@ -48,9 +48,9 @@ describe Ooor do
     it "should be able to configure the database" do
       chart_module_id = IrModuleModule.search([['category_id', '=', 'Account Charts'], ['name','=', 'l10n_fr']])[0]
       unless IrModuleModule.find(chart_module_id).state == "installed"
-        w2 = AccountConfigWizard.create(:charts => chart_module_id)
+        w2 = @ooor.const_get('account.config.wizard').create(:charts => chart_module_id)
         w2.action_create
-        w3 = WizardMultiChartsAccounts.create
+        w3 = @ooor.const_get('wizard.multi.charts.accounts').create
         w3.action_create
       end
     end
