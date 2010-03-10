@@ -11,7 +11,6 @@ class FormModel
     if data #it's a wizard
       @datas = data['datas'].symbolize_keys!
       @type = data['type']
-      puts "states", data['state']
       update_wizard_state(data['state'])
     end
   end
@@ -33,7 +32,6 @@ class FormModel
         end
       end
     end
-    puts content
   end
 
   def old_wizard_step(method_symbol, *arguments)
@@ -71,7 +69,6 @@ class FormModel
     if state.is_a? Array
       @state = state
       @state.each do |state_item| #generates autocompletion handles
-        p "state_item", state_item
         self.class_eval do
           define_method state_item[0] do |*args|
             self.send :old_wizard_step, *[state_item[0], *args]

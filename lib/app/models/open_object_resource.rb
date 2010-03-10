@@ -66,7 +66,7 @@ class OpenObjectResource < ActiveResource::Base
     # ******************** remote communication ********************
 
     #OpenERP search method
-    def search(domain, offset=0, limit=false, order=false, context={}, count=false)
+    def search(domain=[], offset=0, limit=false, order=false, context={}, count=false)
       rpc_execute('search', domain, offset, limit, order, context, count)
     end
 

@@ -57,7 +57,8 @@ describe Ooor do
 
   describe "Do operations on configured database" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database)
+      @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database,
+        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu'])
     end
 
     describe "Finders operations" do
@@ -69,6 +70,10 @@ describe Ooor do
         l.size.should == 2
         a = AccountInvoice.find(1)
         a.should_not be_nil
+      end
+
+      it "should load required models on the fly" do
+        SaleOrder.find(1).shop_id.should be_kind_of(SaleShop)
       end
 
       it "should be able to specify the fields to read" do
@@ -280,7 +285,8 @@ describe Ooor do
 
   describe "Offer Web Client core features" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database)
+      @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database,
+        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu'])
     end
 
     it "should find the default user action" do
@@ -310,7 +316,8 @@ describe Ooor do
 
   describe "UML features" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database)
+      @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database,
+        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu'])
     end
 
     it "should be able to draw the UML of any class" do
@@ -320,13 +327,17 @@ describe Ooor do
     it "should be able to draw the UML of several classes" do
       UML.print_uml([SaleOrder, SaleShop]).should be_true
     end
+
+    it "should accept rendering options" do
+      SaleOrder.print_uml(:all, :detailed).should be_true
+    end
   end
 
 
   describe "Multi-instance and class name scoping" do
     before(:all) do
-      @ooor1 = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database, :scope_prefix => 'OE1')
-      @ooor2 = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database, :scope_prefix => 'OE2')
+      @ooor1 = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database, :scope_prefix => 'OE1', :models => ['product.product'])
+      @ooor2 = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database, :scope_prefix => 'OE2', :models => ['product.product'])
     end
 
     it "should still be possible to find a ressource using an absolute id" do
