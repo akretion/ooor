@@ -16,7 +16,7 @@ class OpenObjectResource < ActiveResource::Base
     cattr_accessor :logger
     attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes assotiated to the OpenERP ir.model
                   :fields, :fields_defined, :many2one_relations, :one2many_relations, :many2many_relations, :polymorphic_m2o_relations, :relations_keys,
-                  :openerp_database, :user_id, :scope_prefix, :ooor
+                  :database, :user_id, :scope_prefix, :ooor
 
     def class_name_from_model_key(model_key=self.openerp_model)
       model_key.split('.').collect {|name_part| name_part.capitalize}.join

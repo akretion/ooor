@@ -68,7 +68,7 @@ class Ooor
     klass.site = url || @base_url
     klass.user = user_id
     klass.password = pass
-    klass.openerp_database = database
+    klass.database = database
     klass.openerp_model = param['model']
     klass.openerp_id = url || param['id']
     klass.info = (param['info'] || '').gsub("'",' ')
