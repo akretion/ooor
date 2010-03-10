@@ -1,5 +1,7 @@
 require "lib/ooor.rb"
 
+#RSpec executable specification; see http://rspec.info/ for more information.
+#Run the file with the rspec command  from the rspec gem
 describe Ooor do
   before(:all) do
     @url = 'http://localhost:8069/xmlrpc'
