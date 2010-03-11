@@ -9,7 +9,7 @@ describe Ooor do
     @username = 'admin'
     @password = 'admin'
     @database = 'ooor_test'
-    @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password)
+    @ooor = Ooor.new(:url => @url, :username => @username, :password => @password)
   end
 
   it "should keep quiet if no database is mentioned" do
@@ -30,7 +30,7 @@ describe Ooor do
   
   describe "Configure existing database" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database)
+      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database)
     end
 
     it "should be able to load a profile" do
@@ -59,7 +59,7 @@ describe Ooor do
 
   describe "Do operations on configured database" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database,
+      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database,
         :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu'])
     end
 
@@ -287,7 +287,7 @@ describe Ooor do
 
   describe "Offer Web Client core features" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database,
+      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database,
         :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu'])
     end
 
@@ -318,7 +318,7 @@ describe Ooor do
 
   describe "UML features" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database,
+      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database,
         :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu'])
     end
 
@@ -338,8 +338,8 @@ describe Ooor do
 
   describe "Multi-instance and class name scoping" do
     before(:all) do
-      @ooor1 = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database, :scope_prefix => 'OE1', :models => ['product.product'])
-      @ooor2 = Ooor.new(:url => @url, :username => @username, :admin => @password, :database => @database, :scope_prefix => 'OE2', :models => ['product.product'])
+      @ooor1 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE1', :models => ['product.product'])
+      @ooor2 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE2', :models => ['product.product'])
     end
 
     it "should still be possible to find a ressource using an absolute id" do
