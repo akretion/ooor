@@ -191,6 +191,10 @@ describe Ooor do
         p = ProductProduct.new
         p.sale_delay.should be_kind_of(Integer)
       end
+
+      it "should skipped inherited default fields properly, for instance at product variant creation" do
+        ProductProduct.create(:product_tmpl_id => 25, :code => 'OOOR variant').should be_kind_of(ProductProduct)
+      end
     end
 
     describe "Basic updates" do
