@@ -3,7 +3,8 @@ module DbService
   def create(password=@config[:db_password], db_name='ooor_db', demo=true, lang='en-US', user_password=@config[:password] || 'admin')
     process_id = OpenObjectResource.try_with_pretty_error_log { OpenObjectResource.client(@base_url + "/db").call("create", password, db_name, demo, lang, user_password) }
     @config[:database] = db_name
-    @config[:username] = user_password
+    @config[:username] = 'admin'
+    @config[:passowrd] = user_password
     while get_progress('admin', process_id) == [0, []]
       @logger.info "..."
       sleep(0.5)
