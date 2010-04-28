@@ -72,7 +72,7 @@ class OpenObjectResource < ActiveResource::Base
 
     def client(url)
       @clients ||= {}
-      @clients[url] ||= XMLRPC::Client.new2(url, nil, 180)
+      @clients[url] ||= XMLRPC::Client.new2(url, nil, 900)
     end
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
