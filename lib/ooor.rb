@@ -20,6 +20,7 @@ require 'app/models/open_object_resource'
 require 'app/models/uml'
 require 'app/models/db_service'
 require 'app/models/common_service'
+require 'app/models/base64'
 require 'app/ui/client_base'
 
 class Ooor
