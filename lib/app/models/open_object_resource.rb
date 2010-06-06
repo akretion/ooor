@@ -22,8 +22,6 @@ require 'app/ui/form_model'
 require 'app/models/uml'
 require 'set'
 
-#TODO implement passing session credentials to RPC methods (concurrent access of different user credentials in Rails)
-
 class OpenObjectResource < ActiveResource::Base
   include UML
 
@@ -45,6 +43,10 @@ class OpenObjectResource < ActiveResource::Base
       klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : @ooor.define_openerp_model(model_key, self.scope_prefix)
       klass.reload_fields_definition unless klass.fields_defined
       klass
+    end
+
+	def create(attributes = {}, context={}, default_get_list=false, reload=true)
+       self.new(attributes, default_get_list, context).tap { |resource| resource.save(context, reload) }
     end
 
     def reload_fields_definition(force = false)
@@ -248,7 +250,7 @@ class OpenObjectResource < ActiveResource::Base
         record.each_pair do |k,v|
           r[k.to_sym] = v
         end
-        active_resources << instantiate_record(r, prefix_options)
+        active_resources << instantiate_record(r, prefix_options, context)
       end
       unless is_collection
         return active_resources[0]
@@ -257,8 +259,8 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     #overriden because loading default fields is all the rage but we don't want them when reading a record
-    def instantiate_record(record, prefix_options = {})
-      new(record, [], {}).tap do |resource|
+    def instantiate_record(record, prefix_options = {}, context = {})
+      new(record, [], context).tap do |resource|
         resource.prefix_options = prefix_options
       end
     end
@@ -268,7 +270,20 @@ class OpenObjectResource < ActiveResource::Base
 
   # ******************** instance methods ********************
 
-  attr_accessor :relations, :loaded_relations, :ir_model_data_id
+  attr_accessor :relations, :loaded_relations, :ir_model_data_id, :object_session
+  
+  #try to wrap the object context inside the query.
+  def rpc_execute(method, *args)
+	if args[-1].is_a? Hash
+      args[-1] = self.class.ooor.global_context.merge(object_session[:context]).merge(args[-1])
+    elsif args.is_a?(Array)
+      args += [self.class.ooor.global_context.merge(object_session[:context])]
+	end
+	  db = object_session[:database] || self.class.database || self.class.ooor.config[:database]
+	  uid = object_session[:user_id] || self.class.user_id || self.class.ooor.config[:user_id]
+	  pass = object_session[:password] || self.class.password || self.class.ooor.config[:password]
+	  self.class.rpc_execute_with_all(db, uid, pass, self.class.openerp_model, method, *args)
+  end
 
   def cast_relations_to_openerp!
     @relations.reject! do |k, v| #reject non asigned many2one or empty list
@@ -358,47 +373,56 @@ class OpenObjectResource < ActiveResource::Base
   #takes care of reading OpenERP default field values.
   #FIXME: until OpenObject explicits inheritances, we load all default values of all related fields, unless specified in default_get_list
   def initialize(attributes = {}, default_get_list=false, context={})
-    @attributes     = {}
+    @attributes = {}
     @prefix_options = {}
     @ir_model_data_id = attributes.delete(:ir_model_data_id)
+	@object_session = {}
+	@object_session[:user_id] = context.delete :user_id
+	@object_session[:database] = context.delete :database
+	@object_session[:password] = context.delete :password
+	@object_session[:context] = context
     if ['ir.model', 'ir.model.fields'].index(self.class.openerp_model) || default_get_list == []
       load(attributes)
     else
       self.class.reload_fields_definition() unless self.class.fields_defined
       default_get_list ||= Set.new(self.class.many2one_relations.reject {|k, v| attributes.keys.index(k.to_sym)}.collect {|k, field| self.class.const_get(field.relation).fields.keys}.flatten + self.class.fields.keys).to_a
-      load(self.class.rpc_execute("default_get", default_get_list, context).symbolize_keys!.merge(attributes.symbolize_keys!))
+      load(rpc_execute("default_get", default_get_list, @object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!))
     end
+  end
+
+  def save(context={}, reload=true)
+    new? ? create(context, reload) : update(context, reload)
   end
 
   #compatible with the Rails way but also supports OpenERP context
   def create(context={}, reload=true)
-    self.id = self.class.rpc_execute('create', to_openerp_hash!, context)
+    self.id = rpc_execute('create', to_openerp_hash!, context)
     IrModelData.create(:model => self.class.openerp_model, :module => @ir_model_data_id[0], :name=> @ir_model_data_id[1], :res_id => self.id) if @ir_model_data_id
     reload_from_record!(self.class.find(self.id, :context => context)) if reload
   end
 
   #compatible with the Rails way but also supports OpenERP context
   def update(context={}, reload=true)
-    self.class.rpc_execute('write', self.id, to_openerp_hash!, context)
+    rpc_execute('write', self.id, to_openerp_hash!, context)
     reload_from_record!(self.class.find(self.id, :context => context)) if reload
   end
 
   #compatible with the Rails way but also supports OpenERP context
   def destroy(context={})
-    self.class.rpc_execute('unlink', [self.id], context)
+    rpc_execute('unlink', [self.id], context)
   end
 
   #OpenERP copy method, load persisted copied Object
   def copy(defaults={}, context={})
-    self.class.find(self.class.rpc_execute('copy', self.id, defaults, context), :context => context)
+    self.class.find(rpc_execute('copy', self.id, defaults, context), :context => context)
   end
 
   #Generic OpenERP rpc method call
-  def call(method, *args) self.class.rpc_execute(method, *args) end
+  def call(method, *args) rpc_execute(method, *args) end
 
   #Generic OpenERP on_change method
   def on_change(on_change_method, field_name, field_value, *args)
-    result = self.class.rpc_execute(on_change_method, self.id && [id] || [], *args)
+    result = self.class.rpc_execute(on_change_method, self.id && [id] || [], *args) #OpenERP doesn't accept context systematically in on_change events unfortunately
     if result["warning"]
       self.class.logger.info result["warning"]["title"]
       self.class.logger.info result["warning"]["message"]
@@ -443,7 +467,7 @@ class OpenObjectResource < ActiveResource::Base
     is_assign = method_name.end_with?('=')
     method_key = method_name.sub('=', '')
     return super if attributes.has_key?(method_key)
-    return self.class.rpc_execute(method_name, *arguments) unless arguments.empty? || is_assign
+    return rpc_execute(method_name, *arguments) unless arguments.empty? || is_assign
 
     self.class.reload_fields_definition() unless self.class.fields_defined
 
@@ -487,7 +511,7 @@ class OpenObjectResource < ActiveResource::Base
 
     if id
       arguments += [{}] unless arguments.last.is_a?(Hash)
-      self.class.rpc_execute(method_key, [id], *arguments) #we assume that's an action
+      rpc_execute(method_key, [id], *arguments) #we assume that's an action
     else
       super
     end

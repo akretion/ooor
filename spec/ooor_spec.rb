@@ -159,6 +159,23 @@ describe Ooor do
         p.categ_id.id.should == 1
       end
 
+      it "should support the context at object creation" do
+		p = ProductProduct.new({:name => "testProduct1", :categ_id => 1}, false, {:lang => 'en_US', :user_id=>1, :password => 'admin'})
+		p.object_session[:context][:lang] .should == 'en_US'
+		p.object_session[:user_id].should == 1
+		p.object_session[:password].should == "admin"
+		p.save
+	  end
+
+      it "should support context when instanciating collections" do
+		products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US', :user_id=>1, :password => 'admin'})
+		p = products[0]
+		p.object_session[:context][:lang] .should == 'en_US'
+		p.object_session[:user_id].should == 1
+		p.object_session[:password].should == "admin"
+		p.save
+      end
+
       it "should be able to create an order" do
         o = SaleOrder.create(:partner_id => ResPartner.search([['name', 'ilike', 'Agrolait']])[0], 
           :partner_order_id => 1, :partner_invoice_id => 1, :partner_shipping_id => 1, :pricelist_id => 1)
