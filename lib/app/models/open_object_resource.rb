@@ -432,9 +432,9 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   #wrapper for OpenERP exec_workflow Business Process Management engine
-  def wkf_action(action, context={})
+  def wkf_action(action, context={}, reload=true)
     self.class.rpc_exec_workflow_with_all(object_db, object_uid, object_pass, self.class.openerp_model, action, self.id) #FIXME looks like OpenERP exec_workflow doesn't accept context but it might be a bug
-    reload_from_record!(self.class.find(self.id, :context => context))
+    reload_from_record!(self.class.find(self.id, :context => context)) if reload
   end
 
   def old_wizard_step(wizard_name, step='init', wizard_id=nil, form={}, context={})
