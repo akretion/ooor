@@ -271,18 +271,19 @@ class OpenObjectResource < ActiveResource::Base
   # ******************** instance methods ********************
 
   attr_accessor :relations, :loaded_relations, :ir_model_data_id, :object_session
+
+  def object_db; object_session[:database] || self.class.database || self.class.ooor.config[:database]; end
+  def object_uid;object_session[:user_id] || self.class.user_id || self.class.ooor.config[:user_id]; end
+  def object_pass; object_session[:password] || self.class.password || self.class.ooor.config[:password]; end
   
   #try to wrap the object context inside the query.
   def rpc_execute(method, *args)
 	if args[-1].is_a? Hash
-      args[-1] = self.class.ooor.global_context.merge(object_session[:context]).merge(args[-1])
-    elsif args.is_a?(Array)
-      args += [self.class.ooor.global_context.merge(object_session[:context])]
+    args[-1] = self.class.ooor.global_context.merge(object_session[:context]).merge(args[-1])
+  elsif args.is_a?(Array)
+    args += [self.class.ooor.global_context.merge(object_session[:context])]
 	end
-	  db = object_session[:database] || self.class.database || self.class.ooor.config[:database]
-	  uid = object_session[:user_id] || self.class.user_id || self.class.ooor.config[:user_id]
-	  pass = object_session[:password] || self.class.password || self.class.ooor.config[:password]
-	  self.class.rpc_execute_with_all(db, uid, pass, self.class.openerp_model, method, *args)
+    self.class.rpc_execute_with_all(object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
   end
 
   def cast_relations_to_openerp!
@@ -422,7 +423,7 @@ class OpenObjectResource < ActiveResource::Base
 
   #Generic OpenERP on_change method
   def on_change(on_change_method, field_name, field_value, *args)
-    result = self.class.rpc_execute(on_change_method, self.id && [id] || [], *args) #OpenERP doesn't accept context systematically in on_change events unfortunately
+    result = self.class.rpc_execute_with_all(object_db, object_uid, object_pass, self.class.openerp_model, on_change_method, self.id && [id] || [], *args) #OpenERP doesn't accept context systematically in on_change events unfortunately
     if result["warning"]
       self.class.logger.info result["warning"]["title"]
       self.class.logger.info result["warning"]["message"]
@@ -432,7 +433,7 @@ class OpenObjectResource < ActiveResource::Base
 
   #wrapper for OpenERP exec_workflow Business Process Management engine
   def wkf_action(action, context={})
-    self.class.rpc_exec_workflow(action, self.id) #FIXME looks like OpenERP exec_workflow doesn't accept context but it might be a bug
+    self.class.rpc_exec_workflow_with_all(object_db, object_uid, object_pass, self.class.openerp_model, action, self.id) #FIXME looks like OpenERP exec_workflow doesn't accept context but it might be a bug
     reload_from_record!(self.class.find(self.id, :context => context))
   end
 
