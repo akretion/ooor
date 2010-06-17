@@ -20,7 +20,6 @@ require 'rubygems'
 require 'active_resource'
 require 'app/ui/form_model'
 require 'app/models/uml'
-require 'set'
 
 class OpenObjectResource < ActiveResource::Base
   include UML
