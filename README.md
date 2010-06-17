@@ -309,6 +309,18 @@ However you might want to change that. 2 solutions:
 [Finger in the nose multi-OpenERP instances migration/management with OOOR](http://wiki.github.com/rvalyi/ooor/howto-connect-ooor-to-multiple-openerp-instance-easy-data-migration)
 
 
+Detailed API in the automated test suite
+------------
+
+OOOR ships with an [RSpec](http://rspec.info/) automated unit test suite to avoid regressions. This is also the place
+where you can easily read the exact API detail to master every OOOR features.
+You can read the test suite here: [http://github.com/rvalyi/ooor/blob/master/spec/ooor_spec.rb](http://github.com/rvalyi/ooor/blob/master/spec/ooor_spec.rb)
+Of course this also shows you can use RSpec to specify and test your OpenERP modules.
+OOOR is actually used to test OpenERP complex features in a specification language business experts can read and even write!
+In this case [CampToCamp](http://www.camptocamp.com/) used the famous [Cucumber functionnal test suite](http://cukes.info/) in the [OERPScenario project](https://launchpad.net/oerpscenario).
+
+
+
 FAQ
 ------------
 
