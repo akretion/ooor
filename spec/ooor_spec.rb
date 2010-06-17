@@ -100,6 +100,11 @@ describe Ooor do
       it "should mimic ActiveResource scoping" do
         partners = ResPartner.find(:all, :params => {:supplier => true})
         partners.should_not be_empty
+	end
+	
+      it "should mimic ActiveResource scoping with first" do
+        partner = ResPartner.find(:first, :params => {:supplier => true})
+        partners.should be_kind_of ResPartner
       end
 
       it "should support OpenERP context in finders" do
@@ -141,7 +146,7 @@ describe Ooor do
       end
 
       it "should read many2many relations" do
-        SaleOrder.find(1).order_line[1].invoice_ids.should be_kind_of(Array)
+        SaleOrder.find(1).order_line[1].invoice_lines.should be_kind_of(Array)
       end
 
       it "should read polymorphic references" do
