@@ -100,11 +100,11 @@ describe Ooor do
       it "should mimic ActiveResource scoping" do
         partners = ResPartner.find(:all, :params => {:supplier => true})
         partners.should_not be_empty
-	end
+      end
 	
       it "should mimic ActiveResource scoping with first" do
-        partner = ResPartner.find(:first, :params => {:supplier => true})
-        partners.should be_kind_of ResPartner
+        partner = ResPartner.find(:first, :params => {:customer => true})
+        partner.should be_kind_of ResPartner
       end
 
       it "should support OpenERP context in finders" do
@@ -141,11 +141,16 @@ describe Ooor do
       it "should read one2many relations" do
         o = SaleOrder.find(1)
         o.order_line.each do |line|
-          line.should be_kind_of(SaleOrderLine)
+        line.should be_kind_of(SaleOrderLine)
         end
       end
 
       it "should read many2many relations" do
+        s = SaleOrder.find(1)
+        s.order_policy = 'manual'
+        s.save
+        s.wkf_action('order_confirm')
+        s.wkf_action('manual_invoice')
         SaleOrder.find(1).order_line[1].invoice_lines.should be_kind_of(Array)
       end
 
@@ -165,20 +170,20 @@ describe Ooor do
       end
 
       it "should support the context at object creation" do
-		p = ProductProduct.new({:name => "testProduct1", :categ_id => 1}, false, {:lang => 'en_US', :user_id=>1, :password => 'admin'})
-		p.object_session[:context][:lang] .should == 'en_US'
-		p.object_session[:user_id].should == 1
-		p.object_session[:password].should == "admin"
-		p.save
-	  end
+        p = ProductProduct.new({:name => "testProduct1", :categ_id => 1}, false, {:lang => 'en_US', :user_id=>1, :password => 'admin'})
+        p.object_session[:context][:lang] .should == 'en_US'
+        p.object_session[:user_id].should == 1
+        p.object_session[:password].should == "admin"
+        p.save
+      end
 
       it "should support context when instanciating collections" do
-		products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US', :user_id=>1, :password => 'admin'})
-		p = products[0]
-		p.object_session[:context][:lang] .should == 'en_US'
-		p.object_session[:user_id].should == 1
-		p.object_session[:password].should == "admin"
-		p.save
+        products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US', :user_id=>1, :password => 'admin'})
+        p = products[0]
+        p.object_session[:context][:lang] .should == 'en_US'
+        p.object_session[:user_id].should == 1
+        p.object_session[:password].should == "admin"
+        p.save
       end
 
       it "should be able to create an order" do
@@ -215,7 +220,8 @@ describe Ooor do
       end
 
       it "should skipped inherited default fields properly, for instance at product variant creation" do
-        ProductProduct.create(:product_tmpl_id => 25, :code => 'OOOR variant').should be_kind_of(ProductProduct)
+        #note that we force [] here for the default_get_fields otherwise OpenERP will blows up while trying to write in the product template!
+        create({:product_tmpl_id => 25, :code => 'OOOR variant'}, {}, []).should be_kind_of(ProductProduct)
       end
     end
 
