@@ -66,7 +66,6 @@ class Ooor
     @global_context = @config[:global_context] || {}
     global_login(@config[:username] || 'admin', @config[:password] || 'admin')
     @ir_model_class = define_openerp_model({'model' => 'ir.model'}, @config[:scope_prefix])
-    #define_openerp_model("ir.model.fields", @config[:scope_prefix])
     if to_load_models #we load only a customized subset of the OpenERP models
       model_ids = @ir_model_class.search([['model', 'in', to_load_models]])
     else #we load all the models
