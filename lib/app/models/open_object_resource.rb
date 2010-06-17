@@ -40,31 +40,31 @@ class OpenObjectResource < ActiveResource::Base
     #similar to Object#const_get but for OpenERP model key
     def const_get(model_key)
       klass_name = class_name_from_model_key(model_key)
-      klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : @ooor.define_openerp_model(model_key, self.scope_prefix)
+      klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : @ooor.define_openerp_model({'model' => model_key}, self.scope_prefix)
       klass.reload_fields_definition unless klass.fields_defined
       klass
     end
 
-	def create(attributes = {}, context={}, default_get_list=false, reload=true)
+    def create(attributes = {}, context={}, default_get_list=false, reload=true)
        self.new(attributes, default_get_list, context).tap { |resource| resource.save(context, reload) }
     end
 
     def reload_fields_definition(force = false)
-      if not (self.to_s.match('IrModel') || self.to_s.match('IrModelFields')) and (force or not @fields_defined)#TODO have a way to force reloading @field_ids too eventually
-        fields = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get('IrModelFields').find(@field_ids)
+      if force or not @fields_defined
+        @fields_defined = true
         @fields = {}
-        fields.each do |field|
-          case field.attributes['ttype']
+        rpc_execute("fields_get").each do |k, field|
+          case field['type']
           when 'many2one'
-            @many2one_relations[field.attributes['name']] = field
+            @many2one_relations[k] = field
           when 'one2many'
-            @one2many_relations[field.attributes['name']] = field
+            @one2many_relations[k] = field
           when 'many2many'
-            @many2many_relations[field.attributes['name']] = field
+            @many2many_relations[k] = field
           when 'reference'
-            @polymorphic_m2o_relations[field.attributes['name']] = field
+            @polymorphic_m2o_relations[k] = field
           else
-            @fields[field.attributes['name']] = field
+            @fields[k] = field
           end
         end
         @relations_keys = @many2one_relations.keys + @one2many_relations.keys + @many2many_relations.keys + @polymorphic_m2o_relations.keys
@@ -79,7 +79,6 @@ class OpenObjectResource < ActiveResource::Base
         end
         logger.info "#{fields.size} fields loaded in model #{self.class}"
       end
-      @fields_defined = true
     end
 
     # ******************** remote communication ********************
@@ -182,7 +181,7 @@ class OpenObjectResource < ActiveResource::Base
       def cast_map_to_ruby!(map)
         map.each do |k, v|
           if self.fields[k] && v.is_a?(String) && !v.empty?
-            case self.fields[k].ttype
+            case self.fields[k]['type']
               when 'datetime'
                 map[k] = Time.parse(v)
               when 'date'
@@ -315,7 +314,7 @@ class OpenObjectResource < ActiveResource::Base
         @relations[k] = new_rel
       else
         self.class.many2one_relations.each do |k2, field| #try to cast the relation to an inherited o2m or m2m:
-          linked_class = self.class.const_get(field.relation)
+          linked_class = self.class.const_get(field['relation'])
           new_rel = self.cast_relation(k, v, linked_class.one2many_relations, linked_class.many2many_relations)
           @relations[k] = new_rel and break if new_rel
         end
@@ -356,13 +355,12 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   def display_available_fields
-    msg = "\n*** DIRECTLY AVAILABLE FIELDS ON OBJECT #{self} ARE: ***"
-    msg << "\n\n" << self.class.fields.sort {|a,b| a[1].ttype<=>b[1].ttype}.map {|i| "#{i[1].ttype} --- #{i[0]}"}.join("\n")
-    msg << "\n\n" << self.class.many2one_relations.map {|k, v| "many2one --- #{v.relation} --- #{k}"}.join("\n")
-    msg << "\n\n" << self.class.one2many_relations.map {|k, v| "one2many --- #{v.relation} --- #{k}"}.join("\n")
-    msg << "\n\n" << self.class.many2many_relations.map {|k, v| "many2many --- #{v.relation} --- #{k}"}.join("\n")
-    msg << "\n\n" << self.class.polymorphic_m2o_relations.map {|k, v| "polymorphic_m2o --- #{v.relation} --- #{k}"}.join("\n")
-    msg << "\n\nYOU CAN ALSO USE THE INHERITED FIELDS FROM THE INHERITANCE MANY2ONE RELATIONS OR THE OBJECT METHODS...\n\n"
+    msg = "\n*** AVAILABLE FIELDS ON OBJECT #{self} ARE: ***"
+    msg << "\n\n" << self.class.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
+    msg << "\n\n" << self.class.many2one_relations.map {|k, v| "many2one --- #{v['relation']} --- #{k}"}.join("\n")
+    msg << "\n\n" << self.class.one2many_relations.map {|k, v| "one2many --- #{v['relation']} --- #{k}"}.join("\n")
+    msg << "\n\n" << self.class.many2many_relations.map {|k, v| "many2many --- #{v['relation']} --- #{k}"}.join("\n")
+    msg << "\n\n" << self.class.polymorphic_m2o_relations.map {|k, v| "polymorphic_m2o --- #{v['relation']} --- #{k}"}.join("\n")
     self.class.logger.debug msg
   end
 
@@ -372,22 +370,19 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   #takes care of reading OpenERP default field values.
-  #FIXME: until OpenObject explicits inheritances, we load all default values of all related fields, unless specified in default_get_list
   def initialize(attributes = {}, default_get_list=false, context={})
     @attributes = {}
     @prefix_options = {}
     @ir_model_data_id = attributes.delete(:ir_model_data_id)
-	@object_session = {}
-	@object_session[:user_id] = context.delete :user_id
-	@object_session[:database] = context.delete :database
-	@object_session[:password] = context.delete :password
-	@object_session[:context] = context
-    if ['ir.model', 'ir.model.fields'].index(self.class.openerp_model) || default_get_list == []
+    @object_session = {}
+    @object_session[:user_id] = context.delete :user_id
+    @object_session[:database] = context.delete :database
+    @object_session[:password] = context.delete :password
+    @object_session[:context] = context
+    if default_get_list == []
       load(attributes)
     else
-      self.class.reload_fields_definition() unless self.class.fields_defined
-      default_get_list ||= Set.new(self.class.many2one_relations.reject {|k, v| attributes.keys.index(k.to_sym)}.collect {|k, field| self.class.const_get(field.relation).fields.keys}.flatten + self.class.fields.keys).to_a
-      load(rpc_execute("default_get", default_get_list, @object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!))
+      load(rpc_execute("default_get", rpc_execute("fields_get").keys, @object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!))
     end
   end
 
@@ -450,11 +445,11 @@ class OpenObjectResource < ActiveResource::Base
   def relationnal_result(method_name, *arguments)
     self.class.reload_fields_definition unless self.class.fields_defined
     if self.class.many2one_relations.has_key?(method_name)
-      load_relation(self.class.many2one_relations[method_name].relation, @relations[method_name][0], *arguments)
+      load_relation(self.class.many2one_relations[method_name]['relation'], @relations[method_name][0], *arguments)
     elsif self.class.one2many_relations.has_key?(method_name)
-      load_relation(self.class.one2many_relations[method_name].relation, @relations[method_name], *arguments)
+      load_relation(self.class.one2many_relations[method_name]['relation'], @relations[method_name], *arguments)
     elsif self.class.many2many_relations.has_key?(method_name)
-      load_relation(self.class.many2many_relations[method_name].relation, @relations[method_name], *arguments)
+      load_relation(self.class.many2many_relations[method_name]['relation'], @relations[method_name], *arguments)
     elsif self.class.polymorphic_m2o_relations.has_key?(method_name)
       values = @relations[method_name].split(',')
       load_relation(values[0], values[1].to_i, *arguments)
@@ -473,13 +468,13 @@ class OpenObjectResource < ActiveResource::Base
     self.class.reload_fields_definition() unless self.class.fields_defined
 
     if is_assign
-      known_relations = self.class.relations_keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field.relation).relations_keys}.flatten
+      known_relations = self.class.relations_keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field['relation']).relations_keys}.flatten
       if known_relations.index(method_key)
         @relations[method_key] = arguments[0]
         @loaded_relations[method_key] = arguments[0]
         return
       end
-      know_fields = self.class.fields.keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field.relation).fields.keys}.flatten
+      know_fields = self.class.fields.keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field['relation']).fields.keys}.flatten
       @attributes[method_key] = arguments[0] and return if know_fields.index(method_key)
     end
 
@@ -491,24 +486,6 @@ class OpenObjectResource < ActiveResource::Base
     end
     result = relationnal_result(method_name, *arguments)
     @loaded_relations[method_name] = result and return result if result
-
-    #maybe the relation is inherited or could be inferred from a related field
-    self.class.many2one_relations.each do |k, field| #TODO could be recursive eventually
-      if @relations[k] #we only care if instance has a relation
-        related_model = self.class.const_get(field.relation)
-        related_model.reload_fields_definition() unless related_model.fields_defined
-        if related_model.relations_keys.index(method_key)
-          @loaded_relations[k] ||= load_relation(field.relation, @relations[k][0], *arguments)
-          model = @loaded_relations[k]
-          model.loaded_relations[method_key] ||= model.relationnal_result(method_key, *arguments)
-          return model.loaded_relations[method_key] if model.loaded_relations[method_key]
-        end
-      elsif is_assign
-        klazz = self.class.const_get(field.relation)
-        @relations[method_key] = arguments[0] and return if klazz.relations_keys.index(method_key)
-        @attributes[method_key] = arguments[0] and return if klazz.fields.keys.index(method_key)
-      end
-    end
 
     if id
       arguments += [{}] unless arguments.last.is_a?(Hash)

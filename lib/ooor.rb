@@ -65,22 +65,19 @@ class Ooor
   def load_models(to_load_models=@config[:models])
     @global_context = @config[:global_context] || {}
     global_login(@config[:username] || 'admin', @config[:password] || 'admin')
-    @ir_model_class = define_openerp_model("ir.model", @config[:scope_prefix])
-    define_openerp_model("ir.model.fields", @config[:scope_prefix])
+    @ir_model_class = define_openerp_model({'model' => 'ir.model'}, @config[:scope_prefix])
+    #define_openerp_model("ir.model.fields", @config[:scope_prefix])
     if to_load_models #we load only a customized subset of the OpenERP models
-      models = @ir_model_class.find(:all, :domain => [['model', 'in', to_load_models]])
+      model_ids = @ir_model_class.search([['model', 'in', to_load_models]])
     else #we load all the models
-      models = @ir_model_class.find(:all).reject {|model| ["ir.model", "ir.model.fields"].index model.model}
+      model_ids = @ir_model_class.search() - [1, 2]
     end
+    models = @ir_model_class.read(model_ids, ['name', 'model', 'id', 'info', 'state', 'field_id', 'access_ids'])
     @global_context.merge!({}).merge!(@config[:global_context] || {})
     models.each {|openerp_model| define_openerp_model(openerp_model, @config[:scope_prefix])}
   end
 
-  def define_openerp_model(arg, scope_prefix=nil, url=nil, database=nil, user_id=nil, pass=nil)
-    if arg.is_a?(String) && arg != 'ir.model' && arg != 'ir.model.fields'
-      arg = @ir_model_class.find(:first, :domain => [['model', '=', arg]])
-    end
-    param = (arg.is_a? OpenObjectResource) ? arg.attributes.merge(arg.relations) : {'model' => arg}
+  def define_openerp_model(param, scope_prefix=nil, url=nil, database=nil, user_id=nil, pass=nil)
     klass = Class.new(OpenObjectResource)
     klass.ooor = self
     klass.site = url || @base_url

@@ -34,7 +34,7 @@ module UML
   def self.display_fields(clazz)
     s = ""
     clazz.reload_fields_definition if clazz.fields.empty?
-    clazz.fields.sort {|a,b| a[1].ttype <=> b[1].ttype}.each {|i| s << "+ #{i[1].ttype} : #{i[0]}\\l\\n"}
+    clazz.fields.sort {|a,b| a[1]['type'] <=> b[1]['type']}.each {|i| s << "+ #{i[1]['type']} : #{i[0]}\\l\\n"}
     s
   end
 
@@ -187,8 +187,8 @@ module UML
   private
 
   def self.get_target(is_reverse, local, enabled_targets, field, model)
-    if (is_reverse && !local) || (!enabled_targets) || enabled_targets.index(field.relation)
-      model.const_get(field.relation)
+    if (is_reverse && !local) || (!enabled_targets) || enabled_targets.index(field['relation'])
+      model.const_get(field['relation'])
     else
       false
     end
