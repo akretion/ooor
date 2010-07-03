@@ -6,8 +6,7 @@ development:
   database: database_name                #the OpenERP database you want to connect to
   username: admin
   password: admin
-  #comment the following line if you want to load ALL the available models (slower startup), or complete it with all the OpenERP models you want to be loaded
-  models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice]
+  #models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice] #you can allow only some models if you like
   bootstrap: true   #true if you want to load OpenObject models (will hit OpenERP server) at startup; else use Ooor.reload!(lambda {}) to reload the Ooor models at any time
   #log_level: 0
   #global_context:
@@ -18,7 +17,6 @@ test:
   database: database_name
   username: admin
   password: admin
-  models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice]
   bootstrap: true
 
 production:
@@ -26,5 +24,4 @@ production:
   database: database_name
   username: admin
   password: admin
-  models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice]
   bootstrap: true
