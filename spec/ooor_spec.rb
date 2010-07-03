@@ -221,7 +221,7 @@ describe Ooor do
 
       it "should skipped inherited default fields properly, for instance at product variant creation" do
         #note that we force [] here for the default_get_fields otherwise OpenERP will blows up while trying to write in the product template!
-        create({:product_tmpl_id => 25, :code => 'OOOR variant'}, {}, []).should be_kind_of(ProductProduct)
+        ProductProduct.create({:product_tmpl_id => 25, :code => 'OOOR variant'}, {}, []).should be_kind_of(ProductProduct)
       end
     end
 
