@@ -47,7 +47,7 @@ class Ooor
   def initialize(config, env=false)
     @config = config.is_a?(String) ? Ooor.load_config(config, env) : config
     @config.symbolize_keys!
-    @logger = ((defined?(Rails) && $0 != 'irb' || config[:force_rails_logger]) ? Rails.logger : Logger.new(STDOUT))
+    @logger = ((defined?(Rails) && $0 != 'irb' || config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
     @logger.level = config[:log_level] if config[:log_level]
     OpenObjectResource.logger = @logger
     @base_url = config[:url].gsub(/\/$/,'')
