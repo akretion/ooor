@@ -44,11 +44,17 @@ But OOOR makes it straightforward to use a standard OpenERP models as your persi
 
 An other reason why you might want to use OOOR is because you would like to code essentially a Rails or say web application
 (because you know it better, because the framework is cleaner or because you will reuse something, possibly Java libraries though JRuby)
-but you still want to benefit from OpenERP features.
+but you still want to benefit from OpenERP features. Notice that despite its name OOOR doens't hold a dependency upon Rails anymore.
 
 Yet an other typicall use case would be to test your OpenERP application/module using Rails best of bread BDD Ruby frameworks such as RSpec or Cucumber.
+We use RSpec to test OOOR againt OpenERP [here](http://github.com/rvalyi/ooor/blob/master/spec/ooor_spec.rb) and thanks to the initiative of CampToCamp, the OpenERP community tests OpenERP business features extensively
+using Cucumber in [OEPScenario](http://launchpad.net/oerpscenario).
 
-Finally you might also want to use OOOR simply to expose your OpenERP through REST to other consumer applications. Since OOOR just does that too out of the box.
+An other usage of OOOR, is it ability to bridge the OpenERP Python world and and the Java world thanks to its JRuby compatibility. This is especially useful in to do extensive "Data Integration" with OpenERP and benefit from the
+most powerful Java based ETL's. The main project here is [TerminatOOOR](http://github.com/rvalyi/terminatooor), a Pentaho ETL Kettle 4 plugin allowing to push/pull data into/from OpenERP with an incomparable flexibility and yet benefit
+all standard ETL features, including the AgileBI OLAP business intelligence plugin.
+
+Finally you might also want to use OOOR simply to expose your OpenERP through REST to other consumer applications using [the OOOREST project](http://github.com/rvalyi/ooorest).
 
 
 
@@ -56,9 +62,9 @@ How?
 ------------
 
 OpenERP is a Python based open source ERP. Every action in OpenERP is actually invokable as a webservice (SOA orientation, close to being RESTful).
-OOOR just takes advantage of brings this power your favorite web development tool - Rails - with OpenERP domain objects and business methods.
+OOOR just takes advantage of it.
 
-OOOR aims at being a very simple piece of code (< 500 lines of code; e.g no bug, easy to evolve) adhering to Rails standards.
+OOOR aims at being a very simple piece of code (< 500 lines of code; e.g no bug, [heavility tested](http://github.com/rvalyi/ooor/blob/master/spec/ooor_spec.rb), easy to evolve) adhering to Rails standards.
 So instead of re-inventing the wheel, OOOR basically just sits on the top of Rails [ActiveResource::Base](http://api.rubyonrails.org/classes/ActiveResource/Base.html), the standard way of remoting you ActiveRecord Rails models with REST.
 
 Remember, ActiveResource is actually simpler than [ActiveRecord](http://api.rubyonrails.org/classes/ActiveRecord/Base.html). It's aimed at remoting ANY object model, not necessarily ActiveRecord models.
@@ -66,11 +72,19 @@ So ActiveResource is only a subset of ActiveRecord, sharing the common denominat
 
 OOOR implements ActiveResource public API almost fully. It means that you can remotely work on any OpenERP model using [the standard ActiveResource API](http://api.rubyonrails.org/classes/ActiveResource/Base.html).
 
-But, OOOR goes actually a bit further: it does implements model associations (one2many, many2many, many2one, single table inheritance).
+But, OOOR goes actually a bit further: it does implements model associations (one2many, many2many, many2one, single table inheritance, polymorphic associations...).
 Indeed, when loading the OpenERP models, we load the relational meta-model using OpenERP standard datamodel introspection services.
 Then we cache that relational model and use it in OpenObjectResource.method_missing to load associations as requested.
 
 OOOR also extends ActiveResource a bit with special request parameters (like :domain or :context) that will just map smoothly to the OpenERP native API, see API.
+
+
+Trying it simply
+------------
+
+If you have Java 1.6+ installed, then the easiest way to tryout OOOR might be to download the [TerminatOOOR zip](http://github.com/rvalyi/terminatooor/downloads)
+and double-click on jruby-ooor or launch it by command line with java -jar jruby-ooor.jar: it will launch an OOOR console with helpful auto-completion (hit 'tab') on OpenERP business objects.
+
 
 
 Installation
@@ -95,6 +109,8 @@ Let's test OOOR in an irb console (irb command):
 This should load all your OpenERP models into Ruby proxy Activeresource objects. Of course there are option to load only some models.
 Let's try to retrieve the user with id 1:
     $ ResUsers.find(1)
+	
+(in case you have an error like "no such file to load -- net/https", then on Debian/Ubuntu, you might need to do before: apt-get install libopenssl-ruby)
     
     
 ### (J)Ruby on Rails application:
@@ -115,8 +131,8 @@ You can then use all the OOOR API upon all loaded OpenERP models in your regular
 A good way to start playing with OOOR is inside the console, using:
     $ ruby script/console #or jruby script/console on JRuby of course
 
-Note: when boostraping Ooor in a Rails application, the default Ooor instance is stored in the OOOR constant.
-So for instance you can know all loaded models doing OOOR.all_loaded_models; this is used by [OooREST](http://github.com/rvalyi/ooorest) to register all the REST controllers.
+Note: when boostraping Ooor in a Rails application, the default Ooor instance is stored in the Ooor.default_ooor variable.
+So for instance you can know all loaded models doing Ooor.default_ooor variable.loaded_models; this is used by [OooREST](http://github.com/rvalyi/ooorest) to register all the REST controllers.
 
 Enabling REST HTTP routes to your OpenERP models:
 The REST Controller layer of OOOR has been moved as a thin separate gem called [OooREST](http://github.com/rvalyi/ooorest).
@@ -273,7 +289,7 @@ Call old style wizards:
     $ TODO test and document new osv_memory wizards API
 
 
-Absolute OpeNERP ids aka ir_model_data:
+Absolute OpenERP ids aka ir_model_data:
 
 just like Rails fixtures, OpenERP supports absolute ids for its records, especially those imported from XML or CSV.
 We are here speaking about the string id of the XML or CSV records, eventually prefixed by the module name.
