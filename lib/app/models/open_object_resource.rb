@@ -219,7 +219,7 @@ class OpenObjectResource < ActiveResource::Base
           domain.push [k.to_s, '=', v]
         end
       end
-      ids = rpc_execute('search', domain, context)
+      ids = rpc_execute('search', domain, options[:offset] || 0, options[:limit] || false,  options[:order] || false, context)
       !ids.empty? && ids[0].is_a?(Integer) && find_single(ids, options) || []
     end
 
