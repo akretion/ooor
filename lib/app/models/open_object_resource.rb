@@ -381,7 +381,8 @@ class OpenObjectResource < ActiveResource::Base
     if default_get_list == []
       load(attributes)
     else
-      load(rpc_execute("default_get", default_get_list || self.class.fields && self.class.fields.keys || rpc_execute("fields_get").keys, @object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!))
+      self.class.reload_fields_definition()
+      load(rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.relations_keys, @object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!))
     end
   end
 
