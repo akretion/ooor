@@ -110,6 +110,8 @@ describe Ooor do
       it "should support OpenERP context in finders" do
         p = ProductProduct.find(1, :context => {:my_key => 'value'})
         p.should_not be_nil
+        products = ProductProduct.find(:all, :context => {:lang => 'es_ES'})
+        products.should be_kind_of(Array)
       end
 
       it "should support OpenERP search method" do
@@ -180,7 +182,7 @@ describe Ooor do
       it "should support context when instanciating collections" do
         products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US', :user_id=>1, :password => 'admin'})
         p = products[0]
-        p.object_session[:context][:lang] .should == 'en_US'
+        p.object_session[:context][:lang].should == 'en_US'
         p.object_session[:user_id].should == 1
         p.object_session[:password].should == "admin"
         p.save
@@ -239,6 +241,11 @@ describe Ooor do
     end
 
     describe "Relations assignations" do
+      it "should be able to assign many2one relations on new" do
+        s = SaleOrder.new(:partner_id => 2)
+        s.partner_id.id.should == 2
+      end
+
       it "should be able to do product.taxes_id = [1,2]" do
         p = ProductProduct.find(1)
         p.taxes_id = [1, 2]
