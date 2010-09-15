@@ -40,7 +40,7 @@ class OpenObjectResource < ActiveResource::Base
     def const_get(model_key)
       klass_name = class_name_from_model_key(model_key)
       klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : @ooor.define_openerp_model({'model' => model_key}, self.scope_prefix)
-      klass.reload_fields_definition unless klass.fields_defined
+      klass.reload_fields_definition()
       klass
     end
 
@@ -175,7 +175,7 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def cast_answer_to_ruby!(answer)
-      reload_fields_definition() unless self.fields_defined
+      reload_fields_definition()
 
       def cast_map_to_ruby!(map)
         map.each do |k, v|
@@ -324,7 +324,7 @@ class OpenObjectResource < ActiveResource::Base
   def reload_from_record!(record) load(record.attributes, record.relations) end
 
   def load(attributes, relations={})#an attribute might actually be a relation too, will be determined here
-    self.class.reload_fields_definition() unless self.class.fields_defined
+    self.class.reload_fields_definition()
     raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
     @prefix_options, attributes = split_options(attributes)
     @relations = relations
@@ -442,7 +442,7 @@ class OpenObjectResource < ActiveResource::Base
   # ******************** fake associations like much like ActiveRecord according to the cached OpenERP data model ********************
 
   def relationnal_result(method_name, *arguments)
-    self.class.reload_fields_definition unless self.class.fields_defined
+    self.class.reload_fields_definition()
     if self.class.many2one_relations.has_key?(method_name)
       load_relation(self.class.many2one_relations[method_name]['relation'], @relations[method_name][0], *arguments)
     elsif self.class.one2many_relations.has_key?(method_name)
@@ -464,7 +464,7 @@ class OpenObjectResource < ActiveResource::Base
     return super if attributes.has_key?(method_key)
     return rpc_execute(method_name, *arguments) unless arguments.empty? || is_assign
 
-    self.class.reload_fields_definition() unless self.class.fields_defined
+    self.class.reload_fields_definition()
 
     if is_assign
       known_relations = self.class.relations_keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field['relation']).relations_keys}.flatten
