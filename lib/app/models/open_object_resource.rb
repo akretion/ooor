@@ -398,7 +398,7 @@ class OpenObjectResource < ActiveResource::Base
 
   #compatible with the Rails way but also supports OpenERP context
   def update(context={}, reload=true)
-    rpc_execute('write', self.id, to_openerp_hash!, context)
+    rpc_execute('write', [self.id], to_openerp_hash!, context)
     reload_from_record!(self.class.find(self.id, :context => context)) if reload
   end
 
