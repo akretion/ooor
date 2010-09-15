@@ -444,7 +444,7 @@ class OpenObjectResource < ActiveResource::Base
   def relationnal_result(method_name, *arguments)
     self.class.reload_fields_definition()
     if self.class.many2one_relations.has_key?(method_name)
-      load_relation(self.class.many2one_relations[method_name]['relation'], @relations[method_name][0], *arguments)
+      load_relation(self.class.many2one_relations[method_name]['relation'], @relations[method_name].is_a?(Integer) && @relations[method_name] || @relations[method_name][0], *arguments)
     elsif self.class.one2many_relations.has_key?(method_name)
       load_relation(self.class.one2many_relations[method_name]['relation'], @relations[method_name], *arguments)
     elsif self.class.many2many_relations.has_key?(method_name)
