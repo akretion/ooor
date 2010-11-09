@@ -16,7 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 module UML
-  #usage: UML.print_uml or with options: UML.print_uml(:all, : detailed) or MyOpenObjectResource.print_uml or UML.print_uml([list_of_classes], :all, :detailed)
+  #usage: UML.print_uml or with options: UML.print_uml(:all, :detailed) or MyOpenObjectResource.print_uml or UML.print_uml([list_of_classes], :all, :detailed)
 
   def self.included(base) base.extend(ClassMethods) end
 
