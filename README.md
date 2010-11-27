@@ -105,7 +105,7 @@ In all case, you first need to install the ooor gem:
 Let's test OOOR in an irb console (irb command):
     $ require 'rubygems'
     $ require 'ooor'
-    $ Ooor.new({:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
+    $ Ooor.new(:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin')
 This should load all your OpenERP models into Ruby proxy Activeresource objects. Of course there are option to load only some models.
 Let's try to retrieve the user with id 1:
     $ ResUsers.find(1)
@@ -349,14 +349,11 @@ Then create indents in the log before doing some action and watch your logs care
 ### How can I load/reload my OpenERP models into my Ruby application?
 
 You can load/reload your models at any time (even in console), creating a new Ooor instance that will override the class definitions:
-    $ Ooor.new({:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
+    $ ooor_instance = Ooor.new(:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin')
 or using a config YAML file instead:
-    $ Ooor.new("config/ooor.yml")
-
-### Do I need to load all the OpenERP models in my Ruby application?
-
-You can load only some OpenERP models (not all), which is faster and better in term of memory/security:
-    $ Ooor.reload!({:models => [res.partner, product.template, product.product], :url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin'})
+    $ ooor_instance = Ooor.new("config/ooor.yml")
+Alternatively, you can load/reload some specific OpenERP models only:
+    $ ooor_instance.load_models(['product.product', 'res.partner'])
 
 ### Isn't OOOR slow?
 
