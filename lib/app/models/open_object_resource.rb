@@ -147,8 +147,9 @@ class OpenObjectResource < ActiveResource::Base
           raise e
         end
         raise e unless openerp_error_hash.is_a? Hash
-        logger.error "*********** OpenERP Server ERROR:\n#{openerp_error_hash["faultString"]}***********"
-        raise RuntimeError.new('OpenERP server error')
+	    error_msg = "*********** OpenERP Server ERROR:\n#{openerp_error_hash["faultString"]}***********"
+        logger.error error_msg
+        raise RuntimeError.new(error_msg)
     end
 
     def clean_request_args!(args)
