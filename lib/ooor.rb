@@ -86,7 +86,8 @@ class Ooor
     klass.openerp_model = param['model']
     klass.openerp_id = url || param['id']
     klass.info = (param['info'] || '').gsub("'",' ')
-    klass.name = param['name']
+    model_class_name = klass.class_name_from_model_key
+    klass.name = model_class_name
     klass.state = param['state']
     klass.field_ids = param['field_id']
     klass.access_ids = param['access_ids']
@@ -97,7 +98,6 @@ class Ooor
     klass.relations_keys = []
     klass.fields = {}
     klass.scope_prefix = scope_prefix
-    model_class_name = klass.class_name_from_model_key
     @logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{param['model']} model"
     (scope_prefix ? Object.const_get(scope_prefix) : Object).const_set(model_class_name, klass)
     @loaded_models.push(klass)
