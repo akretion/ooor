@@ -107,6 +107,12 @@ class Ooor
 end
 
 if defined?(Rails) #Optionnal autoload in Rails:
-  Ooor.default_config = Ooor.load_config(false, RAILS_ENV)
-  Ooor.default_ooor = Ooor.new(Ooor.default_config) if Ooor.default_config['bootstrap']
+require 'rails'
+
+  class Railtie < Rails::Railtie
+    initializer "ooor.middleware" do |app|
+      Ooor.default_config = Ooor.load_config(false, RAILS_ENV)
+      Ooor.default_ooor = Ooor.new(Ooor.default_config) if Ooor.default_config['bootstrap']
+    end
+  end	
 end
