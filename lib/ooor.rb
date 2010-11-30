@@ -34,13 +34,13 @@ class Ooor
 
   #load the custom configuration
   def self.load_config(config_file=nil, env=nil)
-    config_file ||= defined?(RAILS_ROOT) && "#{RAILS_ROOT}/config/ooor.yml" || 'ooor.yml'
+    config_file ||= defined?(Rails.root) && "#{Rails.root}/config/ooor.yml" || 'ooor.yml'
     @config = YAML.load_file(config_file)[env || 'development']
   rescue SystemCallError
     @logger.error """failed to load OOOR yaml configuration file.
        make sure your app has a #{config_file} file correctly set up
        if not, just copy/paste the default ooor.yml file from the OOOR Gem
-       to #{RAILS_ROOT}/config/ooor.yml and customize it properly\n\n"""
+       to #{Rails.root}/config/ooor.yml and customize it properly\n\n"""
     raise
   end
 
