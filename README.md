@@ -85,6 +85,8 @@ Trying it simply
 If you have Java 1.6+ installed, then the easiest way to tryout OOOR might be to download the [TerminatOOOR zip](http://github.com/rvalyi/terminatooor/downloads)
 and double-click on jruby-ooor.jar or launch it by command line with java -jar jruby-ooor.jar: it will launch an OOOR console with helpful auto-completion (hit 'tab') on OpenERP business objects.
 
+You can read [http://www.akretion.com/en/blog/2010/01/18/introducing-ooor---openobject-on-rails-drivingrequesting-your-openerp-became-a-child-play/](an introduction to OOOR on Akretion's blog).
+
 
 
 Installation
@@ -115,27 +117,7 @@ Let's try to retrieve the user with id 1:
     
 ### (J)Ruby on Rails application:
 
-we assume you created a working Rails application, in your config/environment.rb
-Inside the Rails::Initializer.run do |config| statement, paste the following gem dependency:
-
-    $ config.gem "ooor"
-
-Now, you should also create a ooor.yml config file in your config directory
-You can copy/paste [the default ooor.yml from the OOOR gem](http://github.com/rvalyi/ooor/blob/master/ooor.yml)
-and then adapt it to your OpenERP server environment.
-If you set the 'bootstrap' parameter to true, OpenERP models will be loaded at the Rails startup.
-That the easiest option to get started while you might not want that in production.
-
-Then just start your Rails application, your OpenERP models will be loaded as you'll see in the Rails log.
-You can then use all the OOOR API upon all loaded OpenERP models in your regular Rails code (see API usage section).
-A good way to start playing with OOOR is inside the console, using:
-    $ ruby script/console #or jruby script/console on JRuby of course
-
-Note: when boostraping Ooor in a Rails application, the default Ooor instance is stored in the Ooor.default_ooor variable.
-So for instance you can know all loaded models doing Ooor.default_ooor variable.loaded_models; this is used by [OooREST](http://github.com/rvalyi/ooorest) to register all the REST controllers.
-
-Enabling REST HTTP routes to your OpenERP models:
-The REST Controller layer of OOOR has been moved as a thin separate gem called [OooREST](http://github.com/rvalyi/ooorest).
+Please read details [https://github.com/rvalyi/ooor/wiki/(J)Ruby-on-Rails-application](here)
 
 
 API usage
