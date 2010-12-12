@@ -85,7 +85,7 @@ Trying it simply
 If you have Java 1.6+ installed, then the easiest way to tryout OOOR might be to download the [TerminatOOOR zip](http://github.com/rvalyi/terminatooor/downloads)
 and double-click on jruby-ooor.jar or launch it by command line with java -jar jruby-ooor.jar: it will launch an OOOR console with helpful auto-completion (hit 'tab') on OpenERP business objects.
 
-You can read [http://www.akretion.com/en/blog/2010/01/18/introducing-ooor---openobject-on-rails-drivingrequesting-your-openerp-became-a-child-play/](an introduction to OOOR on Akretion's blog).
+You can read [an introduction to OOOR on Akretion's blog.](http://www.akretion.com/en/blog/2010/01/18/introducing-ooor---openobject-on-rails-drivingrequesting-your-openerp-became-a-child-play/)
 
 
 
