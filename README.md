@@ -225,7 +225,8 @@ On Change methods:
 
 Note: currently OOOR doesn't deal with the View layer, or has a very limited support for forms for the wizards.
 So, it's not possible so far for OOOR to know an on_change signature. Because of this, the on_change syntax is  bit awkward
-as you will see: you need to explicitely tell the on_change name, the parameter name that changed, the new value and finally
+as you will see (fortunately OpenERP SA announced they will fix that on_change API in subsequent v6 OpenERP releases):
+you need to explicitely tell the on_change name, the parameter name that changed, the new value and finally
 enfore the on_change syntax (looking at the OpenERP model code or view or XML/RPC logs will help you to find out). But
 ultimately it works:
 
