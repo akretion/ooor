@@ -37,11 +37,10 @@ class Ooor
     config_file ||= defined?(Rails.root) && "#{Rails.root}/config/ooor.yml" || 'ooor.yml'
     @config = YAML.load_file(config_file)[env || 'development']
   rescue SystemCallError
-    @logger.error """failed to load OOOR yaml configuration file.
+    raise """failed to load OOOR yaml configuration file.
        make sure your app has a #{config_file} file correctly set up
        if not, just copy/paste the default ooor.yml file from the OOOR Gem
        to #{Rails.root}/config/ooor.yml and customize it properly\n\n"""
-    raise
   end
 
   def initialize(config, env=false)
@@ -107,7 +106,7 @@ class Ooor
 end
 
 if defined?(Rails) #Optionnal autoload in Rails:
-  if Rails.version[0] == 3[0] #Rails 3 bootstrap
+  if Rails.version[0] == "3"[0] #Rails 3 bootstrap
     class Railtie < Rails::Railtie
       initializer "ooor.middleware" do |app|
         Ooor.default_config = Ooor.load_config(false, RAILS_ENV)
@@ -116,6 +115,6 @@ if defined?(Rails) #Optionnal autoload in Rails:
     end
   else #Rails 2.3.x bootstrap
     Ooor.default_config = Ooor.load_config(false, RAILS_ENV)
-	Ooor.default_ooor = Ooor.new(Ooor.default_config) if Ooor.default_config['bootstrap']
-  end
+       Ooor.default_ooor = Ooor.new(Ooor.default_config) if Ooor.default_config['bootstrap']
+   end
 end
