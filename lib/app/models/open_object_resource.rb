@@ -21,6 +21,27 @@ require 'active_resource'
 require 'app/ui/form_model'
 require 'app/models/uml'
 
+class OOORClient < XMLRPC::Client
+    def call2(method, *args)
+      request = create().methodCall(method, *args)
+      data = do_rpc(request, false)
+	  data2 = "<?xml version='1.0' encoding='UTF-8'?>" #encoding is not defined by OpenERP and can lead to bug with Ruby 1.9
+	  first = true
+	  data.each_line {|line| data2 << line unless first; first = false}
+      parser().parseMethodResponse(data2)
+      rescue RuntimeError => e
+        begin
+          openerp_error_hash = eval("#{ e }".gsub("wrong fault-structure: ", ""))
+        rescue SyntaxError
+          raise e
+        end
+        raise e unless openerp_error_hash.is_a? Hash
+	    error_msg = "*********** OpenERP Server ERROR:\n#{openerp_error_hash["faultCode"]}\n#{openerp_error_hash["faultString"]}***********"
+		logger.error error_msg if defined?(logger)
+        raise RuntimeError.new(error_msg)
+    end
+end
+
 class OpenObjectResource < ActiveResource::Base
   include UML
 
@@ -89,7 +110,7 @@ class OpenObjectResource < ActiveResource::Base
 
     def client(url)
       @clients ||= {}
-      @clients[url] ||= XMLRPC::Client.new2(url, nil, 900)
+      @clients[url] ||= OOORClient.new2(url, nil, 900)
     end
 
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
@@ -104,8 +125,8 @@ class OpenObjectResource < ActiveResource::Base
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
     def rpc_execute_with_all(db, uid, pass, obj, method, *args)
       clean_request_args!(args)
-      logger.debug "rpc_execute_with_all: rpc_method: 'execute', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, method: #{method}, *args: #{args.inspect}"
-      try_with_pretty_error_log { cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("execute",  db, uid, pass, obj, method, *args)) }
+      logger.debug "OOOR RPC: rpc_method: 'execute', db: #{db}, uid: #{uid}, pass: ######, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
+      cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("execute",  db, uid, pass, obj, method, *args))
     end
 
      #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
@@ -119,21 +140,21 @@ class OpenObjectResource < ActiveResource::Base
 
     def rpc_exec_workflow_with_all(db, uid, pass, obj, action, *args)
       clean_request_args!(args)
-      logger.debug "rpc_execute_with_all: rpc_method: 'exec_workflow', db: #{db.inspect}, uid: #{uid.inspect}, pass: #{pass.inspect}, obj: #{obj.inspect}, action: #{action}, *args: #{args.inspect}"
-      try_with_pretty_error_log { cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args)) }
+      logger.debug "OOOR RPC: 'exec_workflow', db: #{db}, uid: #{uid}, pass: ######, obj: #{obj}, action: #{action}, *args: #{args.inspect}"
+      cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args))
     end
 
     def old_wizard_step(wizard_name, ids, step='init', wizard_id=nil, form={}, context={}, report_type='pdf')
       context = @ooor.global_context.merge(context)
       cast_request_to_openerp!(form)
       unless wizard_id
-        logger.debug "rpc_execute_with_all: rpc_method: 'create old_wizard_step' #{wizard_name}"
-        wizard_id = try_with_pretty_error_log { cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("create",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_name)) }
+        logger.debug "OOOR RPC: 'create old_wizard_step' #{wizard_name}"
+        wizard_id = cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("create",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_name))
       end
       params = {'model' => @openerp_model, 'form' => form, 'report_type' => report_type}
       params.merge!({'id' => ids[0], 'ids' => ids}) if ids
-      logger.debug "rpc_execute_with_all: rpc_method: 'execute old_wizard_step' #{wizard_id}, #{params.inspect}, #{step}, #{context}"
-      [wizard_id, try_with_pretty_error_log { cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, params, step, context)) }]
+      logger.debug "OOOR RPC: 'execute old_wizard_step' #{wizard_id}, #{params.inspect}, #{step}, #{context}"
+      [wizard_id, cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, params, step, context))]
     end
 
     #grab the eventual error log from OpenERP response as OpenERP doesn't enforce carefuly
