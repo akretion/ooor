@@ -70,7 +70,7 @@ class Ooor
     else #we load all the models
       model_ids = @ir_model_class.search() - [1, 2]
     end
-    models = @ir_model_class.read(model_ids, ['name', 'model', 'id', 'info', 'state', 'field_id', 'access_ids'])
+    models = @ir_model_class.read(model_ids, ['name', 'model', 'id', 'info', 'state'])#, 'field_id', 'access_ids'])
     @global_context.merge!({}).merge!(@config[:global_context] || {})
     models.each {|openerp_model| define_openerp_model(openerp_model, @config[:scope_prefix])}
   end
@@ -88,8 +88,8 @@ class Ooor
     model_class_name = klass.class_name_from_model_key
     klass.name = model_class_name
     klass.state = param['state']
-    klass.field_ids = param['field_id']
-    klass.access_ids = param['access_ids']
+    #klass.field_ids = param['field_id']
+    #klass.access_ids = param['access_ids']
     klass.many2one_relations = {}
     klass.one2many_relations = {}
     klass.many2many_relations = {}
