@@ -36,7 +36,7 @@ class OOORClient < XMLRPC::Client
           raise e
         end
         raise e unless openerp_error_hash.is_a? Hash
-	    error_msg = "*********** OpenERP Server ERROR:\n#{openerp_error_hash["faultCode"]}\n#{openerp_error_hash["faultString"]}***********"
+	    error_msg = "\n\n*********** OpenERP Server ERROR ***********\n#{openerp_error_hash["faultCode"]}\n#{openerp_error_hash["faultString"]}********************************************\n."
 		logger.error error_msg if defined?(logger)
         raise RuntimeError.new(error_msg)
     end
@@ -97,7 +97,7 @@ class OpenObjectResource < ActiveResource::Base
             end
           end
         end
-        logger.info "#{fields.size} fields loaded in model #{self.class}"
+        logger.debug "#{fields.size} fields loaded in model #{self.class}"
       end
     end
 
