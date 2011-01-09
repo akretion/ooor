@@ -15,32 +15,12 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-require 'xmlrpc/client'
 require 'rubygems'
 require 'active_resource'
 require 'app/ui/form_model'
 require 'app/models/uml'
+require 'app/models/ooor_client'
 
-class OOORClient < XMLRPC::Client
-    def call2(method, *args)
-      request = create().methodCall(method, *args)
-      data = do_rpc(request, false)
-	  data2 = "<?xml version='1.0' encoding='UTF-8'?>" #encoding is not defined by OpenERP and can lead to bug with Ruby 1.9
-	  first = true
-	  data.each_line {|line| data2 << line unless first; first = false}
-      parser().parseMethodResponse(data2)
-      rescue RuntimeError => e
-        begin
-          openerp_error_hash = eval("#{ e }".gsub("wrong fault-structure: ", ""))
-        rescue SyntaxError
-          raise e
-        end
-        raise e unless openerp_error_hash.is_a? Hash
-	    error_msg = "\n\n*********** OpenERP Server ERROR ***********\n#{openerp_error_hash["faultCode"]}\n#{openerp_error_hash["faultString"]}********************************************\n."
-		logger.error error_msg if defined?(logger)
-        raise RuntimeError.new(error_msg)
-    end
-end
 
 class OpenObjectResource < ActiveResource::Base
   include UML
@@ -88,7 +68,7 @@ class OpenObjectResource < ActiveResource::Base
           end
         end
         @relations_keys = @many2one_relations.keys + @one2many_relations.keys + @many2many_relations.keys + @polymorphic_m2o_relations.keys
-        (@fields.keys + @relations_keys).each do |meth| #generates method handlers for autompletion tools such as jirb_swing
+        (@fields.keys + @relations_keys).each do |meth| #generates method handlers for auto-completion tools such as jirb_swing
           unless self.respond_to?(meth)
             self.instance_eval do
               define_method meth do |*args|
@@ -97,7 +77,7 @@ class OpenObjectResource < ActiveResource::Base
             end
           end
         end
-        logger.debug "#{fields.size} fields loaded in model #{self.class}"
+        logger.debug "#{fields.size} fields loaded in model #{self.name}"
       end
     end
 
@@ -125,7 +105,7 @@ class OpenObjectResource < ActiveResource::Base
     #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
     def rpc_execute_with_all(db, uid, pass, obj, method, *args)
       clean_request_args!(args)
-      logger.debug "OOOR RPC: rpc_method: 'execute', db: #{db}, uid: #{uid}, pass: ######, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
+      logger.debug "OOOR RPC: rpc_method: 'execute', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
       cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("execute",  db, uid, pass, obj, method, *args))
     end
 
@@ -140,7 +120,7 @@ class OpenObjectResource < ActiveResource::Base
 
     def rpc_exec_workflow_with_all(db, uid, pass, obj, action, *args)
       clean_request_args!(args)
-      logger.debug "OOOR RPC: 'exec_workflow', db: #{db}, uid: #{uid}, pass: ######, obj: #{obj}, action: #{action}, *args: #{args.inspect}"
+      logger.debug "OOOR RPC: 'exec_workflow', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, action: #{action}, *args: #{args.inspect}"
       cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args))
     end
 
@@ -307,7 +287,7 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   def cast_relations_to_openerp!
-    @relations.reject! do |k, v| #reject non asigned many2one or empty list
+    @relations.reject! do |k, v| #reject non assigned many2one or empty list
       v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String))
     end
 
@@ -317,7 +297,11 @@ class OpenObjectResource < ActiveResource::Base
           if value.is_a?(OpenObjectResource) #on the fly creation as in the GTK client
             [0, 0, value.to_openerp_hash!]
           else
-            [1, value, {}]
+            if value.is_a?(Hash)
+              [0, 0, value]
+            else
+              [1, value, {}]
+            end
           end
         end
       elsif many2many_relations[k]
@@ -375,19 +359,18 @@ class OpenObjectResource < ActiveResource::Base
     related_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
   end
 
-  def display_available_fields
-    msg = "\n*** AVAILABLE FIELDS ON OBJECT #{self} ARE: ***"
+  def available_fields
+    msg = "\n*** AVAILABLE FIELDS ON OBJECT #{self.class.name} ARE: ***"
     msg << "\n\n" << self.class.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
     msg << "\n\n" << self.class.many2one_relations.map {|k, v| "many2one --- #{v['relation']} --- #{k}"}.join("\n")
     msg << "\n\n" << self.class.one2many_relations.map {|k, v| "one2many --- #{v['relation']} --- #{k}"}.join("\n")
     msg << "\n\n" << self.class.many2many_relations.map {|k, v| "many2many --- #{v['relation']} --- #{k}"}.join("\n")
     msg << "\n\n" << self.class.polymorphic_m2o_relations.map {|k, v| "polymorphic_m2o --- #{v['relation']} --- #{k}"}.join("\n")
-    self.class.logger.debug msg
   end
 
   def to_openerp_hash!
     cast_relations_to_openerp!
-    @attributes.reject {|key, value| key == 'id'}.merge(@relations)
+    @attributes.reject {|key| key == 'id'}.merge(@relations)
   end
 
   #takes care of reading OpenERP default field values.
@@ -404,7 +387,8 @@ class OpenObjectResource < ActiveResource::Base
       load(attributes)
     else
       self.class.reload_fields_definition()
-      load(rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.relations_keys, @object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!))
+      attributes = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.relations_keys, @object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!)
+      load(attributes)
     end
   end
 
@@ -460,10 +444,8 @@ class OpenObjectResource < ActiveResource::Base
   end
 
   def type() method_missing(:type) end #skips deprecated Object#type method
-
-
-  # ******************** fake associations like much like ActiveRecord according to the cached OpenERP data model ********************
-
+  
+  # fakes associations like much like ActiveRecord according to the cached OpenERP data model
   def relationnal_result(method_name, *arguments)
     self.class.reload_fields_definition()
     if self.class.many2one_relations.has_key?(method_name)
@@ -484,12 +466,23 @@ class OpenObjectResource < ActiveResource::Base
     method_name = method_symbol.to_s
     is_assign = method_name.end_with?('=')
     method_key = method_name.sub('=', '')
-    return super if attributes.has_key?(method_key)
-    return rpc_execute(method_name, *arguments) unless arguments.empty? || is_assign
-
     self.class.reload_fields_definition()
-
-    if is_assign
+    
+    if attributes.has_key?(method_key)
+      return super
+    elsif @loaded_relations.has_key?(method_name)
+      @loaded_relations[method_name]
+    elsif @relations.has_key?(method_name)
+      if (!@relations[method_name] || @relations[method_name].is_a?(Array) && !@relations[method_name][0])
+        return nil
+      else
+        result = relationnal_result(method_name, *arguments)
+        @loaded_relations[method_name] = result and return result if result
+      end
+    elsif self.class.fields.has_key?(method_key) || self.class.relations_keys.index(method_name) #unloaded field
+      load(rpc_execute('read', [id], [method_key], *arguments)[0] || {})
+      return method_missing(method_key, *arguments)
+    elsif is_assign
       known_relations = self.class.relations_keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field['relation']).relations_keys}.flatten
       if known_relations.index(method_key)
         @relations[method_key] = arguments[0]
@@ -498,29 +491,16 @@ class OpenObjectResource < ActiveResource::Base
       end
       know_fields = self.class.fields.keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field['relation']).fields.keys}.flatten
       @attributes[method_key] = arguments[0] and return if know_fields.index(method_key)
-    end
-
-    return @loaded_relations[method_name] if @loaded_relations.has_key?(method_name)
-    return false if @relations.has_key?(method_name) and (!@relations[method_name] || @relations[method_name].is_a?(Array) && !@relations[method_name][0])
-
-    if self.class.relations_keys.index(method_name) && !@relations[method_name]
-      return self.class.many2one_relations.index(method_name) ? nil : []
-    end
-    result = relationnal_result(method_name, *arguments)
-    @loaded_relations[method_name] = result and return result if result
-
-    if id
+    elsif id #it's an action
       arguments += [{}] unless arguments.last.is_a?(Hash)
       rpc_execute(method_key, [id], *arguments) #we assume that's an action
     else
       super
     end
 
-  rescue RuntimeError
-    raise
-  rescue NoMethodError
-    display_available_fields
-    raise
+  rescue RuntimeError => e
+    e.message << "\n" + available_fields if e.message.index("AttributeError")
+    raise e
   end
 
 end
