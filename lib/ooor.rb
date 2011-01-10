@@ -52,9 +52,7 @@ class Ooor
     @base_url = config[:url].gsub(/\/$/,'')
     @loaded_models = []
     scope = Module.new and Object.const_set(config[:scope_prefix], scope) if config[:scope_prefix]
-    if config[:database]
-      load_models()
-    end
+    load_models() if config[:database]
   end
 
   def const_get(model_key)
@@ -68,7 +66,7 @@ class Ooor
     if to_load_models #we load only a customized subset of the OpenERP models
       model_ids = @ir_model_class.search([['model', 'in', to_load_models]])
     else #we load all the models
-      model_ids = @ir_model_class.search() - [1, 2]
+      model_ids = @ir_model_class.search() - [1]
     end
     models = @ir_model_class.read(model_ids, ['name', 'model', 'id', 'info', 'state'])#, 'field_id', 'access_ids'])
     @global_context.merge!({}).merge!(@config[:global_context] || {})
@@ -97,7 +95,7 @@ class Ooor
     klass.relations_keys = []
     klass.fields = {}
     klass.scope_prefix = scope_prefix
-    @logger.info "registering #{model_class_name} as a Rails ActiveResource Model wrapper for OpenObject #{param['model']} model"
+    @logger.info "registering #{model_class_name} as an ActiveResource proxy for OpenObject #{param['model']} model"
     (scope_prefix ? Object.const_get(scope_prefix) : Object).const_set(model_class_name, klass)
     @loaded_models.push(klass)
     klass
