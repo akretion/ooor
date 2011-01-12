@@ -1,4 +1,4 @@
-require "lib/ooor.rb"
+require File.dirname(__FILE__) + '/../lib/ooor'
 
 #RSpec executable specification; see http://rspec.info/ for more information.
 #Run the file with the rspec command  from the rspec gem
@@ -34,18 +34,26 @@ describe Ooor do
     end
 
     it "should be able to load a profile" do
-      manufacturing_module_id = IrModuleModule.search([['name','=', 'profile_manufacturing']])[0]
+      manufacturing_module_id = IrModuleModule.search([['name','=', 'account']])[0]
       unless IrModuleModule.find(manufacturing_module_id).state == "installed"
-        w = @ooor.old_wizard_step('base_setup.base_setup')
-        w.company(:profile => manufacturing_module_id)
-        w.update(:name => 'Akretion.com', :state_id => false)
-        w.finish
+        conf1= BaseSetupConfig.create
+        conf1.config
+        conf2 = ResConfigView.create(:view => 'extended')
+        conf2.action_next
+        conf3 = BaseSetupCompany.create(:name => 'Akretion')
+        conf3.action_next
+        conf4 = BaseSetupInstaller.create(:sale => 1)
+        conf4.action_next
         @ooor.load_models
+        config5 = AccountInstaller.create(:charts => 'configurable')
+        config5.action_next
         @ooor.loaded_models.should_not be_empty
       end
     end
 
     it "should be able to configure the database" do
+	end
+	  if false
       chart_module_id = IrModuleModule.search([['category_id', '=', 'Account Charts'], ['name','=', 'l10n_fr']])[0]
       unless IrModuleModule.find(chart_module_id).state == "installed"
         w2 = @ooor.const_get('account.config.wizard').create(:charts => chart_module_id)
@@ -68,10 +76,10 @@ describe Ooor do
       it "should be able to find data by id" do
         p = ProductProduct.find(1)
         p.should_not be_nil
+        p = ProductProduct.find(:first)
+        p.should_not be_nil
         l = ProductProduct.find([1,2])
         l.size.should == 2
-        a = AccountInvoice.find(1)
-        a.should_not be_nil
       end
 
       it "should load required models on the fly" do
@@ -157,7 +165,7 @@ describe Ooor do
       end
 
       it "should read polymorphic references" do
-        IrUiMenu.find(:first, :domain => [['name', '=', 'Partners'], ['parent_id', '!=', false]]).action.should be_kind_of(IrActionsAct_window)
+        IrUiMenu.find(:first, :domain => [['name', '=', 'Customers'], ['parent_id', '!=', false]]).action.should be_kind_of(IrActionsAct_window)
       end
     end
 
@@ -246,12 +254,12 @@ describe Ooor do
         s.partner_id.id.should == 2
       end
 
-      it "should be able to do product.taxes_id = [1,2]" do
+      it "should be able to do product.taxes_id = [id1, id2]" do
         p = ProductProduct.find(1)
-        p.taxes_id = [1, 2]
+        p.taxes_id = AccountTax.search([['type_tax_use','=','sale']])[0..1]
         p.save
-        p.taxes_id[0].id.should == 1
-        p.taxes_id[1].id.should == 2
+        p.taxes_id[0].should be_kind_of(AccountTax)
+        p.taxes_id[1].should be_kind_of(AccountTax)
       end
 
       it "should be able to create one2many relations on the fly" do
@@ -270,7 +278,7 @@ describe Ooor do
 
     describe "Old wizard management" do
       it "should be possible to pay an invoice in one step" do
-        inv = AccountInvoice.find(1).copy() #creates a draft invoice
+        inv = AccountInvoice.find(:first).copy() #creates a draft invoice
         inv.state.should == "draft"
         inv.wkf_action('invoice_open')
         inv.state.should == "open"
@@ -280,7 +288,7 @@ describe Ooor do
       end
 
       it "should be possible to pay an invoice using an intermediary wizard step" do
-        inv = AccountInvoice.find(1).copy() #creates a draft invoice
+        inv = AccountInvoice.find(:first).copy() #creates a draft invoice
         inv.wkf_action('invoice_open')
         wizard = inv.old_wizard_step('account.invoice.pay')
         wizard.writeoff_check({"amount" => inv.amount_total - 1, "journal_id" => AccountJournal.search([['code', 'ilike', 'CHK']])[0], "name" =>'from_rails'}) #use the button name as the wizard method
@@ -342,15 +350,15 @@ describe Ooor do
     end
 
     it "should retrieve the action of a menu" do
-      IrUiMenu.find(:first, :domain => [['name', '=', 'Partners'], ['parent_id', '!=', false]]).action.should be_kind_of(IrActionsAct_window)
+      IrUiMenu.find(:first, :domain => [['name', '=', 'Customers']]).action.should be_kind_of(IrActionsAct_window)
     end
 
     it "should be able to open a list view of a menu action" do
-      @ooor.menu_class.find(:first, :domain => [['name', '=', 'Partners'], ['parent_id', '!=', false]]).action.open('tree')
+      @ooor.menu_class.find(:first, :domain => [['name', '=', 'Customers']]).action.open('tree')
     end
 
     it  "should be able to open a form view of a menu action" do
-      @ooor.menu_class.find(:first, :domain => [['name', '=', 'Partners'], ['parent_id', '!=', false]]).action.open('form', [1])
+      @ooor.menu_class.find(:first, :domain => [['name', '=', 'Customers']]).action.open('form', [1])
     end
   end
 
