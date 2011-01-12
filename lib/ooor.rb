@@ -37,16 +37,17 @@ class Ooor
     config_file ||= defined?(Rails.root) && "#{Rails.root}/config/ooor.yml" || 'ooor.yml'
     @config = YAML.load_file(config_file)[env || 'development']
   rescue SystemCallError
-    raise """failed to load OOOR yaml configuration file.
+    puts """failed to load OOOR yaml configuration file.
        make sure your app has a #{config_file} file correctly set up
        if not, just copy/paste the default ooor.yml file from the OOOR Gem
        to #{Rails.root}/config/ooor.yml and customize it properly\n\n"""
+    {}
   end
 
   def initialize(config, env=false)
     @config = config.is_a?(String) ? Ooor.load_config(config, env) : config
     @config.symbolize_keys!
-    @logger = ((defined?(Rails) && $0 != 'irb' || config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
+    @logger = ((defined?(Rails) && $0 != 'irb' && Rails.logger || config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
     @logger.level = config[:log_level] if config[:log_level]
     OpenObjectResource.logger = @logger
     @base_url = config[:url].gsub(/\/$/,'')
@@ -103,7 +104,7 @@ class Ooor
 
 end
 
-if defined?(Rails) #Optionnal autoload in Rails:
+if defined?(Rails) #Optional autoload in Rails:
   if Rails.version[0] == "3"[0] #Rails 3 bootstrap
     class Railtie < Rails::Railtie
       initializer "ooor.middleware" do |app|
