@@ -1,5 +1,5 @@
 #    OOOR: Open Object On Rails
-#    Copyright (C) 2009-2010 Akretion LTDA (<http://www.akretion.com>).
+#    Copyright (C) 2009-2011 Akretion LTDA (<http://www.akretion.com>).
 #    Author: Raphaël Valyi
 #
 #    This program is free software: you can redistribute it and/or modify
