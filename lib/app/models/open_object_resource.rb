@@ -157,22 +157,6 @@ module Ooor
         [wizard_id, cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, params, step, context))]
       end
 
-      #grab the eventual error log from OpenERP response as OpenERP doesn't enforce carefuly
-      #the XML/RPC spec, see https://bugs.launchpad.net/openerp/+bug/257581
-      def try_with_pretty_error_log
-        yield
-        rescue RuntimeError => e
-          begin
-            openerp_error_hash = eval("#{ e }".gsub("wrong fault-structure: ", ""))
-          rescue SyntaxError
-            raise e
-          end
-          raise e unless openerp_error_hash.is_a? Hash
-        error_msg = "*********** OpenERP Server ERROR:\n#{openerp_error_hash["faultString"]}***********"
-          logger.error error_msg
-          raise RuntimeError.new(error_msg)
-      end
-
       def clean_request_args!(args)
         if args[-1].is_a? Hash
           args[-1] = @ooor.global_context.merge(args[-1])

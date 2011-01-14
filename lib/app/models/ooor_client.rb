@@ -25,6 +25,8 @@ module Ooor
       parser().parseMethodResponse(data)
     rescue RuntimeError => e
       begin
+        #extracts the eventual error log from OpenERP response as OpenERP doesn't enforce carefully*
+        #the XML/RPC spec, see https://bugs.launchpad.net/openerp/+bug/257581
         openerp_error_hash = eval("#{ e }".gsub("wrong fault-structure: ", ""))
       rescue SyntaxError
         raise e
