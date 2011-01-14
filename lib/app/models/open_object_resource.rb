@@ -107,6 +107,9 @@ module Ooor
       def relation; @relation ||= Relation.new(self); end
       def where(opts, *rest); relation.where(opts, *rest); end
       def all(*args); relation.all(*args); end
+      def limit(value); relation.limit(value); end
+      def order(value); relation.order(value); end
+      def offset(value); relation.offset(value); end
 
       def client(url)
         @clients ||= {}

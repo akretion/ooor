@@ -134,13 +134,8 @@ module Ooor
     def method_missing(method, *args, &block)
       if Array.method_defined?(method)
         to_a.send(method, *args, &block)
-      elsif @klass.scopes[method] #TODO send method to all records by collecting their ids
-        merge(@klass.send(method, *args, &block))
-      elsif @klass.respond_to?(method)
-        scoping { @klass.send(method, *args, &block) }
       else
-        @klass.send(method, *args, &block)
-        super
+        @klass.rpc_execute(method.to_s, to_a.map {|record| record.id}, *args)
       end
     end
 
