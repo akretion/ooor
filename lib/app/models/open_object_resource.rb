@@ -104,10 +104,9 @@ module Ooor
         rpc_execute('search', domain, offset, limit, order, context, count)
       end
       
-      def where(opts, *rest)
-        @relation ||= Relation.new(self)
-        @relation.where(opts, *rest)
-      end
+      def relation; @relation ||= Relation.new(self); end
+      def where(opts, *rest); relation.where(opts, *rest); end
+      def all(*args); relation.all(*args); end
 
       def client(url)
         @clients ||= {}

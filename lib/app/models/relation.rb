@@ -23,7 +23,7 @@ module Ooor
   class Relation
     
     attr_reader :klass, :loaded
-    attr_accessor :domain, :context, :count_field, :includes_values, :eager_load_values, :preload_values,
+    attr_accessor :context, :count_field, :includes_values, :eager_load_values, :preload_values,
                   :select_values, :group_values, :order_values, :reorder_flag, :joins_values, :where_values, :having_values,
                   :limit_value, :offset_value, :lock_value, :readonly_value, :create_with_value, :from_value
     alias :loaded? :loaded
@@ -31,7 +31,7 @@ module Ooor
     def build_where(opts, other = [])
       case opts
       when Array
-        opts
+        [opts]
       when Hash
         opts.keys.map {|key|["#{key}", "=", opts[key]]}
       end
@@ -76,7 +76,6 @@ module Ooor
       @klass = klass
       @where_values = []
       @loaded = false
-      @domain = []
       @context = {}
       @count_field = false
       @limit_value = false
@@ -120,7 +119,7 @@ module Ooor
       else
         search_order = @order_values.join(", ")
       end
-      ids = @klass.rpc_execute('search', @domain, @offset_value, @limit_value, search_order, @context, @count_field)
+      ids = @klass.rpc_execute('search', @where_values, @offset_value, @limit_value, search_order, @context, @count_field)
       @records = @klass.find(ids)
       @loaded = true
       @records
