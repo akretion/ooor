@@ -23,13 +23,15 @@ require 'app/models/ooor_client'
 
 
 class OpenObjectResource < ActiveResource::Base
+  #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
+  #include ActiveModel::Validations
   include UML
 
   # ******************** class methods ********************
   class << self
 
     cattr_accessor :logger
-    attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes assotiated to the OpenERP ir.model
+    attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes associated to the OpenERP ir.model
                   :fields, :fields_defined, :many2one_relations, :one2many_relations, :many2many_relations, :polymorphic_m2o_relations, :relations_keys,
                   :database, :user_id, :scope_prefix, :ooor
 
@@ -46,7 +48,7 @@ class OpenObjectResource < ActiveResource::Base
     end
 
     def create(attributes = {}, context={}, default_get_list=false, reload=true)
-       self.new(attributes, default_get_list, context).tap { |resource| resource.save(context, reload) }
+      self.new(attributes, default_get_list, context).tap { |resource| resource.save(context, reload) }
     end
 
     def reload_fields_definition(force = false)
@@ -64,7 +66,20 @@ class OpenObjectResource < ActiveResource::Base
           when 'reference'
             @polymorphic_m2o_relations[k] = field
           else
+#            if ['integer', 'int8'].index(field['type'])
+#              self.send :validates_numericality_of, k, :only_integer => true
+#            elsif field['type'] == 'float'
+#              self.send :validates_numericality_of, k
+#            elsif field['type'] == 'char'
+#              self.send :validates_length_of, k, :maximum => field['size'] || 128
+#            end
             @fields[k] = field
+          end
+          if field["required"]
+#            if field['type'] == 'many2one'
+#              next if PREDEFINED_INHERITS[self.openerp_model] == k
+#            end
+            self.send :validates_presence_of, k
           end
         end
         @relations_keys = @many2one_relations.keys + @one2many_relations.keys + @many2many_relations.keys + @polymorphic_m2o_relations.keys
@@ -268,6 +283,7 @@ class OpenObjectResource < ActiveResource::Base
   end
 
 
+  self.name = "OpenObjectResource"
   # ******************** instance methods ********************
 
   attr_accessor :relations, :loaded_relations, :ir_model_data_id, :object_session
