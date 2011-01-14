@@ -20,6 +20,7 @@ require 'active_resource'
 require 'app/ui/form_model'
 require 'app/models/uml'
 require 'app/models/ooor_client'
+require 'app/models/relation'
 
 module Ooor
   class OpenObjectResource < ActiveResource::Base
@@ -33,7 +34,7 @@ module Ooor
       cattr_accessor :logger
       attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes associated to the OpenERP ir.model
                     :fields, :fields_defined, :many2one_relations, :one2many_relations, :many2many_relations, :polymorphic_m2o_relations, :relations_keys,
-                    :database, :user_id, :scope_prefix, :ooor
+                    :database, :user_id, :scope_prefix, :ooor, :relation
 
       def class_name_from_model_key(model_key=self.openerp_model)
         model_key.split('.').collect {|name_part| name_part.capitalize}.join
@@ -101,6 +102,11 @@ module Ooor
       #OpenERP search method
       def search(domain=[], offset=0, limit=false, order=false, context={}, count=false)
         rpc_execute('search', domain, offset, limit, order, context, count)
+      end
+      
+      def where(opts, *rest)
+        @relation ||= Relation.new(self)
+        @relation.where(opts, *rest)
       end
 
       def client(url)
