@@ -20,6 +20,7 @@ require 'active_resource'
 require 'app/ui/form_model'
 require 'app/models/uml'
 require 'app/models/ooor_client'
+require 'app/models/type_casting'
 require 'app/models/relation'
 
 module Ooor
@@ -27,6 +28,7 @@ module Ooor
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
     include UML
+	include TypeCasting
 
     # ******************** class methods ********************
     class << self
@@ -128,6 +130,7 @@ module Ooor
       #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
       def rpc_execute_with_all(db, uid, pass, obj, method, *args)
         clean_request_args!(args)
+        reload_fields_definition()
         logger.debug "OOOR RPC: rpc_method: 'execute', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
         cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("execute",  db, uid, pass, obj, method, *args))
       end
@@ -143,6 +146,7 @@ module Ooor
 
       def rpc_exec_workflow_with_all(db, uid, pass, obj, action, *args)
         clean_request_args!(args)
+        reload_fields_definition()
         logger.debug "OOOR RPC: 'exec_workflow', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, action: #{action}, *args: #{args.inspect}"
         cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args))
       end
@@ -158,54 +162,6 @@ module Ooor
         params.merge!({'id' => ids[0], 'ids' => ids}) if ids
         logger.debug "OOOR RPC: 'execute old_wizard_step' #{wizard_id}, #{params.inspect}, #{step}, #{context}"
         [wizard_id, cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, params, step, context))]
-      end
-
-      def clean_request_args!(args)
-        if args[-1].is_a? Hash
-          args[-1] = @ooor.global_context.merge(args[-1])
-        elsif args.is_a?(Array)
-          args += [@ooor.global_context]
-        end
-        cast_request_to_openerp!(args[-2]) if args[-2].is_a? Hash
-      end
-
-      def cast_request_to_openerp!(map)
-        map.each do |k, v|
-          if v == nil
-            map[k] = false
-          elsif !v.is_a?(Integer) && !v.is_a?(Float) && v.is_a?(Numeric) && v.respond_to?(:to_f)
-            map[k] = v.to_f
-          elsif !v.is_a?(Numeric) && !v.is_a?(Integer) && v.respond_to?(:sec) && v.respond_to?(:year)#really ensure that's a datetime type
-            map[k] = "#{v.year}-#{v.month}-#{v.day} #{v.hour}:#{v.min}:#{v.sec}"
-          elsif !v.is_a?(Numeric) && !v.is_a?(Integer) && v.respond_to?(:day) && v.respond_to?(:year)#really ensure that's a date type
-            map[k] = "#{v.year}-#{v.month}-#{v.day}"
-          end
-        end
-      end
-
-      def cast_answer_to_ruby!(answer)
-        reload_fields_definition()
-
-        def cast_map_to_ruby!(map)
-          map.each do |k, v|
-            if self.fields[k] && v.is_a?(String) && !v.empty?
-              case self.fields[k]['type']
-                when 'datetime'
-                  map[k] = Time.parse(v)
-                when 'date'
-                  map[k] = Date.parse(v)
-              end
-            end
-          end
-        end
-
-        if answer.is_a?(Array)
-          answer.each {|item| self.cast_map_to_ruby!(item) if item.is_a? Hash}
-        elsif answer.is_a?(Hash)
-          self.cast_map_to_ruby!(answer)
-        else
-          answer
-        end
       end
 
       def method_missing(method_symbol, *arguments)
