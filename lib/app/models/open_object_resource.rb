@@ -203,7 +203,7 @@ module Ooor
           end
         end.reject! {|item| !item}
         records = rpc_execute('read', scope, fields, context)
-        records.sort_by! {|r| scope.index(r["id"])}
+        records = records.sort_by {|r| scope.index(r["id"])} #TODO use sort_by! in Ruby 1.9
         active_resources = []
         records.each do |record|
           r = {}
