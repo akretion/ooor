@@ -17,6 +17,8 @@
 
 #TODO chainability of where via scopes
 #TODO include relations for single read
+require 'will_paginate/finders'
+require 'will_paginate/finders/base'
 
 module Ooor
   # = Similar to Active Record Relation
@@ -134,6 +136,8 @@ module Ooor
     def method_missing(method, *args, &block)
       if Array.method_defined?(method)
         to_a.send(method, *args, &block)
+      elsif @klass.respond_to?(method)
+        @klass.send(method, *args, &block)
       else
         @klass.rpc_execute(method.to_s, to_a.map {|record| record.id}, *args)
       end
