@@ -288,11 +288,6 @@ module Ooor
       msg << "\n\n" << self.class.polymorphic_m2o_relations.map {|k, v| "polymorphic_m2o --- #{v['relation']} --- #{k}"}.join("\n")
     end
 
-    def to_openerp_hash!
-      cast_relations_to_openerp!
-      @attributes.reject {|key| key == 'id'}.merge(@relations)
-    end
-
     #takes care of reading OpenERP default field values.
     def initialize(attributes = {}, default_get_list=false, context={})
       @attributes = {}
