@@ -4,6 +4,56 @@ module Ooor
     def self.included(base) base.extend(ClassMethods) end
   
     module ClassMethods
+      
+      def openerp_string_domain_to_ruby(string_domain)
+        eval(string_domain.gsub('(', '[').gsub(')',']'))
+      end
+      
+      def ruby_hash_to_openerp_domain(ruby_hash)
+        ruby_hash.map{|k,v| [k.to_s, '=', v]}
+      end
+      
+      def cast_relations_to_openerp!
+        @relations.reject! do |k, v| #reject non assigned many2one or empty list
+          v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String))
+        end
+
+        def cast_relation(k, v, one2many_relations, many2many_relations)
+          if one2many_relations[k]
+            return v.collect! do |value|
+              if value.is_a?(OpenObjectResource) #on the fly creation as in the GTK client
+                [0, 0, value.to_openerp_hash!]
+              else
+                if value.is_a?(Hash)
+                  [0, 0, value]
+                else
+                  [1, value, {}]
+                end
+              end
+            end
+          elsif many2many_relations[k]
+            return v = [[6, 0, v]]
+          end
+        end
+
+        @relations.each do |k, v| #see OpenERP awkward relations API
+          #already casted, possibly before server error!
+          next if (v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array)) \
+                  || self.class.many2one_relations[k] \
+                  || !v.is_a?(Array)
+          new_rel = self.cast_relation(k, v, self.class.one2many_relations, self.class.many2many_relations)
+          if new_rel #matches a known o2m or m2m
+            @relations[k] = new_rel
+          else
+            self.class.many2one_relations.each do |k2, field| #try to cast the relation to an inherited o2m or m2m:
+              linked_class = self.class.const_get(field['relation'])
+              new_rel = self.cast_relation(k, v, linked_class.one2many_relations, linked_class.many2many_relations)
+              @relations[k] = new_rel and break if new_rel
+            end
+          end
+        end
+      end
+      
       def clean_request_args!(args)
         if args[-1].is_a? Hash
           args[-1] = @ooor.global_context.merge(args[-1])

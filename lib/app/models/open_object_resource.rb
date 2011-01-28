@@ -28,7 +28,7 @@ module Ooor
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
     include UML
-	include TypeCasting
+    include TypeCasting
 
     # ******************** class methods ********************
     class << self
@@ -78,12 +78,12 @@ module Ooor
   #            end
               @fields[k] = field
             end
-            if field["required"]
+  #          if field["required"]
   #            if field['type'] == 'many2one'
   #              next if PREDEFINED_INHERITS[self.openerp_model] == k
   #            end
-              self.send :validates_presence_of, k
-            end
+  #            self.send :validates_presence_of, k
+  #          end
           end
           @relations_keys = @many2one_relations.keys + @one2many_relations.keys + @many2many_relations.keys + @polymorphic_m2o_relations.keys
           (@fields.keys + @relations_keys).each do |meth| #generates method handlers for auto-completion tools such as jirb_swing
@@ -171,7 +171,6 @@ module Ooor
 
 
       # ******************** finders low level implementation ********************
-
       private
 
       def find_every(options)
@@ -179,10 +178,7 @@ module Ooor
         context = options[:context] || {}
         unless domain
           prefix_options, query_options = split_options(options[:params])
-          domain = []
-          query_options.each_pair do |k, v|
-            domain.push [k.to_s, '=', v]
-          end
+          domain = ruby_hash_to_openerp_domain(query_options)
         end
         ids = rpc_execute('search', domain, options[:offset] || 0, options[:limit] || false,  options[:order] || false, context)
         !ids.empty? && ids[0].is_a?(Integer) && find_single(ids, options) || []
@@ -207,6 +203,7 @@ module Ooor
           end
         end.reject! {|item| !item}
         records = rpc_execute('read', scope, fields, context)
+        records.sort_by! {|r| scope.index(r["id"])}
         active_resources = []
         records.each do |record|
           r = {}
@@ -248,47 +245,6 @@ module Ooor
       args += [self.class.ooor.global_context.merge(object_session[:context])]
     end
       self.class.rpc_execute_with_all(object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
-    end
-
-    def cast_relations_to_openerp!
-      @relations.reject! do |k, v| #reject non assigned many2one or empty list
-        v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String))
-      end
-
-      def cast_relation(k, v, one2many_relations, many2many_relations)
-        if one2many_relations[k]
-          return v.collect! do |value|
-            if value.is_a?(OpenObjectResource) #on the fly creation as in the GTK client
-              [0, 0, value.to_openerp_hash!]
-            else
-              if value.is_a?(Hash)
-                [0, 0, value]
-              else
-                [1, value, {}]
-              end
-            end
-          end
-        elsif many2many_relations[k]
-          return v = [[6, 0, v]]
-        end
-      end
-
-      @relations.each do |k, v| #see OpenERP awkward relations API
-        #already casted, possibly before server error!
-        next if (v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array)) \
-                || self.class.many2one_relations[k] \
-                || !v.is_a?(Array)
-        new_rel = self.cast_relation(k, v, self.class.one2many_relations, self.class.many2many_relations)
-        if new_rel #matches a known o2m or m2m
-          @relations[k] = new_rel
-        else
-          self.class.many2one_relations.each do |k2, field| #try to cast the relation to an inherited o2m or m2m:
-            linked_class = self.class.const_get(field['relation'])
-            new_rel = self.cast_relation(k, v, linked_class.one2many_relations, linked_class.many2many_relations)
-            @relations[k] = new_rel and break if new_rel
-          end
-        end
-      end
     end
 
     def reload_from_record!(record) load(record.attributes, record.relations) end
@@ -425,7 +381,7 @@ module Ooor
         false
       end
     end
-
+    
     def method_missing(method_symbol, *arguments)
       method_name = method_symbol.to_s
       is_assign = method_name.end_with?('=')
@@ -437,7 +393,7 @@ module Ooor
       elsif @loaded_relations.has_key?(method_name)
         @loaded_relations[method_name]
       elsif @relations.has_key?(method_name)
-        if (!@relations[method_name] || @relations[method_name].is_a?(Array) && !@relations[method_name][0])
+        if false#(!@relations[method_name] || @relations[method_name].is_a?(Array) && !@relations[method_name][0])
           return nil
         else
           result = relationnal_result(method_name, *arguments)
