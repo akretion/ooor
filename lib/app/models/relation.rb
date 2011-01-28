@@ -17,8 +17,6 @@
 
 #TODO chainability of where via scopes
 #TODO include relations for single read
-require 'will_paginate/finders'
-require 'will_paginate/finders/base'
 
 module Ooor
   # = Similar to Active Record Relation
