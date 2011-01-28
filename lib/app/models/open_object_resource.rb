@@ -357,6 +357,8 @@ module Ooor
       result = self.class.old_wizard_step(wizard_name, [self.id], step, wizard_id, form, {})
       FormModel.new(wizard_name, result[0], nil, nil, result[1], [self], self.class.ooor.global_context)
     end
+    
+    def log(message, context={}) rpc_execute('log', id, message, context) end
 
     def type() method_missing(:type) end #skips deprecated Object#type method
 
