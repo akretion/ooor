@@ -51,17 +51,17 @@ module Ooor
       def columns_hash
         reload_fields_definition
         unless @column_hash
-           @column_hash = {"id" => {"string"=>"Id", "type"=>"integer"}}.merge(get_fields('tree'))
-           def @column_hash.type
-             col_type = @column_hash['type'].to_sym #TODO mapping ?
-             col_type == :char && :string || col_type
-           end
+          @column_hash = {"id" => {"string"=>"Id", "type"=>"integer"}}.merge(get_fields('tree'))
+          def @column_hash.type
+            col_type = @column_hash['type'].to_sym #TODO mapping ?
+            col_type == :char && :string || col_type
+          end
         end
         @column_hash
       end
 
       def primary_key
-		"id"
+        "id"
       end
 
       def get_arch(mode)
