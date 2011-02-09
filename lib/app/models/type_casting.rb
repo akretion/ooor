@@ -63,7 +63,7 @@ module Ooor
     
     def to_openerp_hash!
       cast_relations_to_openerp!
-      @attributes.reject {|key| key == 'id'}.merge(@relations)
+      @attributes.reject {|k, v| k == 'id'}.merge(@relations)
     end
     
     def cast_relations_to_openerp!
