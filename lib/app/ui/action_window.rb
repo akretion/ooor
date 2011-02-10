@@ -40,7 +40,7 @@ module Ooor
 
       def get_fields(mode)
         @views[mode] ||= @klass.fields_view_get(get_view_id(mode), mode)
-        @views[mode]['fields']
+        @views[mode]['fields'] #TODO order by occurrence in view XML
       end
 
       def column_names
@@ -83,7 +83,6 @@ module Ooor
       end
     
     end
-    
     
     
   end

@@ -103,7 +103,7 @@ module Ooor
 
       #OpenERP search method
       def search(domain=[], offset=0, limit=false, order=false, context={}, count=false)
-        rpc_execute('search', domain, offset, limit, order, context, count)
+        rpc_execute('search', to_openerp_domain(domain), offset, limit, order, context, count)
       end
       
       def relation; @relation ||= Relation.new(self); end
@@ -176,11 +176,8 @@ module Ooor
       def find_every(options)
         domain = options[:domain]
         context = options[:context] || {}
-        unless domain
-          prefix_options, query_options = split_options(options[:params])
-          domain = ruby_hash_to_openerp_domain(query_options)
-        end
-        ids = rpc_execute('search', domain, options[:offset] || 0, options[:limit] || false,  options[:order] || false, context)
+        prefix_options, domain = split_options(options[:params]) unless domain
+        ids = rpc_execute('search', self.class.to_openerp_domain(domain), options[:offset] || 0, options[:limit] || false,  options[:order] || false, context)
         !ids.empty? && ids[0].is_a?(Integer) && find_single(ids, options) || []
       end
 
@@ -227,8 +224,9 @@ module Ooor
 
     end
 
-
     self.name = "OpenObjectResource"
+    
+    
     # ******************** instance methods ********************
 
     attr_accessor :relations, :loaded_relations, :ir_model_data_id, :object_session
@@ -390,13 +388,9 @@ module Ooor
       elsif @loaded_relations.has_key?(method_name)
         @loaded_relations[method_name]
       elsif @relations.has_key?(method_name)
-        if false#(!@relations[method_name] || @relations[method_name].is_a?(Array) && !@relations[method_name][0])
-          return nil
-        else
-          result = relationnal_result(method_name, *arguments)
-          @loaded_relations[method_name] = result and return result if result
-        end
-      elsif self.class.fields.has_key?(method_key) || self.class.relations_keys.index(method_name) #unloaded field
+        result = relationnal_result(method_name, *arguments)
+        @loaded_relations[method_name] = result and return result if result
+      elsif self.class.fields.has_key?(method_key) || self.class.relations_keys.index(method_name) #unloaded field/relation
         load(rpc_execute('read', [id], [method_key], *arguments)[0] || {})
         return method_missing(method_key, *arguments)
       elsif is_assign

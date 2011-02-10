@@ -9,8 +9,16 @@ module Ooor
         eval(string_domain.gsub('(', '[').gsub(')',']'))
       end
       
-      def ruby_hash_to_openerp_domain(ruby_hash)
-        ruby_hash.map{|k,v| [k.to_s, '=', v]}
+      def to_openerp_domain(domain)
+        if domain.is_a?(Hash)
+          return domain.map{|k,v| [k.to_s, '=', v]}
+        elsif domain == []
+          return []
+        elsif domain.is_a?(Array) && !domain[0].is_a?(Array)
+          return [domain]
+        else
+          return domain
+        end
       end
 
       def clean_request_args!(args)
