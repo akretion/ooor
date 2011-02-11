@@ -35,8 +35,8 @@ module Ooor
 
       cattr_accessor :logger
       attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes associated to the OpenERP ir.model
-                    :fields, :fields_defined, :many2one_relations, :one2many_relations, :many2many_relations, :polymorphic_m2o_relations, :relations_keys,
-                    :database, :user_id, :scope_prefix, :ooor, :relation
+                    :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
+                    :database, :user_id, :scope_prefix, :ooor, :association
 
       def class_name_from_model_key(model_key=self.openerp_model)
         model_key.split('.').collect {|name_part| name_part.capitalize}.join
@@ -61,13 +61,13 @@ module Ooor
           rpc_execute("fields_get").each do |k, field|
             case field['type']
             when 'many2one'
-              @many2one_relations[k] = field
+              @many2one_associations[k] = field
             when 'one2many'
-              @one2many_relations[k] = field
+              @one2many_associations[k] = field
             when 'many2many'
-              @many2many_relations[k] = field
+              @many2many_associations[k] = field
             when 'reference'
-              @polymorphic_m2o_relations[k] = field
+              @polymorphic_m2o_associations[k] = field
             else
   #            if ['integer', 'int8'].index(field['type'])
   #              self.send :validates_numericality_of, k, :only_integer => true
@@ -85,8 +85,8 @@ module Ooor
   #            self.send :validates_presence_of, k
   #          end
           end
-          @relations_keys = @many2one_relations.keys + @one2many_relations.keys + @many2many_relations.keys + @polymorphic_m2o_relations.keys
-          (@fields.keys + @relations_keys).each do |meth| #generates method handlers for auto-completion tools such as jirb_swing
+          @associations_keys = @many2one_associations.keys + @one2many_associations.keys + @many2many_associations.keys + @polymorphic_m2o_associations.keys
+          (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools such as jirb_swing
             unless self.respond_to?(meth)
               self.instance_eval do
                 define_method meth do |*args|
@@ -177,7 +177,7 @@ module Ooor
         domain = options[:domain]
         context = options[:context] || {}
         prefix_options, domain = split_options(options[:params]) unless domain
-        ids = rpc_execute('search', self.class.to_openerp_domain(domain), options[:offset] || 0, options[:limit] || false,  options[:order] || false, context)
+        ids = rpc_execute('search', to_openerp_domain(domain), options[:offset] || 0, options[:limit] || false,  options[:order] || false, context)
         !ids.empty? && ids[0].is_a?(Integer) && find_single(ids, options) || []
       end
 
@@ -229,7 +229,7 @@ module Ooor
     
     # ******************** instance methods ********************
 
-    attr_accessor :relations, :loaded_relations, :ir_model_data_id, :object_session
+    attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
 
     def object_db; object_session[:database] || self.class.database || self.class.ooor.config[:database]; end
     def object_uid;object_session[:user_id] || self.class.user_id || self.class.ooor.config[:user_id]; end
@@ -245,19 +245,19 @@ module Ooor
       self.class.rpc_execute_with_all(object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
     end
 
-    def reload_from_record!(record) load(record.attributes, record.relations) end
+    def reload_from_record!(record) load(record.attributes, record.associations) end
 
-    def load(attributes, relations={})#an attribute might actually be a relation too, will be determined here
+    def load(attributes, associations={})#an attribute might actually be a association too, will be determined here
       self.class.reload_fields_definition()
       raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
       @prefix_options, attributes = split_options(attributes)
-      @relations = relations
+      @associations = associations
       @attributes = {}
-      @loaded_relations = {}
+      @loaded_associations = {}
       attributes.each do |key, value|
         skey = key.to_s
-        if self.class.relations_keys.index(skey) || value.is_a?(Array)
-          relations[skey] = value #the relation because we want the method to load the association through method missing
+        if self.class.associations_keys.index(skey) || value.is_a?(Array)
+          associations[skey] = value #the association because we want the method to load the association through method missing
         else
           case value
             when Hash
@@ -271,7 +271,7 @@ module Ooor
       self
     end
 
-    def load_relation(model_key, ids, *arguments)
+    def load_association(model_key, ids, *arguments)
       options = arguments.extract_options!
       related_class = self.class.const_get(model_key)
       related_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
@@ -280,10 +280,10 @@ module Ooor
     def available_fields
       msg = "\n*** AVAILABLE FIELDS ON OBJECT #{self.class.name} ARE: ***"
       msg << "\n\n" << self.class.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
-      msg << "\n\n" << self.class.many2one_relations.map {|k, v| "many2one --- #{v['relation']} --- #{k}"}.join("\n")
-      msg << "\n\n" << self.class.one2many_relations.map {|k, v| "one2many --- #{v['relation']} --- #{k}"}.join("\n")
-      msg << "\n\n" << self.class.many2many_relations.map {|k, v| "many2many --- #{v['relation']} --- #{k}"}.join("\n")
-      msg << "\n\n" << self.class.polymorphic_m2o_relations.map {|k, v| "polymorphic_m2o --- #{v['relation']} --- #{k}"}.join("\n")
+      msg << "\n\n" << self.class.many2one_associations.map {|k, v| "many2one --- #{v['association']} --- #{k}"}.join("\n")
+      msg << "\n\n" << self.class.one2many_associations.map {|k, v| "one2many --- #{v['association']} --- #{k}"}.join("\n")
+      msg << "\n\n" << self.class.many2many_associations.map {|k, v| "many2many --- #{v['association']} --- #{k}"}.join("\n")
+      msg << "\n\n" << self.class.polymorphic_m2o_associations.map {|k, v| "polymorphic_m2o --- #{v['association']} --- #{k}"}.join("\n")
     end
 
     #takes care of reading OpenERP default field values.
@@ -300,7 +300,7 @@ module Ooor
         load(attributes)
       else
         self.class.reload_fields_definition()
-        attributes = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.relations_keys, @object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!)
+        attributes = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, @object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!)
         load(attributes)
       end
     end
@@ -342,7 +342,7 @@ module Ooor
         self.class.logger.info result["warning"]["title"]
         self.class.logger.info result["warning"]["message"]
       end
-      load(@attributes.merge({field_name => field_value}).merge(result["value"]), @relations)
+      load(@attributes.merge({field_name => field_value}).merge(result["value"]), @associations)
     end
 
     #wrapper for OpenERP exec_workflow Business Process Management engine
@@ -363,14 +363,14 @@ module Ooor
     # fakes associations like much like ActiveRecord according to the cached OpenERP data model
     def relationnal_result(method_name, *arguments)
       self.class.reload_fields_definition()
-      if self.class.many2one_relations.has_key?(method_name)
-        load_relation(self.class.many2one_relations[method_name]['relation'], @relations[method_name].is_a?(Integer) && @relations[method_name] || @relations[method_name][0], *arguments)
-      elsif self.class.one2many_relations.has_key?(method_name)
-        load_relation(self.class.one2many_relations[method_name]['relation'], @relations[method_name], *arguments) || []
-      elsif self.class.many2many_relations.has_key?(method_name)
-        load_relation(self.class.many2many_relations[method_name]['relation'], @relations[method_name], *arguments) || []
-      elsif self.class.polymorphic_m2o_relations.has_key?(method_name)
-        values = @relations[method_name].split(',')
+      if self.class.many2one_associations.has_key?(method_name)
+        load_relation(self.class.many2one_associations[method_name]['association'], @associations[method_name].is_a?(Integer) && @associations[method_name] || @associations[method_name][0], *arguments)
+      elsif self.class.one2many_associations.has_key?(method_name)
+        load_relation(self.class.one2many_associations[method_name]['association'], @associations[method_name], *arguments) || []
+      elsif self.class.many2many_associations.has_key?(method_name)
+        load_relation(self.class.many2many_associations[method_name]['association'], @associations[method_name], *arguments) || []
+      elsif self.class.polymorphic_m2o_associations.has_key?(method_name)
+        values = @associations[method_name].split(',')
         load_relation(values[0], values[1].to_i, *arguments)
       else
         false
@@ -385,22 +385,22 @@ module Ooor
 
       if attributes.has_key?(method_key)
         return super
-      elsif @loaded_relations.has_key?(method_name)
-        @loaded_relations[method_name]
-      elsif @relations.has_key?(method_name)
+      elsif @loaded_associations.has_key?(method_name)
+        @loaded_associations[method_name]
+      elsif @associations.has_key?(method_name)
         result = relationnal_result(method_name, *arguments)
-        @loaded_relations[method_name] = result and return result if result
-      elsif self.class.fields.has_key?(method_key) || self.class.relations_keys.index(method_name) #unloaded field/relation
+        @loaded_associations[method_name] = result and return result if result
+      elsif self.class.fields.has_key?(method_key) || self.class.associations_keys.index(method_name) #unloaded field/association
         load(rpc_execute('read', [id], [method_key], *arguments)[0] || {})
         return method_missing(method_key, *arguments)
       elsif is_assign
-        known_relations = self.class.relations_keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field['relation']).relations_keys}.flatten
-        if known_relations.index(method_key)
-          @relations[method_key] = arguments[0]
-          @loaded_relations[method_key] = arguments[0]
+        known_associations = self.class.associations_keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['association']).associations_keys}.flatten
+        if known_associations.index(method_key)
+          @associations[method_key] = arguments[0]
+          @loaded_associations[method_key] = arguments[0]
           return
         end
-        know_fields = self.class.fields.keys + self.class.many2one_relations.collect {|k, field| self.class.const_get(field['relation']).fields.keys}.flatten
+        know_fields = self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['association']).fields.keys}.flatten
         @attributes[method_key] = arguments[0] and return if know_fields.index(method_key)
       elsif id #it's an action
         arguments += [{}] unless arguments.last.is_a?(Hash)

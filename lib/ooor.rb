@@ -94,11 +94,11 @@ module Ooor
       klass.state = param['state']
       #klass.field_ids = param['field_id']
       #klass.access_ids = param['access_ids']
-      klass.many2one_relations = {}
-      klass.one2many_relations = {}
-      klass.many2many_relations = {}
-      klass.polymorphic_m2o_relations = {}
-      klass.relations_keys = []
+      klass.many2one_associations = {}
+      klass.one2many_associations = {}
+      klass.many2many_associations = {}
+      klass.polymorphic_m2o_associations = {}
+      klass.associations_keys = []
       klass.fields = {}
       klass.scope_prefix = scope_prefix
       @logger.info "registering #{model_class_name} as an ActiveResource proxy for OpenObject #{param['model']} model"
