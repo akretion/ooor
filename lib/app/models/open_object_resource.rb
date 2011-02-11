@@ -183,7 +183,7 @@ module Ooor
 
       #actually finds many resources specified with scope = ids_array
       def find_single(scope, options)
-        fields = options[:fields] || []
+        fields = options[:fields] || options[:only] []
         context = options[:context] || {}
         prefix_options, query_options = split_options(options[:params])
         is_collection = true
@@ -274,7 +274,7 @@ module Ooor
     def load_association(model_key, ids, *arguments)
       options = arguments.extract_options!
       related_class = self.class.const_get(model_key)
-      related_class.send :find, ids, :fields => options[:fields] || [], :context => options[:context] || {}
+      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || {}
     end
 
     def available_fields
