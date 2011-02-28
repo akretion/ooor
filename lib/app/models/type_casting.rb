@@ -14,7 +14,7 @@ module Ooor
           return domain.map{|k,v| [k.to_s, '=', v]}
         elsif domain == []
           return []
-        elsif domain.is_a?(Array) && !domain[0].is_a?(Array)
+        elsif domain.is_a?(Array) && !domain.last.is_a?(Array)
           return [domain]
         else
           return domain
