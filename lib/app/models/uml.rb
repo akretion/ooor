@@ -27,7 +27,6 @@ module Ooor
 
     def serve_uml(*options)#TODO port
       ooor = self
-    p self
       require 'sinatra'
       set :public, File.dirname(__FILE__) + '/../../'
 
