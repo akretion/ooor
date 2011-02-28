@@ -37,7 +37,7 @@ module Ooor
         model.print_uml
         s = ""#"Hello world! #{model_name}"
         s << "<IMG SRC='/x.png' USEMAP='#UMLbyOOOR' />"
-        f=File.open('lib/x.map')
+        f=File.open('x.map')
         f.each_line {|l| s << l}
         s
       end
@@ -147,7 +147,7 @@ module Ooor
       rescue
       end
       #cmd_line2 = "dot -Tpng uml.dot -o uml.png"
-      cmd_line2 = "dot -Tcmapx -olib/x.map -Tpng -olib/x.png uml.dot"
+      cmd_line2 = "dot -Tcmapx -ox.map -Tpng -ox.png uml.dot"
       system(cmd_line2)
     end
 
@@ -158,7 +158,7 @@ module Ooor
         model.reload_fields_definition if model.fields.empty?
 
         #many2one:
-        model.many2one_relations.each do |k, field|
+        model.many2one_associations.each do |k, field|
           target = UML.get_target(is_reverse, local, enabled_targets, field, model)
           if target
             connex_classes.add(target)
@@ -174,7 +174,7 @@ module Ooor
 
      classes.each do |model|
         #one2many:
-        model.one2many_relations.each do |k, field|
+        model.one2many_associations.each do |k, field|
           target = UML.get_target(is_reverse, local, enabled_targets, field, model)
           if target
             connex_classes.add(target)
@@ -189,7 +189,7 @@ module Ooor
         end
 
         #many2many:
-        model.many2many_relations.each do |k, field|
+        model.many2many_associations.each do |k, field|
           target = UML.get_target(is_reverse, local, enabled_targets, field, model)
           if target
             connex_classes.add(target)
