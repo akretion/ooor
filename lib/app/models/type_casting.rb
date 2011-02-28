@@ -71,16 +71,16 @@ module Ooor
     
     def to_openerp_hash!
       cast_relations_to_openerp!
-      @attributes.reject {|k, v| k == 'id'}.merge(@relations)
+      @attributes.reject {|k, v| k == 'id'}.merge(@associations)
     end
     
     def cast_relations_to_openerp!
-      @relations.reject! do |k, v| #reject non assigned many2one or empty list
+      @associations.reject! do |k, v| #reject non assigned many2one or empty list
         v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String))
       end
 
-      def cast_relation(k, v, one2many_relations, many2many_relations)
-        if one2many_relations[k]
+      def cast_relation(k, v, one2many_associations, many2many_associations)
+        if one2many_associations[k]
           return v.collect! do |value|
             if value.is_a?(OpenObjectResource) #on the fly creation as in the GTK client
               [0, 0, value.to_openerp_hash!]
@@ -92,24 +92,24 @@ module Ooor
               end
             end
           end
-        elsif many2many_relations[k]
+        elsif many2many_associations[k]
           return v = [[6, 0, v]]
         end
       end
 
-      @relations.each do |k, v| #see OpenERP awkward relations API
+      @associations.each do |k, v| #see OpenERP awkward associations API
         #already casted, possibly before server error!
         next if (v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array)) \
-                || self.class.many2one_relations[k] \
+                || self.class.many2one_associations[k] \
                 || !v.is_a?(Array)
-        new_rel = self.cast_relation(k, v, self.class.one2many_relations, self.class.many2many_relations)
+        new_rel = self.cast_relation(k, v, self.class.one2many_associations, self.class.many2many_associations)
         if new_rel #matches a known o2m or m2m
-          @relations[k] = new_rel
+          @associations[k] = new_rel
         else
-          self.class.many2one_relations.each do |k2, field| #try to cast the relation to an inherited o2m or m2m:
+          self.class.many2one_associations.each do |k2, field| #try to cast the association to an inherited o2m or m2m:
             linked_class = self.class.const_get(field['relation'])
-            new_rel = self.cast_relation(k, v, linked_class.one2many_relations, linked_class.many2many_relations)
-            @relations[k] = new_rel and break if new_rel
+            new_rel = self.cast_relation(k, v, linked_class.one2many_associations, linked_class.many2many_associations)
+            @associations[k] = new_rel and break if new_rel
           end
         end
       end

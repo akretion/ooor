@@ -76,7 +76,7 @@ module Ooor
   #            elsif field['type'] == 'char'
   #              self.send :validates_length_of, k, :maximum => field['size'] || 128
   #            end
-              @fields[k] = field
+              @fields[k] = field if field['name'] != 'id'
             end
   #          if field["required"]
   #            if field['type'] == 'many2one'
@@ -164,7 +164,7 @@ module Ooor
         [wizard_id, cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, params, step, context))]
       end
 
-      def method_missing(method_symbol, *arguments)
+      def method_missing(method_symbol, *arguments)        
         raise RuntimeError.new("Invalid RPC method:  #{method_symbol}") if [:type!, :allowed!].index(method_symbol)
         self.rpc_execute(method_symbol.to_s, *arguments)
       end
@@ -280,10 +280,10 @@ module Ooor
     def available_fields
       msg = "\n*** AVAILABLE FIELDS ON OBJECT #{self.class.name} ARE: ***"
       msg << "\n\n" << self.class.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
-      msg << "\n\n" << self.class.many2one_associations.map {|k, v| "many2one --- #{v['association']} --- #{k}"}.join("\n")
-      msg << "\n\n" << self.class.one2many_associations.map {|k, v| "one2many --- #{v['association']} --- #{k}"}.join("\n")
-      msg << "\n\n" << self.class.many2many_associations.map {|k, v| "many2many --- #{v['association']} --- #{k}"}.join("\n")
-      msg << "\n\n" << self.class.polymorphic_m2o_associations.map {|k, v| "polymorphic_m2o --- #{v['association']} --- #{k}"}.join("\n")
+      msg << "\n\n" << self.class.many2one_associations.map {|k, v| "many2one --- #{v['relation']} --- #{k}"}.join("\n")
+      msg << "\n\n" << self.class.one2many_associations.map {|k, v| "one2many --- #{v['relation']} --- #{k}"}.join("\n")
+      msg << "\n\n" << self.class.many2many_associations.map {|k, v| "many2many --- #{v['relation']} --- #{k}"}.join("\n")
+      msg << "\n\n" << self.class.polymorphic_m2o_associations.map {|k, v| "polymorphic_m2o --- #{v['relation']} --- #{k}"}.join("\n")
     end
 
     #takes care of reading OpenERP default field values.
@@ -364,20 +364,20 @@ module Ooor
     def relationnal_result(method_name, *arguments)
       self.class.reload_fields_definition()
       if self.class.many2one_associations.has_key?(method_name)
-        load_relation(self.class.many2one_associations[method_name]['association'], @associations[method_name].is_a?(Integer) && @associations[method_name] || @associations[method_name][0], *arguments)
+        load_association(self.class.many2one_associations[method_name]['relation'], @associations[method_name].is_a?(Integer) && @associations[method_name] || @associations[method_name][0], *arguments)
       elsif self.class.one2many_associations.has_key?(method_name)
-        load_relation(self.class.one2many_associations[method_name]['association'], @associations[method_name], *arguments) || []
+        load_association(self.class.one2many_associations[method_name]['relation'], @associations[method_name], *arguments) || []
       elsif self.class.many2many_associations.has_key?(method_name)
-        load_relation(self.class.many2many_associations[method_name]['association'], @associations[method_name], *arguments) || []
+        load_association(self.class.many2many_associations[method_name]['relation'], @associations[method_name], *arguments) || []
       elsif self.class.polymorphic_m2o_associations.has_key?(method_name)
         values = @associations[method_name].split(',')
-        load_relation(values[0], values[1].to_i, *arguments)
+        load_association(values[0], values[1].to_i, *arguments)
       else
         false
       end
     end
     
-    def method_missing(method_symbol, *arguments)
+    def method_missing(method_symbol, *arguments)      
       method_name = method_symbol.to_s
       is_assign = method_name.end_with?('=')
       method_key = method_name.sub('=', '')
@@ -394,13 +394,13 @@ module Ooor
         load(rpc_execute('read', [id], [method_key], *arguments)[0] || {})
         return method_missing(method_key, *arguments)
       elsif is_assign
-        known_associations = self.class.associations_keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['association']).associations_keys}.flatten
+        known_associations = self.class.associations_keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation']).associations_keys}.flatten
         if known_associations.index(method_key)
           @associations[method_key] = arguments[0]
           @loaded_associations[method_key] = arguments[0]
           return
         end
-        know_fields = self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['association']).fields.keys}.flatten
+        know_fields = self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation']).fields.keys}.flatten
         @attributes[method_key] = arguments[0] and return if know_fields.index(method_key)
       elsif id #it's an action
         arguments += [{}] unless arguments.last.is_a?(Hash)
