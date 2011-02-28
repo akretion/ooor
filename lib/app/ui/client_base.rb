@@ -23,12 +23,7 @@ module Ooor
   module ClientBase
 
     def menu_class
-      action_window_class()
       const_get('ir.ui.menu').send :include, MenuModule
-    end
-
-    def action_window_class
-      const_get('ir.actions.act_window').send :include, ActionWindowModule
     end
 
     def get_init_menu(user_id=@config[:user_id])

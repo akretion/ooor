@@ -19,14 +19,27 @@ module Ooor
     class << self
       attr_accessor :klass, :openerp_act_window, :views
       
-      def define_action_window(act_window_param)
+      def from_menu(menu)
         act_win_class = Class.new(ActionWindow)
-        if act_window_param.ancestors.include?(OpenObjectResource)
-          act_win_class.openerp_act_window = IrActionsAct_window.find(:first, :domain=>[['res_model', '=', act_window_param.openerp_model]])
-          act_win_class.klass = act_window_param
-          act_win_class.views = {}
-          Object.const_set("SuperTest", act_win_class)
-        end #TODO else
+        act_win_class.openerp_act_window = menu.action
+        act_win_class.klass = menu.class.const_get(menu.action.res_model)
+        act_win_class.views = {}
+        act_win_class
+      end
+
+      def from_act_window(act_window)
+        act_win_class = Class.new(ActionWindow)
+        act_win_class.openerp_act_window = act_window
+        act_win_class.klass = act_window.class.const_get(act_window.res_model)
+        act_win_class.views = {}
+        act_win_class
+      end
+      
+      def from_model(act_window_param)
+        act_win_class = Class.new(ActionWindow)
+        act_win_class.openerp_act_window = IrActionsAct_window.find(:first, :domain=>[['res_model', '=', act_window_param.openerp_model]])
+        act_win_class.klass = act_window_param
+        act_win_class.views = {}
         act_win_class
       end 
     
