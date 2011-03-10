@@ -364,6 +364,7 @@ module Ooor
     def relationnal_result(method_name, *arguments)
       self.class.reload_fields_definition()
       if self.class.many2one_associations.has_key?(method_name)
+        return false unless @associations[method_name]
         load_association(self.class.many2one_associations[method_name]['relation'], @associations[method_name].is_a?(Integer) && @associations[method_name] || @associations[method_name][0], *arguments)
       elsif self.class.one2many_associations.has_key?(method_name)
         load_association(self.class.one2many_associations[method_name]['relation'], @associations[method_name], *arguments) || []
