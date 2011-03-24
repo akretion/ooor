@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = %q{ooor}
-  s.version = "1.5.1"
+  s.version = "1.5.2"
   s.date = %q{2011-03-10}
   s.authors = ["Raphael Valyi - www.akretion.com"]
   s.email = %q{rvalyi@akretion.com}
@@ -11,4 +11,6 @@ Gem::Specification.new do |s|
     "lib/app/models/open_object_resource.rb", "lib/app/models/type_casting.rb", "lib/app/models/uml.rb", "lib/app/models/base64.rb", "lib/app/models/ooor_client.rb","lib/app/models/relation.rb", "lib/app/models/db_service.rb", "lib/app/models/common_service.rb",
     "lib/app/ui/action_window.rb", "lib/app/ui/client_base.rb", "lib/app/ui/form_model.rb", "lib/app/ui/menu.rb", "spec/ooor_spec.rb"]
   s.add_dependency(%q<activeresource>, [">= 2.3.5"])
+  s.bindir       = "bin"
+  s.executables  = %w( ooor )
 end
