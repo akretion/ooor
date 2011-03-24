@@ -1,0 +1,57 @@
+#!/usr/bin/ruby
+
+puts "*** OOOR - OpenObject on Rails! is published under the AGPL license by Akretion.com ***"
+
+require 'irb'
+require 'rubygems'
+require 'ooor'
+
+begin
+  #require 'bond' #auto-completion
+  #Bond.start
+  require 'irb/completion'
+rescue
+  require 'irb/completion'
+end
+
+  
+unless ARGV.empty?
+  username = ARGV[0].split(".")[0]
+  database = ARGV[0].split(".")[1].split("@")[0]
+  if ARGV[0].index("@")
+    base_url = ARGV[0].split("@")[1]
+  else
+    base_url = "localhost"
+    end  
+  port_given = false
+  if base_url.index(":") #port in URL
+    t = base_url.split(":")
+    base_url = t[0]
+    port = t[1]
+    port_given = true
+  else
+    port = "8069"
+  end
+  url = "http://#{base_url}:#{port}/xmlrpc"
+  if ARGV[1] && ARGV[1] != "-s"
+    password = ARGV[1]
+  else
+    puts "password?"
+    password = $stdin.gets.chomp!
+  end
+  
+  if ARGV[1] == "-s" || ARGV[2] == "-s" #secure mode
+    url.gsub!("http", "https")
+    url.gsub!("8069", "8071") unless port_given
+  end
+else
+  puts "USAGE: ooor admin.database@host\nor ooor admin.database@host:port\nor ooor admin.database for localhost\nyou can specify the password with ooor admin.database@host password\nyou can use the -s option for secure HTTPS mode"
+  exit 0
+end
+
+ARGV = []
+ARGV << '--readline' << '--prompt' << 'inf-ruby'
+
+ooor = Ooor.new(:url => url, :database => database || 'demo', :username => username || 'admin', :password => password || 'admin')
+
+IRB.start(__FILE__)
