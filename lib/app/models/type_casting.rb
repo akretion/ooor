@@ -40,6 +40,8 @@ module Ooor
             map[k] = "#{v.year}-#{v.month}-#{v.day} #{v.hour}:#{v.min}:#{v.sec}"
           elsif !v.is_a?(Numeric) && !v.is_a?(Integer) && v.respond_to?(:day) && v.respond_to?(:year)#really ensure that's a date type
             map[k] = "#{v.year}-#{v.month}-#{v.day}"
+          elsif v == "false" #may happen with OOORBIT
+            map[k] = false
           end
         end
       end
