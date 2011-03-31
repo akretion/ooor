@@ -124,7 +124,16 @@ module Ooor
       end
 
       def rpc_execute_with_object(object, method, *args)
-        rpc_execute_with_all(@database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], object, method, *args)
+        if args[-1].is_a? Hash #context
+          user_id = args[-1].delete(:user_id) || args[-1].delete('user_id') || @user_id || @ooor.config[:user_id]
+          password = args[-1].delete(:password) || args[-1].delete('password') || @password || @ooor.config[:password]
+          database = args[-1].delete(:database) || args[-1].delete('database') || @database || @ooor.config[:database]
+        else
+          user_id = @user_id || @ooor.config[:user_id] #TODO @user_id useless?
+          password = @password || @ooor.config[:password]
+          database = @database || @ooor.config[:database]
+        end
+        rpc_execute_with_all(database, user_id, password, object, method, *args)
       end
 
       #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
@@ -232,7 +241,7 @@ module Ooor
     attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
 
     def object_db; object_session[:database] || self.class.database || self.class.ooor.config[:database]; end
-    def object_uid;object_session[:user_id] || self.class.user_id || self.class.ooor.config[:user_id]; end
+    def object_uid; object_session[:user_id] || self.class.user_id || self.class.ooor.config[:user_id]; end
     def object_pass; object_session[:password] || self.class.password || self.class.ooor.config[:password]; end
 
     #try to wrap the object context inside the query.
