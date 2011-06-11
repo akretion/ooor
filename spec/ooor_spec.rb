@@ -172,6 +172,12 @@ describe Ooor do
     end
 
     describe "Basic creations" do
+      it "should be able to assign a value to an unloaded field" do
+        p = ProductProduct.new
+        p.name = "testProduct1"
+        p.name.should == "testProduct1"
+      end
+
       it "should be able to create a product" do
         p = ProductProduct.create(:name => "testProduct1", :categ_id => 1)
         ProductProduct.find(p.id).categ_id.id.should == 1

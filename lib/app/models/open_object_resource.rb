@@ -400,9 +400,6 @@ module Ooor
       elsif @associations.has_key?(method_name)
         result = relationnal_result(method_name, *arguments)
         @loaded_associations[method_name] = result and return result if result
-      elsif self.class.fields.has_key?(method_key) || self.class.associations_keys.index(method_name) #unloaded field/association
-        load(rpc_execute('read', [id], [method_key], *arguments)[0] || {})
-        return method_missing(method_key, *arguments)
       elsif is_assign
         known_associations = self.class.associations_keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation']).associations_keys}.flatten
         if known_associations.index(method_key)
@@ -412,6 +409,9 @@ module Ooor
         end
         know_fields = self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation']).fields.keys}.flatten
         @attributes[method_key] = arguments[0] and return if know_fields.index(method_key)
+      elsif self.class.fields.has_key?(method_key) || self.class.associations_keys.index(method_name) #unloaded field/association
+        load(rpc_execute('read', [id], [method_key], *arguments)[0] || {})
+        return method_missing(method_key, *arguments)
       elsif id #it's an action
         arguments += [{}] unless arguments.last.is_a?(Hash)
         rpc_execute(method_key, [id], *arguments) #we assume that's an action
