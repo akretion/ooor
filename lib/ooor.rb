@@ -52,13 +52,13 @@ module Ooor
     def initialize(config, env=false)
       @config = config.is_a?(String) ? Ooor.load_config(config, env) : config
       @config.symbolize_keys!
-      @logger = ((defined?(Rails) && $0 != 'irb' && Rails.logger || config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
-      @logger.level = config[:log_level] if config[:log_level]
+      @logger = ((defined?(Rails) && $0 != 'irb' && Rails.logger || @config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
+      @logger.level = @config[:log_level] if @config[:log_level]
       OpenObjectResource.logger = @logger
-      @base_url = config[:url].gsub(/\/$/,'')
+      @base_url = @config[:url].gsub(/\/$/,'')
       @loaded_models = []
-      scope = Module.new and Object.const_set(config[:scope_prefix], scope) if config[:scope_prefix]
-      load_models() if config[:database]
+      scope = Module.new and Object.const_set(@config[:scope_prefix], scope) if @config[:scope_prefix]
+      load_models() if @config[:database]
     end
 
     def const_get(model_key)
