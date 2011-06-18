@@ -5,14 +5,7 @@ puts "*** OOOR - OpenObject on Rails! is published under the AGPL license by Akr
 require 'irb'
 require 'rubygems'
 require 'ooor'
-
-begin
-  #require 'bond' #auto-completion
-  #Bond.start
-  require 'irb/completion'
-rescue
-  require 'irb/completion'
-end
+require 'irb/completion'
 
   
 unless ARGV.empty?
@@ -49,9 +42,10 @@ else
   exit 0
 end
 
-ARGV = []
-ARGV << '--readline' << '--prompt' << 'inf-ruby'
+ARGV[0] = "--readline"
+ARGV[1] = "--prompt"
+ARGV[2] = "inf-ruby"
 
-ooor = Ooor.new(:url => url, :database => database || 'demo', :username => username || 'admin', :password => password || 'admin')
+ooor = Ooor.new(:url => url, :database => database || 'demo', :username => username || 'admin', :password => password || 'admin', :log_level => Logger::INFO)
 
 IRB.start(__FILE__)
