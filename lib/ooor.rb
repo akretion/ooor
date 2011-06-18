@@ -101,7 +101,7 @@ module Ooor
       klass.associations_keys = []
       klass.fields = {}
       klass.scope_prefix = scope_prefix
-      @logger.info "registering #{model_class_name} as an ActiveResource proxy for OpenObject #{param['model']} model"
+      @logger.debug "registering #{model_class_name} as an ActiveResource proxy for OpenObject #{param['model']} model"
       (scope_prefix ? Object.const_get(scope_prefix) : Object).const_set(model_class_name, klass)
       @loaded_models.push(klass)
       klass
