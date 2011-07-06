@@ -159,6 +159,7 @@ Request params or ActiveResource equivalence of OpenERP domain (but degraded as 
 OpenERP search method:
 
     $ ResPartner.search([['name', 'ilike', 'a']], 0, 2)
+
 Arguments are: domain, offset=0, limit=false, order=false, context={}, count=false
 
 
@@ -187,7 +188,9 @@ Load only specific fields support (faster than loading all fields):
     $ ProductProduct.find(:all, :fields=>["state", "id"])
     $ ProductProduct.find([1,2], :fields=>["state", "id"])
     $ ProductProduct.find(:all, :fields=>["state", "id"])
+
     even in relations:
+
     $ SaleOrder.find(1).order_line(:fields => ["state"])
 
 
@@ -243,6 +246,7 @@ On the fly one2many object graph update/creation:
 
 Just like the OpenERP GTK client (and unlike the web client), in OOOR you can pass create/update
 one2many relation in place directly. For instance:
+
     $ so = SaleOrder.new
     $ so.on_change('onchange_partner_id', :partner_id, 1, 1, false) #auto-complete the address and other data based on the partner
     $ so.order_line = [SaleOrderLine.new(:name => 'sl1', :product_id => 1, :price_unit => 42, :product_uom => 1)] #create one order line
@@ -281,9 +285,12 @@ just like Rails fixtures, OpenERP supports absolute ids for its records, especia
 We are here speaking about the string id of the XML or CSV records, eventually prefixed by the module name.
 Using those ids rather than the SQL ids is a good idea to avoid relying on a particular installation.
 In OOOR, you can both retrieve one or several records using those ids, like for instance:
+
     $ ProductCategory.find('product.product_category_3')
+
 Notice that the 'product.' module prefix is optional here but important if you have similar ids in different module scopes.
 You can also create a resource and it's ir_model_data record alltogether using the ir_mode_data_id param:
+
     $ ProductCategory.create(:name => 'rails_categ', :ir_model_data_id =>['product', 'categ_x']) #1st tab element is the module, 2nd the id in the module
 
 
@@ -292,6 +299,7 @@ Change logged user:
     $ Ooor.global_login('demo', 'demo')
     $ s = SaleOrder.find(2)
     $ => 'Access denied error'
+
 Notice that this changes the globally logged user and doesn't address the issue of
 different users using Ooor concurrently with different credentials as you might want
 for instance in a Rails web application. That second issue will be addressed at
@@ -302,6 +310,7 @@ Change log level:
 
 By default the log level is very verbose (debug level) to help newcomers to jumpstart.
 However you might want to change that. 2 solutions:
+
     $ Ooor.logger.level = 1 #available levels are those of the standard Ruby Logger class: 0 debug, 1 info, 2 error
     $ In the config yaml file or hash, set the :log_level parameter
 
