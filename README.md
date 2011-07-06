@@ -3,16 +3,16 @@ OOOR - OpenObject On Rails
 
 <table>
     <tr>
-        <td width="159px"><a href="http://github.com/rvalyi/ooor" title="OOOR - OpenObject On Rails"><img src="http://akretion.s3.amazonaws.com/assets/ooor_m.jpg" width="159px" height="124px" /></a></td>
+        <td width="159px"><a href="http://github.com/rvalyi/ooor" title="OOOR - OpenObject On Ruby"><img src="http://akretion.s3.amazonaws.com/assets/ooor_m.jpg" width="159px" height="124px" /></a></td>
         <td><b>BY</b></td>
         <td width="320px"><a href="http://www.akretion.com" title="Akretion - open source to spin the world"><img src="http://akretion.s3.amazonaws.com/assets/logo.png" width="320px" height="154px" /></a></td>
         <td width="285px">
-OOOR stands for OpenObject On Rails. OpenObject is the RAD framework behind OpenERP,
+OOOR stands for OpenObject On Ruby. OpenObject is the RAD framework behind OpenERP,
 the ERP that doesn't hurt, just like Rails is "web development that doesn't hurt".
-So OOOR exposes seamlessly your OpenOpbject application, to your custom Rails application.
+So OOOR exposes seamlessly your OpenObject application, to your custom Ruby or Rails application.
 Needless to say, OOOR doubly doesn't hurt.
 Furthermore, OOOR only depends on the "activeresource" gem. So it can even be used
-in any (J)Ruby application without Rails.
+in any Ruby application without Rails. It's also fully JRuby compatible and hence make the bridge between the Python OpenERP and the Java ecosystem.
         </td>
     </tr>
 </table>
@@ -21,9 +21,9 @@ in any (J)Ruby application without Rails.
 Why?
 ------------
 
-OpenERP makes it really straightforward to create/customize business applications with:
+OpenERP makes it really straightforward to create custom business applications with:
 
-* standard ERP business modules (more than 300 modules)
+* standard ERP business modules (more than 500 modules)
 * complex relationnal data model, with automated migration and backoffice interfaces
 * ACID transactions on PostgreSQL
 * role based
@@ -79,16 +79,6 @@ Then we cache that relational model and use it in OpenObjectResource.method_miss
 OOOR also extends ActiveResource a bit with special request parameters (like :domain or :context) that will just map smoothly to the OpenERP native API, see API.
 
 
-Trying it simply
-------------
-
-If you have Java 1.6+ installed, then the easiest way to tryout OOOR might be to download the [TerminatOOOR zip](http://github.com/rvalyi/terminatooor/downloads)
-and double-click on jruby-ooor.jar or launch it by command line with java -jar jruby-ooor.jar: it will launch an OOOR console with helpful auto-completion (hit 'tab') on OpenERP business objects.
-
-You can read [an introduction to OOOR on Akretion's blog.](http://www.akretion.com/en/blog/2010/01/18/introducing-ooor---openobject-on-rails-drivingrequesting-your-openerp-became-a-child-play/)
-
-
-
 Installation
 ------------
 
@@ -96,20 +86,33 @@ You can use OOOR in a standalone (J)Ruby application, or in a Rails application,
 For both example we assume that you already started some OpenERP server on localhost, with XML/RPC on port 8069 (default),
 with a database called 'mybase', with username 'admin' and password 'admin'.
 
-In all case, you first need to install the ooor gem:
+In all case, you first need to install Ruby, then the rubygems package manager and finally the ooor gem with:
 
     $ gem install ooor
 (the ooor gem is hosted [on gemcutter.org here](http://gemcutter.org/gems/ooor), make sure you have it in your gem source lists, a way is to do >gem tumble)
 
 
+Trying it simply
+------------
+
+Once you installed the OOOR gem, you get a new OOOR command line. Basic usage is:
+
+    $ ooor username.database@host:xmlrpc_port
+
+This will bring you in a standard IRB interpreter with an OOOR client already connected to your OpenERP server so you can start playing with it.
+
+
 ### Standalone (J)Ruby application:
 
 Let's test OOOR in an irb console (irb command):
+
     $ require 'rubygems'
     $ require 'ooor'
     $ Ooor.new(:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin')
+
 This should load all your OpenERP models into Ruby proxy Activeresource objects. Of course there are option to load only some models.
 Let's try to retrieve the user with id 1:
+
     $ ResUsers.find(1)
 	
 (in case you have an error like "no such file to load -- net/https", then on Debian/Ubuntu, you might need to do before: apt-get install libopenssl-ruby)
@@ -124,7 +127,7 @@ API usage
 ------------
 
 Note: Ruby proxies objects are named after OpenERP models in but removing the '.' and using CamelCase.
-we remind you that OpenERP tables are also named after OpenERP models but replacing the '.' by '_'.
+(we remind you that OpenERP tables are also named after OpenERP models but replacing the '.' by '_'.)
 
 Basic finders:
 
