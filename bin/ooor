@@ -6,7 +6,6 @@ require 'irb'
 require 'rubygems'
 require 'ooor'
 require 'irb/completion'
-
   
 unless ARGV.empty?
   username = ARGV[0].split(".")[0]

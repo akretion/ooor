@@ -141,7 +141,7 @@ module Ooor
         clean_request_args!(args)
         reload_fields_definition()
         logger.debug "OOOR RPC: rpc_method: 'execute', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
-        cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("execute",  db, uid, pass, obj, method, *args))
+        cast_answer_to_ruby!(client("#{(@database && @site || @ooor.base_url)}/object").call("execute",  db, uid, pass, obj, method, *args))
       end
 
        #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
@@ -157,7 +157,7 @@ module Ooor
         clean_request_args!(args)
         reload_fields_definition()
         logger.debug "OOOR RPC: 'exec_workflow', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, action: #{action}, *args: #{args.inspect}"
-        cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/object").call("exec_workflow", db, uid, pass, obj, action, *args))
+        cast_answer_to_ruby!(client("#{(@database && @site || @ooor.base_url)}/object").call("exec_workflow", db, uid, pass, obj, action, *args))
       end
 
       def old_wizard_step(wizard_name, ids, step='init', wizard_id=nil, form={}, context={}, report_type='pdf')
@@ -170,7 +170,7 @@ module Ooor
         params = {'model' => @openerp_model, 'form' => form, 'report_type' => report_type}
         params.merge!({'id' => ids[0], 'ids' => ids}) if ids
         logger.debug "OOOR RPC: 'execute old_wizard_step' #{wizard_id}, #{params.inspect}, #{step}, #{context}"
-        [wizard_id, cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, params, step, context))]
+        [wizard_id, cast_answer_to_ruby!(client("#{(@database && @site || @ooor.base_url)}/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, params, step, context))]
       end
 
       def method_missing(method_symbol, *arguments)        
