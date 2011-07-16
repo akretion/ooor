@@ -6,7 +6,7 @@ module Ooor
     module ClassMethods
       
       def openerp_string_domain_to_ruby(string_domain)
-        eval(string_domain.gsub('(', '[').gsub(')',']'))
+        eval(string_domain.gsub!('(', '[')!.gsub(')',']'))
       end
       
       def to_openerp_domain(domain)
