@@ -74,7 +74,7 @@ module Ooor
       else #we load all the models
         model_ids = @config[:search_models] && @ir_model_class.search() - [1] || (@config[:nb_models] || 500).times.map{|i| i}
       end
-      models = @ir_model_class.read(model_ids, ['name', 'model', 'id', 'info', 'state'])#, 'field_id', 'access_ids'])
+      models = @ir_model_class.read(model_ids, ['model'])#['name', 'model', 'id', 'info', 'state'])#, 'field_id', 'access_ids'])
       @global_context.merge!({}).merge!(@config[:global_context] || {})
       models.each {|openerp_model| define_openerp_model(openerp_model, @config[:scope_prefix])}
     end
