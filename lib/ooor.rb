@@ -72,7 +72,7 @@ module Ooor
       if to_load_models #we load only a customized subset of the OpenERP models
         model_ids = @ir_model_class.search([['model', 'in', to_load_models]])
       else #we load all the models
-        model_ids = @ir_model_class.search() - [1]
+        model_ids = 500.times.map{|i| i} #@ir_model_class.search() - [1]
       end
       models = @ir_model_class.read(model_ids, ['name', 'model', 'id', 'info', 'state'])#, 'field_id', 'access_ids'])
       @global_context.merge!({}).merge!(@config[:global_context] || {})
