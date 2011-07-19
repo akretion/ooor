@@ -55,7 +55,7 @@ module Ooor
       @logger = ((defined?(Rails) && $0 != 'irb' && Rails.logger || @config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
       @logger.level = @config[:log_level] if @config[:log_level]
       OpenObjectResource.logger = @logger
-      @base_url = @config[:url].gsub!(/\/$/,'')
+      @base_url = @config[:url].gsub(/\/$/,'')
       @loaded_models = []
       scope = Module.new and Object.const_set(@config[:scope_prefix], scope) if @config[:scope_prefix]
       load_models() if @config[:database]
@@ -72,7 +72,7 @@ module Ooor
       if to_load_models #we load only a customized subset of the OpenERP models
         model_ids = @ir_model_class.search([['model', 'in', to_load_models]])
       else #we load all the models
-        model_ids = @config[:search_models] && @ir_model_class.search() - [1] || (@config[:nb_models] || 500).times.map{|i| i}
+        model_ids = @config[:search_models] && @ir_model_class.search() - [1] || @config[:nb_models] || (501.times.map{|i| i}[2..500])
       end
       models = @ir_model_class.read(model_ids, ['model'])#['name', 'model', 'id', 'info', 'state'])#, 'field_id', 'access_ids'])
       @global_context.merge!({}).merge!(@config[:global_context] || {})
@@ -88,7 +88,7 @@ module Ooor
       klass.database = database
       klass.openerp_model = param['model']
       klass.openerp_id = url || param['id']
-      klass.info = (param['info'] || '').gsub!("'",' ')
+      klass.info = (param['info'] || '').gsub("'",' ')
       model_class_name = klass.class_name_from_model_key
       klass.name = model_class_name
       klass.state = param['state']
