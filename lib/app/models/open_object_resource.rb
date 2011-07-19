@@ -19,7 +19,7 @@ require 'rubygems'
 require 'active_resource'
 require 'app/ui/form_model'
 require 'app/models/uml'
-if ENV["RUBY_VERSION"].match "jruby"
+if defined? Java
   require 'app/models/ooor_java_client'
 else
   require 'app/models/ooor_client'
@@ -119,7 +119,7 @@ module Ooor
 
       def client(url)
         @clients ||= {}
-        @clients[url] ||= ENV["RUBY_VERSION"].match("jruby") ? OOORJavaClient.new2(url, nil, 900) : OOORClient.new2(url, nil, 900)
+        @clients[url] ||= defined?(Java) ? OOORJavaClient.new2(url, nil, 900) : OOORClient.new2(url, nil, 900)
       end
 
       #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
