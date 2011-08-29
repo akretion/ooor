@@ -21,7 +21,7 @@ module Ooor
     def global_login(user, password)
       @config[:username] = user
       @config[:password] = password
-      @config[:user_id] = OpenObjectResource.client(@base_url + "/common").call("login", @config[:database], user, password)
+      @config[:user_id] = get_rpc_client(@base_url + "/common").call("login", @config[:database], user, password)
       rescue Exception => error
         @logger.error """login to OpenERP server failed:
          #{error.inspect}
@@ -36,7 +36,7 @@ module Ooor
     [:ir_get, :ir_set, :ir_del, :about, :logout, :timezone_get, :get_available_updates, :get_migration_scripts, :get_server_environment, :login_message, :check_connectivity].each do |meth|
       self.instance_eval do
         define_method meth do |*args|
-          OpenObjectResource.client(@base_url + "/common").call(meth.to_s, *args)
+          get_rpc_client(@base_url + "/common").call(meth.to_s, *args)
         end
       end
     end

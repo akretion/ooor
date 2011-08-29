@@ -25,24 +25,31 @@ module Ooor
         if args[-1].is_a? Hash
           args[-1] = @ooor.global_context.merge(args[-1])
         elsif args.is_a?(Array)
+          args.map! {|v| value_to_openerp(v)}
           args += [@ooor.global_context]
         end
-        cast_request_to_openerp!(args[-2]) if args[-2].is_a? Hash
+        cast_map_to_openerp!(args[-2]) if args[-2].is_a? Hash
+      end
+      
+      def value_to_openerp(v)
+        if v == nil
+          return false
+        elsif !v.is_a?(Integer) && !v.is_a?(Float) && v.is_a?(Numeric) && v.respond_to?(:to_f)
+          return v.to_f
+        elsif !v.is_a?(Numeric) && !v.is_a?(Integer) && v.respond_to?(:sec) && v.respond_to?(:year)#really ensure that's a datetime type
+          return "#{v.year}-#{v.month}-#{v.day} #{v.hour}:#{v.min}:#{v.sec}"
+        elsif !v.is_a?(Numeric) && !v.is_a?(Integer) && v.respond_to?(:day) && v.respond_to?(:year)#really ensure that's a date type
+          return "#{v.year}-#{v.month}-#{v.day}"
+        elsif v == "false" #may happen with OOORBIT
+          return false
+        else
+          v
+        end
       end
 
-      def cast_request_to_openerp!(map)
+      def cast_map_to_openerp!(map)
         map.each do |k, v|
-          if v == nil
-            map[k] = false
-          elsif !v.is_a?(Integer) && !v.is_a?(Float) && v.is_a?(Numeric) && v.respond_to?(:to_f)
-            map[k] = v.to_f
-          elsif !v.is_a?(Numeric) && !v.is_a?(Integer) && v.respond_to?(:sec) && v.respond_to?(:year)#really ensure that's a datetime type
-            map[k] = "#{v.year}-#{v.month}-#{v.day} #{v.hour}:#{v.min}:#{v.sec}"
-          elsif !v.is_a?(Numeric) && !v.is_a?(Integer) && v.respond_to?(:day) && v.respond_to?(:year)#really ensure that's a date type
-            map[k] = "#{v.year}-#{v.month}-#{v.day}"
-          elsif v == "false" #may happen with OOORBIT
-            map[k] = false
-          end
+          map[k] = value_to_openerp(v)
         end
       end
 

@@ -49,6 +49,29 @@ module Ooor
       {}
     end
 
+    def get_rpc_client(url)
+      @rpc_clients ||= {}
+      unless @rpc_clients[url]
+        if defined?(Java) && @config[:rpc_client] != 'ruby'
+          begin
+            require 'jooor'
+            @rpc_clients[url] = get_java_rpc_client(url)
+          rescue LoadError
+            puts "WARNING falling back on Ruby xmlrpc/client client (much slower). Install the 'jooor' gem if you want Java speed for the RPC!"
+            @rpc_clients[url] = get_ruby_rpc_client(url)
+          end
+        else
+          @rpc_clients[url] = get_ruby_rpc_client(url)
+        end
+      end
+      @rpc_clients[url]
+    end
+
+    def get_ruby_rpc_client(url)
+      require 'app/models/ooor_client'
+      XMLClient.new2(self, url, nil, @config[:rpc_timeout] || 900)
+    end
+
     def initialize(config, env=false)
       @config = config.is_a?(String) ? Ooor.load_config(config, env) : config
       @config.symbolize_keys!
@@ -106,7 +129,6 @@ module Ooor
       @loaded_models.push(klass)
       klass
     end
-
   end
   
   if defined?(Rails) #Optional autoload in Rails:

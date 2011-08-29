@@ -19,11 +19,6 @@ require 'rubygems'
 require 'active_resource'
 require 'app/ui/form_model'
 require 'app/models/uml'
-if defined? Java
-  require 'app/models/ooor_java_client'
-else
-  require 'app/models/ooor_client'
-end
 require 'app/models/type_casting'
 require 'app/models/relation'
 
@@ -117,11 +112,6 @@ module Ooor
       def order(value); relation.order(value); end
       def offset(value); relation.offset(value); end
 
-      def client(url)
-        @clients ||= {}
-        @clients[url] ||= defined?(Java) ? OOORJavaClient.new2(url, nil, 900) : OOORClient.new2(url, nil, 900)
-      end
-
       #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
       def rpc_execute(method, *args)
         rpc_execute_with_object(@openerp_model, method, *args)
@@ -145,7 +135,7 @@ module Ooor
         clean_request_args!(args)
         reload_fields_definition()
         logger.debug "OOOR RPC: rpc_method: 'execute', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
-        cast_answer_to_ruby!(client("#{(@database && @site || @ooor.base_url)}/object").call("execute",  db, uid, pass, obj, method, *args))
+        cast_answer_to_ruby!(@ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/object").call("execute",  db, uid, pass, obj, method, *args))
       end
 
        #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
@@ -161,7 +151,7 @@ module Ooor
         clean_request_args!(args)
         reload_fields_definition()
         logger.debug "OOOR RPC: 'exec_workflow', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, action: #{action}, *args: #{args.inspect}"
-        cast_answer_to_ruby!(client("#{(@database && @site || @ooor.base_url)}/object").call("exec_workflow", db, uid, pass, obj, action, *args))
+        cast_answer_to_ruby!(@ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/object").call("exec_workflow", db, uid, pass, obj, action, *args))
       end
 
       def old_wizard_step(wizard_name, ids, step='init', wizard_id=nil, form={}, context={}, report_type='pdf')
@@ -169,12 +159,12 @@ module Ooor
         cast_request_to_openerp!(form)
         unless wizard_id
           logger.debug "OOOR RPC: 'create old_wizard_step' #{wizard_name}"
-          wizard_id = cast_answer_to_ruby!(client((@database && @site || @ooor.base_url) + "/wizard").call("create",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_name))
+          wizard_id = cast_answer_to_ruby!(@ooor.get_rpc_client((@database && @site || @ooor.base_url) + "/wizard").call("create",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_name))
         end
         params = {'model' => @openerp_model, 'form' => form, 'report_type' => report_type}
         params.merge!({'id' => ids[0], 'ids' => ids}) if ids
         logger.debug "OOOR RPC: 'execute old_wizard_step' #{wizard_id}, #{params.inspect}, #{step}, #{context}"
-        [wizard_id, cast_answer_to_ruby!(client("#{(@database && @site || @ooor.base_url)}/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, params, step, context))]
+        [wizard_id, cast_answer_to_ruby!(@ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, params, step, context))]
       end
 
       def method_missing(method_symbol, *arguments)        
