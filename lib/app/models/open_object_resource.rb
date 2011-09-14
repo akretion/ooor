@@ -299,6 +299,7 @@ module Ooor
       @object_session[:database] = context.delete :database
       @object_session[:password] = context.delete :password
       @object_session[:context] = context
+      @persisted = persisted #TODO match 3.1 ActiveResource API
       if default_get_list == []
         load(attributes)
       else
@@ -317,12 +318,14 @@ module Ooor
       self.id = rpc_execute('create', to_openerp_hash!, context)
       IrModelData.create(:model => self.class.openerp_model, :module => @ir_model_data_id[0], :name=> @ir_model_data_id[1], :res_id => self.id) if @ir_model_data_id
       reload_from_record!(self.class.find(self.id, :context => context)) if reload
+      @persisted = true
     end
 
     #compatible with the Rails way but also supports OpenERP context
     def update(context={}, reload=true)
       rpc_execute('write', [self.id], to_openerp_hash!, context)
       reload_from_record!(self.class.find(self.id, :context => context)) if reload
+      @persisted = true
     end
 
     #compatible with the Rails way but also supports OpenERP context
