@@ -220,7 +220,7 @@ module Ooor
 
       #overriden because loading default fields is all the rage but we don't want them when reading a record
       def instantiate_record(record, prefix_options = {}, context = {})
-        new(record, [], context).tap do |resource|
+        new(record, [], context, true).tap do |resource|
           resource.prefix_options = prefix_options
         end
       end
