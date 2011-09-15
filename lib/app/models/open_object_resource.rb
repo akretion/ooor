@@ -42,10 +42,10 @@ module Ooor
       end
 
       #similar to Object#const_get but for OpenERP model key
-      def const_get(model_key)
+      def const_get(model_key, context={})
         klass_name = class_name_from_model_key(model_key)
         klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : @ooor.define_openerp_model({'model' => model_key}, self.scope_prefix)
-        klass.reload_fields_definition()
+        klass.reload_fields_definition(false, context)
         klass
       end
 
@@ -53,7 +53,7 @@ module Ooor
         self.new(attributes, default_get_list, context).tap { |resource| resource.save(context, reload) }
       end
 
-      def reload_fields_definition(force = false)
+      def reload_fields_definition(force=false, context={})
         if force or not @fields_defined
           @fields_defined = true
           @fields = {}
@@ -122,6 +122,7 @@ module Ooor
           user_id = args[-1].delete(:user_id) || args[-1].delete('user_id') || @user_id || @ooor.config[:user_id]
           password = args[-1].delete(:password) || args[-1].delete('password') || @password || @ooor.config[:password]
           database = args[-1].delete(:database) || args[-1].delete('database') || @database || @ooor.config[:database]
+          args[-1].delete(:context)
         else
           user_id = @user_id || @ooor.config[:user_id] #TODO @user_id useless?
           password = @password || @ooor.config[:password]
@@ -133,7 +134,7 @@ module Ooor
       #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
       def rpc_execute_with_all(db, uid, pass, obj, method, *args)
         clean_request_args!(args)
-        reload_fields_definition()
+        reload_fields_definition(false, {:user_id => uid, :password => pass})
         logger.debug "OOOR RPC: rpc_method: 'execute', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
         cast_answer_to_ruby!(@ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/object").call("execute",  db, uid, pass, obj, method, *args))
       end
@@ -214,10 +215,10 @@ module Ooor
       private
 
       def find_every(options)
-        domain = options[:domain]
+        domain = options[:domain] || []
         context = options[:context] || {}
-        prefix_options, domain = split_options(options[:params]) unless domain
-        ids = rpc_execute('search', to_openerp_domain(domain), options[:offset] || 0, options[:limit] || false,  options[:order] || false, context)
+        #prefix_options, domain = split_options(options[:params]) unless domain
+        ids = rpc_execute('search', to_openerp_domain(domain), options[:offset] || 0, options[:limit] || false,  options[:order] || false, context.dup)
         !ids.empty? && ids[0].is_a?(Integer) && find_single(ids, options) || []
       end
 
@@ -225,7 +226,7 @@ module Ooor
       def find_single(scope, options)
         fields = options[:fields] || options[:only] || []
         context = options[:context] || {}
-        prefix_options, query_options = split_options(options[:params])
+#        prefix_options, query_options = split_options(options[:params])
         is_collection = true
         scope = [scope] and is_collection = false if !scope.is_a? Array
         scope.map! do |item|
@@ -233,13 +234,13 @@ module Ooor
             tab = item.split(".")
             domain = [['name', '=', tab[-1]]]
             domain += [['module', '=', tab[-2]]] if tab[-2]
-            ir_model_data = const_get('ir.model.data').find(:first, :domain => domain)
+            ir_model_data = const_get('ir.model.data', context).find(:first, :domain => domain)
             ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]])[0]
           else
             item
           end
         end.reject! {|item| !item}
-        records = rpc_execute('read', scope, fields, context)
+        records = rpc_execute('read', scope, fields, context.dup)
         records = records.sort_by {|r| scope.index(r["id"])} #TODO use sort_by! in Ruby 1.9
         active_resources = []
         records.each do |record|
@@ -247,7 +248,7 @@ module Ooor
           record.each_pair do |k,v|
             r[k.to_sym] = v
           end
-          active_resources << instantiate_record(r, prefix_options, context)
+          active_resources << instantiate_record(r, {}, context)
         end
         unless is_collection
           return active_resources[0]
@@ -257,7 +258,7 @@ module Ooor
 
       #overriden because loading default fields is all the rage but we don't want them when reading a record
       def instantiate_record(record, prefix_options = {}, context = {})
-        new(record, [], context).tap do |resource|
+        new(record, [], context, true).tap do |resource|
           resource.prefix_options = prefix_options
         end
       end
@@ -288,7 +289,7 @@ module Ooor
     def reload_from_record!(record) load(record.attributes, record.associations) end
 
     def load(attributes, associations={})#an attribute might actually be a association too, will be determined here
-      self.class.reload_fields_definition()
+      self.class.reload_fields_definition(false, object_session)
       raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
       @prefix_options, attributes = split_options(attributes)
       @associations = associations
@@ -313,8 +314,8 @@ module Ooor
 
     def load_association(model_key, ids, *arguments)
       options = arguments.extract_options!
-      related_class = self.class.const_get(model_key)
-      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || {}
+      related_class = self.class.const_get(model_key, object_session)
+      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || object_session
     end
 
     def available_fields
@@ -327,7 +328,7 @@ module Ooor
     end
 
     #takes care of reading OpenERP default field values.
-    def initialize(attributes = {}, default_get_list=false, context={})
+    def initialize(attributes = {}, default_get_list=false, context={}, persisted=false)
       @attributes = {}
       @prefix_options = {}
       @ir_model_data_id = attributes.delete(:ir_model_data_id)
@@ -336,11 +337,12 @@ module Ooor
       @object_session[:database] = context.delete :database
       @object_session[:password] = context.delete :password
       @object_session[:context] = context
+      @persisted = persisted #TODO match 3.1 ActiveResource API
       if default_get_list == []
         load(attributes)
       else
-        self.class.reload_fields_definition()
-        attributes = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, @object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!)
+        self.class.reload_fields_definition(false, object_session)
+        attributes = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!)
         load(attributes)
       end
     end
@@ -354,12 +356,14 @@ module Ooor
       self.id = rpc_execute('create', to_openerp_hash!, context)
       IrModelData.create(:model => self.class.openerp_model, :module => @ir_model_data_id[0], :name=> @ir_model_data_id[1], :res_id => self.id) if @ir_model_data_id
       reload_from_record!(self.class.find(self.id, :context => context)) if reload
+      @persisted = true
     end
 
     #compatible with the Rails way but also supports OpenERP context
     def update(context={}, reload=true)
       rpc_execute('write', [self.id], to_openerp_hash!, context)
       reload_from_record!(self.class.find(self.id, :context => context)) if reload
+      @persisted = true
     end
 
     #compatible with the Rails way but also supports OpenERP context
@@ -402,7 +406,7 @@ module Ooor
 
     # fakes associations like much like ActiveRecord according to the cached OpenERP data model
     def relationnal_result(method_name, *arguments)
-      self.class.reload_fields_definition()
+      self.class.reload_fields_definition(false, object_session)
       if self.class.many2one_associations.has_key?(method_name)
         return false unless @associations[method_name]
         load_association(self.class.many2one_associations[method_name]['relation'], @associations[method_name].is_a?(Integer) && @associations[method_name] || @associations[method_name][0], *arguments)
@@ -422,7 +426,7 @@ module Ooor
       method_name = method_symbol.to_s
       is_assign = method_name.end_with?('=')
       method_key = method_name.sub('=', '')
-      self.class.reload_fields_definition()
+      self.class.reload_fields_definition(false, object_session)
 
       if attributes.has_key?(method_key)
         return super
@@ -432,16 +436,16 @@ module Ooor
         result = relationnal_result(method_name, *arguments)
         @loaded_associations[method_name] = result and return result if result
       elsif is_assign
-        known_associations = self.class.associations_keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation']).associations_keys}.flatten
+        known_associations = self.class.associations_keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).associations_keys}.flatten
         if known_associations.index(method_key)
           @associations[method_key] = arguments[0]
           @loaded_associations[method_key] = arguments[0]
           return
         end
-        know_fields = self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation']).fields.keys}.flatten
+        know_fields = self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).fields.keys}.flatten
         @attributes[method_key] = arguments[0] and return if know_fields.index(method_key)
       elsif self.class.fields.has_key?(method_key) || self.class.associations_keys.index(method_name) #unloaded field/association
-        load(rpc_execute('read', [id], [method_key], *arguments)[0] || {})
+        load(rpc_execute('read', [id], [method_key], *arguments || object_session)[0] || {})
         return method_missing(method_key, *arguments)
       elsif id #it's an action
         arguments += [{}] unless arguments.last.is_a?(Hash)
