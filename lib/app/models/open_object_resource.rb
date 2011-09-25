@@ -21,6 +21,7 @@ require 'app/ui/form_model'
 require 'app/models/uml'
 require 'app/models/type_casting'
 require 'app/models/relation'
+require 'app/models/serialization'
 
 module Ooor
   class OpenObjectResource < ActiveResource::Base
@@ -28,6 +29,7 @@ module Ooor
     #include ActiveModel::Validations
     include UML
     include TypeCasting
+    include Serialization
 
     # ******************** class methods ********************
     class << self
