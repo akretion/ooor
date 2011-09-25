@@ -174,7 +174,44 @@ module Ooor
         raise RuntimeError.new("Invalid RPC method:  #{method_symbol}") if [:type!, :allowed!].index(method_symbol)
         self.rpc_execute(method_symbol.to_s, *arguments)
       end
-
+      
+      #Added methods to obtain report data for a model
+      def report(report_name, ids, report_type='pdf', context={})
+        context = @ooor.global_context.merge(context)
+        params = {'model' => @openerp_model, 'id' => ids[0], 'report_type' => report_type}
+        @ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/report").call("report",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], report_name, ids, params, context)
+      end
+      
+      def report_get(report_id, context={})
+        context = @ooor.global_context.merge(context)
+        @ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/report").call("report_get",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], report_id)
+      end
+      
+      def get_report_data(report_name, ids, report_type='pdf', context={})
+        report_id = self.report(report_name, ids, report_type, context)
+        if report_id
+          state = false
+          attempt = 0
+          while not state
+            report = self.report_get(report_id, context)
+            state = report["state"]
+            attempt = 1
+            if not state 
+              sleep(0.1)
+              attempt += 1
+            else
+              return [report["result"],report["format"]]
+            end
+            if attempt > 100
+              logger.debug "OOOR RPC: 'Printing Aborted!'"
+              break
+            end
+          end     
+        else
+          logger.debug "OOOR RPC: 'report not found'"
+        end
+        return nil
+      end
 
       # ******************** finders low level implementation ********************
       private
@@ -363,8 +400,8 @@ module Ooor
     def old_wizard_step(wizard_name, step='init', wizard_id=nil, form={}, context={})
       result = self.class.old_wizard_step(wizard_name, [self.id], step, wizard_id, form, {})
       FormModel.new(wizard_name, result[0], nil, nil, result[1], [self], self.class.ooor.global_context)
-    end
-    
+    end   
+        
     def log(message, context={}) rpc_execute('log', id, message, context) end
 
     def type() method_missing(:type) end #skips deprecated Object#type method
@@ -417,12 +454,17 @@ module Ooor
         rpc_execute(method_key, [id], *arguments) #we assume that's an action
       else
         super
-      end
+      end     
 
     rescue RuntimeError => e
       e.message << "\n" + available_fields if e.message.index("AttributeError")
       raise e
     end
+    
+    #Add get_report_data to obtain [report["result"],report["format]] of a concrete openERP Object
+    def get_report_data(report_name, report_type="pdf", context={})
+      self.class.get_report_data(report_name, [self.id], report_type, context)        
+    end 
 
   end
 end

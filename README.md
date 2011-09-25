@@ -294,6 +294,17 @@ You can also create a resource and it's ir_model_data record alltogether using t
     $ ProductCategory.create(:name => 'rails_categ', :ir_model_data_id =>['product', 'categ_x']) #1st tab element is the module, 2nd the id in the module
 
 
+Obtain report binary data:
+
+To obtain the binary data of an object report simply use the function get_report_data(report_name). This function returns a list that contains the binary data encoded in base64 and a string with the file format.
+Example:
+    
+    $ inv = AccountInvoice.find(3)
+    $ report = inv.get_report_data('account.invoice') #account.invoice is the service name defined in Invoices report
+    $ #Save the report to a file
+    $ #report[1] contains the file extension and report[0] contains the binary data of the report encoded in base64
+    $ File.open("invoice_report.#{report[1]}") {|f| f.write(Base64.decode64(report[0]))} 
+
 Change logged user:
 
     $ Ooor.global_login('demo', 'demo')
