@@ -303,7 +303,7 @@ Example:
     $ report = inv.get_report_data('account.invoice') #account.invoice is the service name defined in Invoices report
     $ #Save the report to a file
     $ #report[1] contains the file extension and report[0] contains the binary data of the report encoded in base64
-    $ File.open("invoice_report.#{report[1]}") {|f| f.write(Base64.decode64(report[0]))} 
+    $ File.open("invoice_report.#{report[1]}", "w") {|f| f.write(Base64.decode64(report[0]))} 
 
 Change logged user:
 
