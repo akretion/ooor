@@ -278,6 +278,11 @@ module Ooor
     def object_uid; object_session[:user_id] || self.class.user_id || self.class.ooor.config[:user_id]; end
     def object_pass; object_session[:password] || self.class.password || self.class.ooor.config[:password]; end
 
+    # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
+    def to_ary # :nodoc:
+        nil
+    end
+
     #try to wrap the object context inside the query.
     def rpc_execute(method, *args)
     if args[-1].is_a? Hash
