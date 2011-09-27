@@ -19,7 +19,7 @@ module Ooor
         if loaded_associations[k].is_a? Array
           included_associations[k] = loaded_associations[k].map {|item| item.as_json[item.class.openerp_model.gsub('.', '_')]}
         else
-          included_associations[k] = associations[k].map {|id| {"id" => id}}
+          included_associations[k] = associations[k].map {|id| {"id" => id}} if associations[k]
         end
       end
 
@@ -29,3 +29,4 @@ module Ooor
 
   end
 end
+
