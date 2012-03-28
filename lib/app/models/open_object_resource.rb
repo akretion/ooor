@@ -159,7 +159,7 @@ module Ooor
 
       def old_wizard_step(wizard_name, ids, step='init', wizard_id=nil, form={}, context={}, report_type='pdf')
         context = @ooor.global_context.merge(context)
-        cast_request_to_openerp!(form)
+        cast_map_to_openerp!(form)
         unless wizard_id
           logger.debug "OOOR RPC: 'create old_wizard_step' #{wizard_name}"
           wizard_id = cast_answer_to_ruby!(@ooor.get_rpc_client((@database && @site || @ooor.base_url) + "/wizard").call("create",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_name))
