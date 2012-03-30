@@ -362,7 +362,7 @@ module Ooor
     def create(context={}, reload=true)
       self.id = rpc_execute('create', to_openerp_hash!, context)
       IrModelData.create(:model => self.class.openerp_model, :module => @ir_model_data_id[0], :name=> @ir_model_data_id[1], :res_id => self.id) if @ir_model_data_id
-      reload_fields(context) if reload
+      reload_from_record!(self.class.find(self.id, :context => context)) if reload
       @persisted = true
     end
 
@@ -475,8 +475,8 @@ module Ooor
     private
 
     def reload_fields(context)
-      records = self.class.find(self.id, :context => context, :fields => @attributes.keys) 
-      reload_from_record!(records) 
+      records = self.class.find(self.id, :context => context, :fields => @attributes.keys)
+      reload_from_record!(records)
     end
   end
 end
