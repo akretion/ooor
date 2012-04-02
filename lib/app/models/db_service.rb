@@ -23,7 +23,8 @@ module Ooor
       @config[:database] = db_name
       @config[:username] = 'admin'
       @config[:passowrd] = user_password
-      while get_progress('admin', process_id) == [0, []]
+      sleep(3)
+      while get_progress('admin', process_id)[0] != 1
         @logger.info "..."
         sleep(0.5)
       end
