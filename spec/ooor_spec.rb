@@ -34,34 +34,30 @@ describe Ooor do
     end
 
     it "should be able to load a profile" do
-      accounting_module_ids = IrModuleModule.search(['|', ['name','=', 'account'], ['name','=', 'account_voucher']])
+      accounting_module_ids = IrModuleModule.search(['|', ['name','=', 'sale'], ['name','=', 'account_voucher']])
       accounting_module_ids.each do |accounting_module_id|
-        unless IrModuleModule.find(accounting_module_id).state == "installed"
-          conf1= BaseSetupConfig.create
-          conf1.config
-          conf2 = ResConfigView.create(:view => 'extended')
-          conf2.action_next
-          conf3 = BaseSetupCompany.create(:name => 'Akretion')
-          conf3.action_next
-          conf4 = BaseSetupInstaller.create(:sale => 1)
-          conf4.action_next
-          @ooor.load_models
-          config5 = AccountInstaller.create(:charts => 'configurable')
-          config5.action_next
-          @ooor.loaded_models.should_not be_empty
+        mod = IrModuleModule.find(accounting_module_id) 
+        unless mod.state == "installed"
+          mod.button_install
         end
       end
+      wizard = BaseModuleUpgrade.create
+      wizard.upgrade_module
+      @ooor.load_models
+#          config5 = AccountInstaller.create(:charts => 'configurable')
+#          config5.action_next
+      @ooor.loaded_models.should_not be_empty
     end
 
     it "should be able to configure the database" do
-	end
-	  if false
-      chart_module_id = IrModuleModule.search([['category_id', '=', 'Account Charts'], ['name','=', 'l10n_fr']])[0]
-      unless IrModuleModule.find(chart_module_id).state == "installed"
-        w2 = @ooor.const_get('account.config.wizard').create(:charts => chart_module_id)
-        w2.action_create
-        w3 = @ooor.const_get('wizard.multi.charts.accounts').create
-        w3.action_create
+#      chart_module_id = IrModuleModule.search([['category_id', '=', 'Account Charts'], ['name','=', 'l10n_fr']])[0]
+      if AccountTax.search.empty?
+        w1 = @ooor.const_get('account.installer').create(:charts => "configurable")
+        w1.action_next
+        w1 = @ooor.const_get('wizard.multi.charts.accounts').create(:charts => "configurable")
+        w1.action_next
+#        w3 = @ooor.const_get('wizard.multi.charts.accounts').create
+#        w3.action_create
       end
     end
   end
