@@ -159,7 +159,7 @@ module Ooor
 
       def old_wizard_step(wizard_name, ids, step='init', wizard_id=nil, form={}, context={}, report_type='pdf')
         context = @ooor.global_context.merge(context)
-        cast_request_to_openerp!(form)
+        cast_map_to_openerp!(form)
         unless wizard_id
           logger.debug "OOOR RPC: 'create old_wizard_step' #{wizard_name}"
           wizard_id = cast_answer_to_ruby!(@ooor.get_rpc_client((@database && @site || @ooor.base_url) + "/wizard").call("create",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_name))
@@ -369,9 +369,10 @@ module Ooor
     #compatible with the Rails way but also supports OpenERP context
     def update(context={}, reload=true)
       rpc_execute('write', [self.id], to_openerp_hash!, context)
-      reload_from_record!(self.class.find(self.id, :context => context)) if reload
+      reload_fields(context) if reload
       @persisted = true
     end
+
 
     #compatible with the Rails way but also supports OpenERP context
     def destroy(context={})
@@ -399,7 +400,7 @@ module Ooor
     #wrapper for OpenERP exec_workflow Business Process Management engine
     def wkf_action(action, context={}, reload=true)
       self.class.rpc_exec_workflow_with_all(object_db, object_uid, object_pass, self.class.openerp_model, action, self.id) #FIXME looks like OpenERP exec_workflow doesn't accept context but it might be a bug
-      reload_from_record!(self.class.find(self.id, :context => context)) if reload
+      reload_fields(context) if reload
     end
 
     def old_wizard_step(wizard_name, step='init', wizard_id=nil, form={}, context={})
@@ -471,5 +472,11 @@ module Ooor
       self.class.get_report_data(report_name, [self.id], report_type, context)        
     end 
 
+    private
+
+    def reload_fields(context)
+      records = self.class.find(self.id, :context => context, :fields => @attributes.keys)
+      reload_from_record!(records)
+    end
   end
 end
