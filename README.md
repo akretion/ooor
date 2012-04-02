@@ -106,14 +106,18 @@ This will bring you in a standard IRB interpreter with an OOOR client already co
 
 Let's test OOOR in an irb console (irb command):
 
-    $ require 'rubygems'
-    $ require 'ooor'
-    $ Ooor.new(:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin')
+```ruby
+require 'rubygems'
+require 'ooor'
+Ooor.new(:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin')
+```
 
 This should load all your OpenERP models into Ruby proxy Activeresource objects. Of course there are option to load only some models.
 Let's try to retrieve the user with id 1:
 
-    $ ResUsers.find(1)
+```ruby
+ResUsers.find(1)
+```
 	
 (in case you have an error like "no such file to load -- net/https", then on Debian/Ubuntu, you might need to do before: apt-get install libopenssl-ruby)
     
@@ -131,52 +135,62 @@ Note: Ruby proxies objects are named after OpenERP models in but removing the '.
 
 Basic finders:
 
-    $ ProductProduct.find(1)
-    $ ProductProduct.find([1,2])
-    $ ProductProduct.find([1])
-    $ ProductProduct.find(:all)
-    $ ProductProduct.find(:last)
-
+```ruby
+ProductProduct.find(1)
+ProductProduct.find([1,2])
+ProductProduct.find([1])
+ProductProduct.find(:all)
+ProductProduct.find(:last)
+```ruby
 
 OpenERP domain support (same as OpenERP):
 
-    $ ResPartner.find(:all, :domain=>[['supplier', '=', 1],['active','=',1]])
-More subtle now, remember OpenERP use a kind of inverse polish notation for complex domains,
-here we look for a product in category 1 AND which name is either 'PC1' OR 'PC2':
-    $ ProductProduct.find(:all, :domain=>[['categ_id','=',1],'|',['name', '=', 'PC1'],['name','=','PC2']])
+```ruby
+ResPartner.find(:all, :domain=>[['supplier', '=', 1],['active','=',1]])
+#More subtle now, remember OpenERP use a kind of inverse polish notation for complex domains,
+#here we look for a product in category 1 AND which name is either 'PC1' OR 'PC2':
+ProductProduct.find(:all, :domain=>[['categ_id','=',1],'|',['name', '=', 'PC1'],['name','=','PC2']])
+```
 
 
 OpenERP context support (same as OpenERP):
 
-    $ ProductProduct.find(1, :context => {:my_key => 'value'})
-
+```ruby
+ProductProduct.find(1, :context => {:my_key => 'value'})
+```
 
 Request params or ActiveResource equivalence of OpenERP domain (but degraded as only the = operator is supported, else use domain):
 
-    $ ResPartner.find(:all, :params => {:supplier => true})
-
+```ruby
+ResPartner.find(:all, :params => {:supplier => true})
+```
 
 OpenERP search method:
 
-    $ ResPartner.search([['name', 'ilike', 'a']], 0, 2)
+```ruby
+ResPartner.search([['name', 'ilike', 'a']], 0, 2)
+```
 
 Arguments are: domain, offset=0, limit=false, order=false, context={}, count=false
 
 
 Relations (many2one, one2many, many2many) support:
 
-    $ SaleOrder.find(1).order_line #one2many relation
-    $ p = ProductProduct.find(1)
-    $ p.product_tmpl_id #many2one relation
-    $ p.taxes_id #automagically reads man2many relation inherited via the product_tmpl_id inheritance relation
-    $ p.taxes_id = [1,2] #save a many2many relation, notice how we bypass the awkward OpenERP syntax for many2many (would require [6,0, [1,2]]) ,
-    $ p.save #assigns taxes with id 1 and 2 as sale taxes,
-see [the official OpenERP documentation](http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many)
+```ruby
+SaleOrder.find(1).order_line #one2many relation
+p = ProductProduct.find(1)
+p.product_tmpl_id #many2one relation
+p.taxes_id #automagically reads man2many relation inherited via the product_tmpl_id inheritance relation
+p.taxes_id = [1,2] #save a many2many relation, notice how we bypass the awkward OpenERP syntax for many2many (would require [6,0, [1,2]]) ,
+p.save #assigns taxes with id 1 and 2 as sale taxes,
+see [the official OpenERP documentation](http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many)```
 
 
 Inherited relations support:
 
-    $ ProductProduct.find(1).categ_id #where categ_id is inherited from the ProductTemplate
+```ruby
+ProductProduct.find(1).categ_id #where categ_id is inherited from the ProductTemplate
+```ruby
 
 Please notice that loaded relations are cached (to avoid  hitting OpenERP over and over)
 until the root object is reloaded (after save/update for instance).
@@ -184,48 +198,57 @@ until the root object is reloaded (after save/update for instance).
 
 Load only specific fields support (faster than loading all fields):
 
-    $ ProductProduct.find(1, :fields=>["state", "id"])
-    $ ProductProduct.find(:all, :fields=>["state", "id"])
-    $ ProductProduct.find([1,2], :fields=>["state", "id"])
-    $ ProductProduct.find(:all, :fields=>["state", "id"])
+```ruby
+ProductProduct.find(1, :fields=>["state", "id"])
+ProductProduct.find(:all, :fields=>["state", "id"])
+ProductProduct.find([1,2], :fields=>["state", "id"])
+ProductProduct.find(:all, :fields=>["state", "id"])
+```ruby
 
     even in relations:
 
-    $ SaleOrder.find(1).order_line(:fields => ["state"])
-
+```ruby
+SaleOrder.find(1).order_line(:fields => ["state"])
+```
 
 Create:
 
-    $ pc = ProductCategory.new(:name => 'Categ From Rails!')
-    $ #<ProductCategory:0xb702c42c @prefix_options={}, @attributes={"name"=>"Categ From Rails!"}>
-    $ pc.create
-    $ pc.id
-    $ => 14
+```ruby
+pc = ProductCategory.new(:name => 'Categ From Rails!')
+#<ProductCategory:0xb702c42c @prefix_options={}, @attributes={"name"=>"Categ From Rails!"}>
+pc.create
+pc.id
+#$ => 14
+```ruby
 
 
 Update:
 
-    $ pc.name = "A new name"
-    $ pc.save
-
+```ruby
+pc.name = "A new name"
+pc.save
+```
 
 Copy:
 
-    $ copied_object = pc.copy({:categ_id => 2})  #first optionnal arg is new default values, second is context
-
+```ruby
+copied_object = pc.copy({:categ_id => 2})  #first optionnal arg is new default values, second is context
+```
 
 Delete:
 
-    $ pc.destroy
-
+```ruby
+pc.destroy
+```
 
 Call workflow:
 
-    $ s = SaleOrder.find(2)
-    $ s.wkf_action('cancel')
-    $ s.state
-    $ => 'cancel'
-
+```ruby
+s = SaleOrder.find(2)
+s.wkf_action('cancel')
+s.state
+#=> 'cancel'
+```
 
 On Change methods:
 
@@ -236,9 +259,11 @@ you need to explicitely tell the on_change name, the parameter name that changed
 enfore the on_change syntax (looking at the OpenERP model code or view or XML/RPC logs will help you to find out). But
 ultimately it works:
 
-    $ l = SaleOrderLine.new
-    $ l.on_change('product_id_change', :product_id, 20, 1, 20, 1, false, 1, false, false, 7, 'en_US', true, false, false, false)
-    $ => #<SaleOrderLine:0x7f76118b4348 @prefix_options={}, @relations={"product_uos"=>false, "product_id"=>20, "product_uom"=>1, "tax_id"=>[]}, @loaded_relations={}, @attributes={"name"=>"[TOW1] ATX Mid-size Tower", "product_uos_qty"=>1, "delay"=>1.0, "price_unit"=>37.5, "type"=>"make_to_stock", "th_weight"=>0}>
+```ruby
+l = SaleOrderLine.new
+l.on_change('product_id_change', :product_id, 20, 1, 20, 1, false, 1, false, false, 7, 'en_US', true, false, false, false)
+#=> #<SaleOrderLine:0x7f76118b4348 @prefix_options={}, @relations={"product_uos"=>false, "product_id"=>20, "product_uom"=>1, "tax_id"=>[]}, @loaded_relations={}, @attributes={"name"=>"[TOW1] ATX Mid-size Tower", "product_uos_qty"=>1, "delay"=>1.0, "price_unit"=>37.5, "type"=>"make_to_stock", "th_weight"=>0}>
+```
 Notice that it reloads the Objects attrs and print warning message accordingly
 
 
@@ -247,12 +272,14 @@ On the fly one2many object graph update/creation:
 Just like the OpenERP GTK client (and unlike the web client), in OOOR you can pass create/update
 one2many relation in place directly. For instance:
 
-    $ so = SaleOrder.new
-    $ so.on_change('onchange_partner_id', :partner_id, 1, 1, false) #auto-complete the address and other data based on the partner
-    $ so.order_line = [SaleOrderLine.new(:name => 'sl1', :product_id => 1, :price_unit => 42, :product_uom => 1)] #create one order line
-    $ so.save
-    $ so.amount_total
-    $ => 42.0
+```ruby
+so = SaleOrder.new
+so.on_change('onchange_partner_id', :partner_id, 1, 1, false) #auto-complete the address and other data based on the partner
+so.order_line = [SaleOrderLine.new(:name => 'sl1', :product_id => 1, :price_unit => 42, :product_uom => 1)] #create one order line
+so.save
+so.amount_total
+#=> 42.0
+```
 
 
 Call aribtrary method:
@@ -261,22 +288,26 @@ Call aribtrary method:
     $ or object.call(method_name, args*) #were args is an aribtrary list of arguments
 
 Class methods from are osv.py/orm.py proxied to OpenERP directly (as the web client does):
-    $ ResPartner.name_search('ax', [], 'ilike', {})
-    $ ProductProduct.fields_view_get(132, 'tree', {})
+```ruby
+ResPartner.name_search('ax', [], 'ilike', {})
+ProductProduct.fields_view_get(132, 'tree', {})
+```
 
 
-Call old style wizards:
+Call old style wizards (OpenERP v5):
 
-    $ inv = AccountInvoice.find(4)
-    $ #in case the inv.state is 'draft', do inv.wkf_action('invoice_open')
-    $ wizard = inv.old_wizard_step('account.invoice.pay') #tip: you can inspect the wizard fields, arch and datas
-    $ wizard.reconcile({:journal_id => 6, :name =>"from_rails"}) #if you want to pay all; will give you a reloaded invoice
-    $ inv.state
-    $ => "paid"
-    $ #or if you want a payment with a write off:
-    $ wizard.writeoff_check({"amount" => 12, "journal_id" => 6, "name" =>'from_rails'}) #use the button name as the wizard method
-    $ wizard.reconcile({required missing write off fields...}) #will give you a reloaded invoice because state is 'end'
-    $ TODO test and document new osv_memory wizards API
+```ruby
+inv = AccountInvoice.find(4)
+#in case the inv.state is 'draft', do inv.wkf_action('invoice_open')
+wizard = inv.old_wizard_step('account.invoice.pay') #tip: you can inspect the wizard fields, arch and datas
+wizard.reconcile({:journal_id => 6, :name =>"from_rails"}) #if you want to pay all; will give you a reloaded invoice
+inv.state
+#=> "paid"
+#or if you want a payment with a write off:
+wizard.writeoff_check({"amount" => 12, "journal_id" => 6, "name" =>'from_rails'}) #use the button name as the wizard method
+wizard.reconcile({required missing write off fields...}) #will give you a reloaded invoice because state is 'end'
+#TODO test and document new osv_memory wizards API
+```
 
 
 Absolute OpenERP ids aka ir_model_data:
@@ -286,39 +317,48 @@ We are here speaking about the string id of the XML or CSV records, eventually p
 Using those ids rather than the SQL ids is a good idea to avoid relying on a particular installation.
 In OOOR, you can both retrieve one or several records using those ids, like for instance:
 
-    $ ProductCategory.find('product.product_category_3')
+```ruby
+ProductCategory.find('product.product_category_3')
+```
 
 Notice that the 'product.' module prefix is optional here but important if you have similar ids in different module scopes.
 You can also create a resource and it's ir_model_data record alltogether using the ir_mode_data_id param:
 
-    $ ProductCategory.create(:name => 'rails_categ', :ir_model_data_id =>['product', 'categ_x']) #1st tab element is the module, 2nd the id in the module
-
+```ruby
+ProductCategory.create(:name => 'rails_categ', :ir_model_data_id =>['product', 'categ_x']) #1st tab element is the module, 2nd the id in the module
+```
 
 Obtain report binary data:
 
 To obtain the binary data of an object report simply use the function get_report_data(report_name). This function returns a list that contains the binary data encoded in base64 and a string with the file format.
 Example:
-    
-    $ inv = AccountInvoice.find(3)
-    $ report = inv.get_report_data('account.invoice') #account.invoice is the service name defined in Invoices report
-    $ #Save the report to a file
-    $ #report[1] contains the file extension and report[0] contains the binary data of the report encoded in base64
-    $ File.open("invoice_report.#{report[1]}", "w") {|f| f.write(Base64.decode64(report[0]))} 
+   
+```ruby 
+inv = AccountInvoice.find(3)
+report = inv.get_report_data('account.invoice') #account.invoice is the service name defined in Invoices report
+#Save the report to a file
+#report[1] contains the file extension and report[0] contains the binary data of the report encoded in base64
+File.open("invoice_report.#{report[1]}", "w") {|f| f.write(Base64.decode64(report[0]))} 
+```
 
 Change logged user:
 
 An Ooor client can have a global user logged in, to change it:
 
-    $ Ooor.global_login('demo', 'demo')
-    $ s = SaleOrder.find(2)
-    $ => 'Access denied error'
+```ruby
+Ooor.global_login('demo', 'demo')
+s = SaleOrder.find(2)
+#=> 'Access denied error'
+```
 
 Instead, every Ooor business objects can also belong to some specific user. To achieve that, generate your object passing
 proper :user_id and :password parameters inside the context of the method creating the object (typically a find).
 Notice that methods invoked on an objet use the same credentials as the business objects.
 Objects generated by this object (by a call to an association for instance) will also have the same credentials.
 
-    $ p = ProductProduct.find(1, :context => {:user_id=>3, :password=>'test'})
+```ruby
+p = ProductProduct.find(1, :context => {:user_id=>3, :password=>'test'})
+```
 
 This is tipycally the system you will use in a Ruby (Rails or not) web application.
 
@@ -327,8 +367,10 @@ Change log level:
 By default the log level is very verbose (debug level) to help newcomers to jumpstart.
 However you might want to change that. 2 solutions:
 
-    $ Ooor.logger.level = 1 #available levels are those of the standard Ruby Logger class: 0 debug, 1 info, 2 error
-    $ In the config yaml file or hash, set the :log_level parameter
+```ruby
+Ooor.logger.level = 1 #available levels are those of the standard Ruby Logger class: 0 debug, 1 info, 2 error
+```
+In the config yaml file or hash, set the :log_level parameter
 
 
 [Drawing OpenERP UML diagrams with OOOR](http://wiki.github.com/rvalyi/ooor/drawing-openerp-uml-diagrams-with-ooor)
