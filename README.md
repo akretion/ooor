@@ -141,7 +141,7 @@ ProductProduct.find([1,2])
 ProductProduct.find([1])
 ProductProduct.find(:all)
 ProductProduct.find(:last)
-```ruby
+```
 
 OpenERP domain support (same as OpenERP):
 
@@ -190,7 +190,7 @@ Inherited relations support:
 
 ```ruby
 ProductProduct.find(1).categ_id #where categ_id is inherited from the ProductTemplate
-```ruby
+```
 
 Please notice that loaded relations are cached (to avoid  hitting OpenERP over and over)
 until the root object is reloaded (after save/update for instance).
@@ -203,7 +203,7 @@ ProductProduct.find(1, :fields=>["state", "id"])
 ProductProduct.find(:all, :fields=>["state", "id"])
 ProductProduct.find([1,2], :fields=>["state", "id"])
 ProductProduct.find(:all, :fields=>["state", "id"])
-```ruby
+```
 
     even in relations:
 
@@ -219,7 +219,7 @@ pc = ProductCategory.new(:name => 'Categ From Rails!')
 pc.create
 pc.id
 #$ => 14
-```ruby
+```
 
 
 Update:
@@ -288,6 +288,7 @@ Call aribtrary method:
     $ or object.call(method_name, args*) #were args is an aribtrary list of arguments
 
 Class methods from are osv.py/orm.py proxied to OpenERP directly (as the web client does):
+
 ```ruby
 ResPartner.name_search('ax', [], 'ilike', {})
 ProductProduct.fields_view_get(132, 'tree', {})
