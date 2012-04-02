@@ -94,8 +94,8 @@ module Ooor
       @ir_model_class = define_openerp_model({'model' => 'ir.model'}, @config[:scope_prefix])
       if to_load_models #we load only a customized subset of the OpenERP models
         model_ids = @ir_model_class.search([['model', 'in', to_load_models]])
-      else #we load all the models
-        model_ids = @config[:search_models] && @ir_model_class.search() - [1] || @config[:nb_models] || (501.times.map{|i| i}[2..500])
+      else #we load all the models: we hardcode model ids read call here on purpose to skip a search call and boot faster!
+        model_ids = @config[:search_models] && @ir_model_class.search() - [1] || @config[:nb_models] || (1001.times.map{|i| i}[2..1000])
       end
       models = @ir_model_class.read(model_ids, ['model'])#['name', 'model', 'id', 'info', 'state'])#, 'field_id', 'access_ids'])
       @global_context.merge!({}).merge!(@config[:global_context] || {})
