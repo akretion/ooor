@@ -44,9 +44,9 @@ module Ooor
       end 
     
       def get_view_id(mode)
-        IrActionsAct_window.read(@openerp_act_window.id, ["view_ids"])["view_ids"]
-        IrActionsAct_windowView.read([9,10], ["view_mode"]).each do |view_hash|
-          return view_hash["id"] if view_hash["view_mode"] == mode.to_s
+        ids = IrActionsAct_window.read(@openerp_act_window.id, ["view_ids"])["view_ids"]
+        IrActionsAct_windowView.read(ids, ["view_mode", "view_id"]).each do |view_hash|
+          return view_hash["view_id"][0] if view_hash["view_id"] && view_hash["view_mode"] == mode.to_s
         end
         IrUiView.search([['model', '=', act_window_param.openerp_model], ['type', '=', mode.to_s]])
       end
