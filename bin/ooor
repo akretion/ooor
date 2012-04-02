@@ -29,7 +29,9 @@ unless ARGV.empty?
     password = ARGV[1]
   else
     puts "password?"
+    system "stty -echo"
     password = $stdin.gets.chomp!
+    system "stty echo"
   end
   
   if ARGV[1] == "-s" || ARGV[2] == "-s" #secure mode
