@@ -54,7 +54,7 @@ describe Ooor do
       if AccountTax.search.empty?
         w1 = @ooor.const_get('account.installer').create(:charts => "configurable")
         w1.action_next
-        w1 = @ooor.const_get('wizard.multi.charts.accounts').create(:charts => "configurable")
+        w1 = @ooor.const_get('wizard.multi.charts.accounts').create(:charts => "configurable", :code_digits => 2)
         w1.action_next
 #        w3 = @ooor.const_get('wizard.multi.charts.accounts').create
 #        w3.action_create
@@ -129,7 +129,7 @@ describe Ooor do
         o = SaleOrder.find(1)
         o.date_order.should be_kind_of(Date)
         m = StockMove.find(1)
-        m.date.should be_kind_of(Time)
+        m.date.should be_kind_of(DateTime)
       end
 
       it "should be able to call any Class method" do
