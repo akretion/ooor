@@ -9,7 +9,7 @@ require 'irb/completion'
   
 unless ARGV.empty?
   username = ARGV[0].split(".")[0]
-  database = ARGV[0].split(".")[1].split("@")[0]
+  database = ARGV[0].split(".")[1..100].join(".").split("@")[0]
   if ARGV[0].index("@")
     base_url = ARGV[0].split("@")[1]
   else
