@@ -213,7 +213,19 @@ module Ooor
         return nil
       end
 
-      # ******************** finders low level implementation ********************
+      def find(*arguments)
+        scope   = arguments.slice!(0)
+        options = arguments.slice!(0) || {}
+        case scope
+          when :all   then find_every(options)
+          when :first then find_every(options.merge(:limit => 1)).first
+          when :last  then find_every(options).last
+          when :one   then find_one(options)
+          else             find_single(scope, options)
+        end
+      end
+
+      #******************** finders low level implementation ********************
       private
 
       def find_every(options)
@@ -250,19 +262,12 @@ module Ooor
           record.each_pair do |k,v|
             r[k.to_sym] = v
           end
-          active_resources << instantiate_record(r, {}, context)
+          active_resources << new(r, [], context, true)
         end
         unless is_collection
           return active_resources[0]
         end
         return active_resources
-      end
-
-      #overriden because loading default fields is all the rage but we don't want them when reading a record
-      def instantiate_record(record, prefix_options = {}, context = {})
-        new(record, [], context, true).tap do |resource|
-          resource.prefix_options = prefix_options
-        end
       end
 
     end
