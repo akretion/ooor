@@ -59,7 +59,7 @@ module Ooor
             if self.fields[k] && v.is_a?(String) && !v.empty?
               case self.fields[k]['type']
               when 'datetime'
-                map[k] = Time.parse(v)
+                map[k] = DateTime.parse(v)
               when 'date'
                 map[k] = Date.parse(v)
               end
