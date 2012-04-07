@@ -103,31 +103,35 @@ module Ooor
     end
 
     def define_openerp_model(param, scope_prefix=nil, url=nil, database=nil, user_id=nil, pass=nil)
-      klass = Class.new(OpenObjectResource)
-      klass.ooor = self
-      klass.site = url || @base_url
-      klass.user = user_id
-      klass.password = pass
-      klass.database = database
-      klass.openerp_model = param['model']
-      klass.openerp_id = url || param['id']
-      klass.info = (param['info'] || '').gsub("'",' ')
-      model_class_name = klass.class_name_from_model_key
-      klass.name = model_class_name
-      klass.state = param['state']
-      #klass.field_ids = param['field_id']
-      #klass.access_ids = param['access_ids']
-      klass.many2one_associations = {}
-      klass.one2many_associations = {}
-      klass.many2many_associations = {}
-      klass.polymorphic_m2o_associations = {}
-      klass.associations_keys = []
-      klass.fields = {}
-      klass.scope_prefix = scope_prefix
-      @logger.debug "registering #{model_class_name} as an ActiveResource proxy for OpenObject #{param['model']} model"
-      (scope_prefix ? Object.const_get(scope_prefix) : Object).const_set(model_class_name, klass)
-      @loaded_models.push(klass)
-      klass
+      model_class_name = OpenObjectResource.class_name_from_model_key(param['model'])
+      unless (scope_prefix ? Object.const_get(scope_prefix) : Object).const_defined?(model_class_name)
+        klass = Class.new(OpenObjectResource)
+        klass.ooor = self
+        klass.site = url || @base_url
+        klass.user = user_id
+        klass.password = pass
+        klass.database = database
+        klass.openerp_model = param['model']
+        klass.openerp_id = url || param['id']
+        klass.info = (param['info'] || '').gsub("'",' ')
+        klass.name = model_class_name
+        klass.state = param['state']
+        #klass.field_ids = param['field_id']
+        #klass.access_ids = param['access_ids']
+        klass.many2one_associations = {}
+        klass.one2many_associations = {}
+        klass.many2many_associations = {}
+        klass.polymorphic_m2o_associations = {}
+        klass.associations_keys = []
+        klass.fields = {}
+        klass.scope_prefix = scope_prefix
+        @logger.debug "registering #{model_class_name} as an ActiveResource proxy for OpenObject #{param['model']} model"
+        (scope_prefix ? Object.const_get(scope_prefix) : Object).const_set(model_class_name, klass)
+        @loaded_models.push(klass)
+        return klass
+      else
+        return (scope_prefix ? Object.const_get(scope_prefix) : Object).const_get(model_class_name)
+      end
     end
   end
   
