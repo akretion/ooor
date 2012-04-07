@@ -23,8 +23,23 @@ require 'app/models/type_casting'
 require 'app/models/relation'
 require 'app/models/serialization'
 
+require 'active_support'
+require 'active_support/core_ext/class/attribute_accessors'
+require 'active_support/core_ext/class/attribute'
+require 'active_support/core_ext/hash/indifferent_access'
+require 'active_support/core_ext/kernel/reporting'
+require 'active_support/core_ext/module/delegation'
+require 'active_support/core_ext/module/aliasing'
+require 'active_support/core_ext/object/blank'
+require 'active_support/core_ext/object/to_query'
+require 'active_support/core_ext/object/duplicable'
+require 'active_support/time'
+require 'set'
+require 'uri'
+
+
 module Ooor
-  class OpenObjectResource < ActiveResource::Base
+  class OpenObjectResource #< ActiveResource::Base
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
     include UML
@@ -37,7 +52,7 @@ module Ooor
       cattr_accessor :logger
       attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes associated to the OpenERP ir.model
                     :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
-                    :database, :user_id, :scope_prefix, :ooor, :association
+                    :database, :user_id, :scope_prefix, :ooor, :association, :site, :user, :password
 
       def class_name_from_model_key(model_key=self.openerp_model)
         model_key.split('.').collect {|name_part| name_part.capitalize}.join
@@ -53,6 +68,10 @@ module Ooor
 
       def create(attributes = {}, context={}, default_get_list=false, reload=true)
         self.new(attributes, default_get_list, context).tap { |resource| resource.save(context, reload) }
+      end
+
+      def element_name
+        @element_name ||= model_name.element
       end
 
       def reload_fields_definition(force=false, context={})
@@ -213,6 +232,20 @@ module Ooor
         return nil
       end
 
+      def find(*arguments)
+        scope   = arguments.slice!(0)
+        options = arguments.slice!(0) || {}
+
+        case scope
+          when :all   then find_every(options)
+          when :first then find_every(options.merge(:limit => 1)).first
+          when :last  then find_every(options).last
+          when :one   then find_one(options)
+          else             find_single(scope, options)
+        end
+      end
+
+
       # ******************** finders low level implementation ********************
       private
 
@@ -250,19 +283,12 @@ module Ooor
           record.each_pair do |k,v|
             r[k.to_sym] = v
           end
-          active_resources << instantiate_record(r, {}, context)
+          active_resources << new(r, [], context, true)
         end
         unless is_collection
           return active_resources[0]
         end
         return active_resources
-      end
-
-      #overriden because loading default fields is all the rage but we don't want them when reading a record
-      def instantiate_record(record, prefix_options = {}, context = {})
-        new(record, [], context, true).tap do |resource|
-          resource.prefix_options = prefix_options
-        end
       end
 
     end
@@ -272,7 +298,7 @@ module Ooor
     
     # ******************** instance methods ********************
 
-    attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
+    attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session, :attributes, :id
 
     def object_db; object_session[:database] || self.class.database || self.class.ooor.config[:database]; end
     def object_uid; object_session[:user_id] || self.class.user_id || self.class.ooor.config[:user_id]; end
@@ -294,6 +320,20 @@ module Ooor
     end
 
     def reload_from_record!(record) load(record.attributes, record.associations) end
+
+        # split an option hash into two hashes, one containing the prefix options,
+        # and the other containing the leftovers.
+        def split_options(options = {})
+          prefix_options, query_options = {}, {}
+
+          (options || {}).each do |key, value|
+            next if key.blank?
+            query_options[key.to_sym] = value
+          end
+
+          [ prefix_options, query_options ]
+        end
+
 
     def load(attributes, associations={})#an attribute might actually be a association too, will be determined here
       self.class.reload_fields_definition(false, object_session)
@@ -397,6 +437,14 @@ module Ooor
       load(@attributes.merge({field_name => field_value}).merge(result["value"]), @associations)
     end
 
+    def to_json(options={})
+      super({ :root => self.class.element_name }.merge(options))
+    end
+    
+    def to_xml(options={})
+      super({ :root => self.class.element_name }.merge(options))
+    end
+
     #wrapper for OpenERP exec_workflow Business Process Management engine
     def wkf_action(action, context={}, reload=true)
       self.class.rpc_exec_workflow_with_all(object_db, object_uid, object_pass, self.class.openerp_model, action, self.id) #FIXME looks like OpenERP exec_workflow doesn't accept context but it might be a bug
@@ -411,6 +459,23 @@ module Ooor
     def log(message, context={}) rpc_execute('log', id, message, context) end
 
     def type() method_missing(:type) end #skips deprecated Object#type method
+
+    def new?
+      !@persisted
+    end
+
+    def id
+      attributes["id"]
+    end
+
+    # Sets the <tt>\id</tt> attribute of the resource.
+    def id=(id)
+      attributes["id"] = id
+    end
+
+    def reload
+      self.class.find(id)
+    end
 
     # fakes associations like much like ActiveRecord according to the cached OpenERP data model
     def relationnal_result(method_name, *arguments)
@@ -430,6 +495,24 @@ module Ooor
       end
     end
     
+
+      def attr_method_missing(method_symbol, *arguments) #:nodoc:
+        method_name = method_symbol.to_s
+
+        if method_name =~ /(=|\?)$/
+          case $1
+          when "="
+            attributes[$`] = arguments.first
+          when "?"
+            attributes[$`]
+          end
+        else
+          return attributes[method_name] if attributes.include?(method_name)
+          super
+        end
+      end
+
+
     def method_missing(method_symbol, *arguments)      
       method_name = method_symbol.to_s
       is_assign = method_name.end_with?('=')
@@ -437,7 +520,7 @@ module Ooor
       self.class.reload_fields_definition(false, object_session)
 
       if attributes.has_key?(method_key)
-        return super
+        return attr_method_missing(method_symbol, *arguments)
       elsif @loaded_associations.has_key?(method_name)
         @loaded_associations[method_name]
       elsif @associations.has_key?(method_name)
@@ -459,7 +542,7 @@ module Ooor
         arguments += [{}] unless arguments.last.is_a?(Hash)
         rpc_execute(method_key, [id], *arguments) #we assume that's an action
       else
-        super
+        attr_method_missing(method_symbol, *arguments)
       end     
 
     rescue RuntimeError => e
@@ -479,4 +562,13 @@ module Ooor
       reload_from_record!(records)
     end
   end
+
+  class OpenObjectResource
+    extend ActiveModel::Naming
+#    include CustomMethods, Observing, Validations
+    include ActiveModel::Conversion
+    include ActiveModel::Serializers::JSON
+    include ActiveModel::Serializers::Xml
+  end
+
 end
