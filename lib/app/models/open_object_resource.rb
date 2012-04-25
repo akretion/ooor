@@ -312,13 +312,7 @@ module Ooor
         if self.class.associations_keys.index(skey) || value.is_a?(Array)
           associations[skey] = value #the association because we want the method to load the association through method missing
         else
-          case value
-            when Hash
-              resource = find_or_create_resource_for(key) #TODO check!
-              @attributes[skey] = resource@attributes[skey].new(value)
-            else
-              @attributes[skey] = value
-          end
+          @attributes[skey] = value
         end
       end
       self
