@@ -43,6 +43,11 @@ module Ooor
         act_win_class
       end 
     
+      def get_url(mode='tree', id=nil, tab=nil) #TODO deal with visible tab in Javascript, possibly hacking web-client
+        url = "#{self.ooor.base_url.gsub("xmlrpc", "web/webclient/home")}#action_id=#{@openerp_act_window.id}&view_type=#{mode}"
+        url += "&id=#{id}" if id
+      end
+
       def get_view_id(mode)
         ids = IrActionsAct_window.read(@openerp_act_window.id, ["view_ids"])["view_ids"]
         IrActionsAct_windowView.read(ids, ["view_mode", "view_id"]).each do |view_hash|
