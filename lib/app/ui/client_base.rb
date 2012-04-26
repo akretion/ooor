@@ -16,15 +16,10 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 require 'app/ui/form_model'
-require 'app/ui/menu'
 require 'app/ui/action_window'
 
 module Ooor
   module ClientBase
-
-    def menu_class
-      const_get('ir.ui.menu').send :include, MenuModule
-    end
 
     def get_init_menu(user_id=@config[:user_id])
       const_get('res.users').read([user_id], ['menu_id', 'name'], @global_context)
