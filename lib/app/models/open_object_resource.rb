@@ -23,11 +23,12 @@ require 'app/models/type_casting'
 require 'app/models/relation'
 require 'app/models/serialization'
 
+autoload :UML, 'app/models/uml'
+
 module Ooor
   class OpenObjectResource < ActiveResource::Base
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
-    include UML
     include TypeCasting
     include Serialization
 
@@ -38,6 +39,10 @@ module Ooor
       attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes associated to the OpenERP ir.model
                     :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
                     :database, :user_id, :scope_prefix, :ooor, :association
+
+      def print_uml(options={})
+        UML.print_uml([self], options)
+      end
 
       def class_name_from_model_key(model_key=self.openerp_model)
         model_key.split('.').collect {|name_part| name_part.capitalize}.join
