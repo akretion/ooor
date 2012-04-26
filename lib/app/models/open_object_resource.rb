@@ -323,12 +323,6 @@ module Ooor
       self
     end
 
-    def load_association(model_key, ids, *arguments)
-      options = arguments.extract_options!
-      related_class = self.class.const_get(model_key, object_session)
-      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || object_session
-    end
-
     def available_fields
       msg = "\n*** AVAILABLE FIELDS ON OBJECT #{self.class.name} ARE: ***"
       msg << "\n\n" << self.class.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
@@ -477,6 +471,12 @@ module Ooor
     end 
 
     private
+    
+    def load_association(model_key, ids, *arguments)
+      options = arguments.extract_options!
+      related_class = self.class.const_get(model_key, object_session)
+      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || object_session
+    end
 
     def reload_fields(context)
       records = self.class.find(self.id, :context => context, :fields => @attributes.keys)
