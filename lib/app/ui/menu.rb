@@ -27,8 +27,5 @@ module Ooor
       @menu_action = self.class.ooor.const_get('ir.actions.act_window').new(action_values, []) #TODO deal with action reference instead
     end
 
-    def open(mode='tree', ids=nil)
-      menu_action.open(mode, ids)
-    end
   end
 end
