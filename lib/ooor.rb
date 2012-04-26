@@ -17,7 +17,6 @@
 
 require 'logger'
 require 'app/models/open_object_resource'
-require 'app/models/uml'
 require 'app/models/db_service'
 require 'app/models/common_service'
 require 'app/models/base64'
@@ -27,9 +26,19 @@ module Ooor
   def self.new(*args)
     Ooor.send :new, *args
   end
+
+  def self.xtend(model_name, &block)
+    @extensions ||= {}
+    @extensions[model_name] ||= []
+    @extensions[model_name] << block
+    @extensions
+  end
+
+  def self.extensions
+    @extensions
+  end
   
   class Ooor
-    include UML
     include DbService
     include CommonService
     include ClientBase
@@ -91,11 +100,12 @@ module Ooor
     def load_models(to_load_models=@config[:models])
       @global_context = @config[:global_context] || {}
       global_login(@config[:username] || 'admin', @config[:password] || 'admin')
+      (['app/helpers/core_helpers.rb'] + (@config[:helper_paths] || [])).each {|path| load path}
       @ir_model_class = define_openerp_model({'model' => 'ir.model'}, @config[:scope_prefix])
       if to_load_models #we load only a customized subset of the OpenERP models
         model_ids = @ir_model_class.search([['model', 'in', to_load_models]])
-      else #we load all the models: we hardcode model ids read call here on purpose to skip a search call and boot faster!
-        model_ids = @config[:search_models] && @ir_model_class.search() - [1] || @config[:nb_models] || (1001.times.map{|i| i}[2..1000])
+      else
+        model_ids = @ir_model_class.search() - [1]
       end
       models = @ir_model_class.read(model_ids, ['model'])#['name', 'model', 'id', 'info', 'state'])#, 'field_id', 'access_ids'])
       @global_context.merge!({}).merge!(@config[:global_context] || {})
@@ -127,6 +137,7 @@ module Ooor
         klass.scope_prefix = scope_prefix
         @logger.debug "registering #{model_class_name} as an ActiveResource proxy for OpenObject #{param['model']} model"
         (scope_prefix ? Object.const_get(scope_prefix) : Object).const_set(model_class_name, klass)
+        (::Ooor.extensions[param['model']] || []).each {|block| p "*****", param['model'] ; klass.class_eval(&block)}
         @loaded_models.push(klass)
         return klass
       else
