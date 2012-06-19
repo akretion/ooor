@@ -379,7 +379,7 @@ describe Ooor do
     end
 
     it "should accept rendering options" do
-      SaleOrder.print_uml(:all, :detailed).should be_true
+      SaleOrder.print_uml({:detailed => true}).should be_true
     end
   end
 

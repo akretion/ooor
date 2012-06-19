@@ -143,7 +143,29 @@ module Ooor
         clean_request_args!(args)
         reload_fields_definition(false, {:user_id => uid, :password => pass})
         logger.debug "OOOR RPC: rpc_method: 'execute', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
-        cast_answer_to_ruby!(@ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/object").call("execute",  db, uid, pass, obj, method, *args))
+        @ooor.rubypython
+        proxy = @ooor.pool.get(obj)
+        p "******", proxy, obj
+        p "proxy.#{method}(@ooor.cr, 1, #{args.map{|i| "#{i}"}.join(", ")})"
+        res = proxy.method_missing(method, @ooor.cr, 1, *args)
+#        res = eval("proxy.#{method}(@ooor.cr, 1, #{args.map{|i| "#{i}"}.join(", ")})")
+#        p res
+        ruby_res = res.rubify
+        if method == "read"
+          ruby_res.each_with_index do |item, n|
+            p "item", item
+            item.each do |k, v|
+              p "kkkkkkk", k, v
+              if v.is_a?(FFI::Pointer)#v.respond_to? :pObject #TODO deal with many2one [id, pointer to name]
+                item[k] = res[n][k].encode('utf-8').to_s
+#res[n][k].to_s
+              end
+            end
+          end
+        end
+#        res = proxy.send(method, @ooor.cr, 1, *args)
+        cast_answer_to_ruby!(ruby_res)
+#        cast_answer_to_ruby!(@ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/object").call("execute",  db, uid, pass, obj, method, *args))
       end
 
        #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)

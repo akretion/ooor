@@ -44,7 +44,7 @@ module Ooor
     include ClientBase
 
     cattr_accessor :default_ooor, :default_config
-    attr_accessor :logger, :config, :loaded_models, :base_url, :global_context, :ir_model_class
+    attr_accessor :logger, :config, :loaded_models, :base_url, :global_context, :ir_model_class, :db, :pool, :cr
 
     #load the custom configuration
     def self.load_config(config_file=nil, env=nil)
@@ -56,6 +56,24 @@ module Ooor
          if not, just copy/paste the default ooor.yml file from the OOOR Gem
          to #{Rails.root}/config/ooor.yml and customize it properly\n\n"""
       {}
+    end
+
+    def rubypython
+      if @pool
+        return
+      else
+require "rubypython"
+RubyPython.start
+sys = RubyPython.import("sys")
+#sys.argv = []
+sys.path.append('/home/rvalyi/DEV/openerp/openerp6.1/server')
+openerp = RubyPython.import("openerp")
+openerp.tools.config.parse_config(['-c', '/home/rvalyi/DEV/openerp/openerp6.1/server/openerp.conf'])
+x = openerp.pooler.get_db_and_pool('ooor_test')
+@db = x[0]
+@pool = x[1]
+@cr = db.cursor()
+      end
     end
 
     def get_rpc_client(url)
@@ -100,7 +118,7 @@ module Ooor
     def load_models(to_load_models=@config[:models])
       @global_context = @config[:global_context] || {}
       global_login(@config[:username] || 'admin', @config[:password] || 'admin')
-      (['app/helpers/core_helpers.rb'] + (@config[:helper_paths] || [])).each {|path| load path}
+      ([File.dirname(__FILE__) + '/app/helpers/core_helpers'] + (@config[:helper_paths] || [])).each {|path| require path}
       @ir_model_class = define_openerp_model({'model' => 'ir.model'}, @config[:scope_prefix])
       if to_load_models #we load only a customized subset of the OpenERP models
         model_ids = @ir_model_class.search([['model', 'in', to_load_models]])
@@ -114,7 +132,9 @@ module Ooor
 
     def define_openerp_model(param, scope_prefix=nil, url=nil, database=nil, user_id=nil, pass=nil)
       model_class_name = OpenObjectResource.class_name_from_model_key(param['model'])
-      unless (scope_prefix ? Object.const_get(scope_prefix) : Object).const_defined?(model_class_name)
+#      p scope_prefix, (scope_prefix ? Object.const_get(scope_prefix) : Object), model_class_name
+#      p (scope_prefix ? Object.const_get(scope_prefix) : Object).const_defined?(model_class_name)
+      unless (scope_prefix ? Object.const_get(scope_prefix) : Object).const_defined?(model_class_name) #FIXME doesn't work well with prefix
         klass = Class.new(OpenObjectResource)
         klass.ooor = self
         klass.site = url || @base_url
