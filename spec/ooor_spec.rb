@@ -107,8 +107,8 @@ describe Ooor do
         partners = ResPartner.find(:all, :params => {:supplier => true})
         partners.should_not be_empty
       end
-	
-      it "should mimic ActiveResource scoping with first" do
+
+      it "should mimic ActiveResource scopinging with first" do
         partner = ResPartner.find(:first, :params => {:customer => true})
         partner.should be_kind_of ResPartner
       end
@@ -386,23 +386,38 @@ describe Ooor do
 
   describe "Multi-instance and class name scoping" do
     before(:all) do
-      @ooor1 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE1', :models => ['product.product'])
-      @ooor2 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE2', :models => ['product.product'])
+      @ooor1 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE1', :models => ['product.product'], :reload => true)
+      @ooor2 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE2', :models => ['product.product'], :reload => true)
     end
 
     it "should still be possible to find a ressource using an absolute id" do
-      #NOTE strangely till recently we could use the E1::ProductProduct symbol directly without OE1.const_get
-      #this even works when putting this example alone in a dedicated test file, or in IRB/Ruby files.
-      #this could even be a bug related to RSpec, I have no idea. As a workaround I changed the test to make it pass here
-      #while still testing the overall feature.
-      OE1.const_get("ProductProduct").find('product_product_pc1').should be_kind_of(OE1.const_get("ProductProduct"))
+      OE1::ProductProduct.find('product_product_pc1').should be_kind_of(OE1::ProductProduct)
     end
 
     it "should be able to read in one instance and write in an other" do
-      p1 = OE1.const_get("ProductProduct").find(1)
-      p2 = OE2.const_get("ProductProduct").create(:name => p1.name, :categ_id => p1.categ_id.id)
-      p2.should be_kind_of(OE2.const_get("ProductProduct"))
+      p1 = OE1::ProductProduct.find(1)
+      p2 = OE2::ProductProduct.create(:name => p1.name, :categ_id => p1.categ_id.id)
+      p2.should be_kind_of(OE2::ProductProduct)
     end
+  end
+
+
+  describe "Ruby OpenERP extensions" do
+    before(:all) do
+      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :helper_paths => [File.dirname(__FILE__) + '/helpers/*'], :reload => true)
+    end
+
+    it "should have default core helpers loaded" do
+      mod = IrModuleModule.find(:first, :domain=>['name', '=', 'sale'])
+      mod.print_dependency_graph
+    end
+
+    it "should load custom helper paths" do
+      IrModuleModule.say_hello.should == "Hello"
+      mod = IrModuleModule.find(:first, :domain=>['name', '=', 'sale'])
+      mod.say_name.should == "sale"
+    end
+
   end
 
 end
