@@ -1,3 +1,8 @@
+#    OOOR: Open Object On Ruby
+#    Copyright (C) 2009-2012 Akretion LTDA (<http://www.akretion.com>).
+#    Author: Akretion: Raphaël Valyi: CampToCamp: Nicolas Bessi, Joel Grand-Guillaume
+#    Licensed under the MIT license, see MIT-LICENSE file
+
 Ooor.xtend('ir.module.module') do
 
   ##########################################################################

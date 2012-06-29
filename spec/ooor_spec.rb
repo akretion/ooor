@@ -1,3 +1,8 @@
+#    OOOR: Open Object On Ruby
+#    Copyright (C) 2009-2012 Akretion LTDA (<http://www.akretion.com>).
+#    Author: Raphaël Valyi
+#    Licensed under the MIT license, see MIT-LICENSE file
+
 require File.dirname(__FILE__) + '/../lib/ooor'
 
 #RSpec executable specification; see http://rspec.info/ for more information.
