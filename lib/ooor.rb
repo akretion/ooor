@@ -100,7 +100,7 @@ module Ooor
     def load_models(to_load_models=@config[:models])
       @global_context = @config[:global_context] || {}
       global_login(@config[:username] || 'admin', @config[:password] || 'admin')
-      (['app/helpers/core_helpers.rb'] + (@config[:helper_paths] || [])).each {|path| load path}
+      ([File.dirname(__FILE__) + '/app/helpers/*'] + (@config[:helper_paths] || [])).each {|dir|  Dir[dir].each { |file| require file }}
       @ir_model_class = define_openerp_model({'model' => 'ir.model'}, @config[:scope_prefix])
       if to_load_models #we load only a customized subset of the OpenERP models
         model_ids = @ir_model_class.search([['model', 'in', to_load_models]])
@@ -109,12 +109,13 @@ module Ooor
       end
       models = @ir_model_class.read(model_ids, ['model'])#['name', 'model', 'id', 'info', 'state'])#, 'field_id', 'access_ids'])
       @global_context.merge!({}).merge!(@config[:global_context] || {})
-      models.each {|openerp_model| define_openerp_model(openerp_model, @config[:scope_prefix])}
+      models.each {|openerp_model| define_openerp_model(openerp_model, @config[:scope_prefix], nil, nil, nil, nil, @config[:reload])}
     end
 
-    def define_openerp_model(param, scope_prefix=nil, url=nil, database=nil, user_id=nil, pass=nil)
+    def define_openerp_model(param, scope_prefix=nil, url=nil, database=nil, user_id=nil, pass=nil, reload=false)
       model_class_name = OpenObjectResource.class_name_from_model_key(param['model'])
-      unless (scope_prefix ? Object.const_get(scope_prefix) : Object).const_defined?(model_class_name)
+      scope = scope_prefix ? Object.const_get(scope_prefix) : Object
+      if reload || !scope.const_defined?(model_class_name)
         klass = Class.new(OpenObjectResource)
         klass.ooor = self
         klass.site = url || @base_url
@@ -136,12 +137,12 @@ module Ooor
         klass.fields = {}
         klass.scope_prefix = scope_prefix
         @logger.debug "registering #{model_class_name} as an ActiveResource proxy for OpenObject #{param['model']} model"
-        (scope_prefix ? Object.const_get(scope_prefix) : Object).const_set(model_class_name, klass)
-        (::Ooor.extensions[param['model']] || []).each {|block| p "*****", param['model'] ; klass.class_eval(&block)}
+        scope.const_set(model_class_name, klass)
+        (::Ooor.extensions[param['model']] || []).each {|block| klass.class_eval(&block)}
         @loaded_models.push(klass)
         return klass
       else
-        return (scope_prefix ? Object.const_get(scope_prefix) : Object).const_get(model_class_name)
+        return scope.const_get(model_class_name)
       end
     end
   end
