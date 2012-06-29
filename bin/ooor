@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 
-puts "*** OOOR - OpenObject on Ruby! Published under the AGPL license by Akretion.com ***"
+puts "*** OOOR - OpenObject on Ruby! Published under the MIT license by Akretion.com ***"
 
 require 'irb'
 require 'rubygems'

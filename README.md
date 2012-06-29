@@ -1,4 +1,4 @@
-OOOR - OpenObject On Rails
+OOOR - OpenObject On Ruby:
 ====
 
 <table>
