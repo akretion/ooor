@@ -18,12 +18,12 @@ module Ooor
   module UML
     #usage: UML.print_uml or with options: UML.print_uml(:all, :detailed) or MyOpenObjectResource.print_uml or UML.print_uml([list_of_classes], :all, :detailed)
 
-    def print_uml(*options)
+    def print_uml(options={})
       ooor = self.class.ooor
       UML.print_uml(ooor.config[:models] && ooor.loaded_models.select {|model| ooor.config[:models].index(model.openerp_model)} || ooor.loaded_models, options)
     end
 
-    def serve_uml(*options)#TODO port
+    def serve_uml(options={})#TODO port
       ooor = self
       require 'sinatra'
       set :public, File.dirname(__FILE__) + '/../../'
@@ -57,7 +57,6 @@ module Ooor
       return if classes.empty?
       local = true
       detailed = true
-p "******", classes, options
       file_name = options[:file_name] || classes[0].name
       if classes.size > 8
         enabled_targets = classes.map {|i| i.openerp_model} #classes[0].ooor.config[:models] #defines the scope of the UML for option local

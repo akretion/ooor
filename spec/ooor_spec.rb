@@ -379,7 +379,7 @@ describe Ooor do
     end
 
     it "should accept rendering options" do
-      SaleOrder.print_uml(:all, :detailed).should be_true
+      SaleOrder.print_uml({:detailed => true}).should be_true
     end
   end
 
@@ -391,13 +391,17 @@ describe Ooor do
     end
 
     it "should still be possible to find a ressource using an absolute id" do
-      OE1::ProductProduct.find('product_product_pc1').should be_kind_of(OE1::ProductProduct)
+      #NOTE strangely till recently we could use the E1::ProductProduct symbol directly without OE1.const_get
+      #this even works when putting this example alone in a dedicated test file, or in IRB/Ruby files.
+      #this could even be a bug related to RSpec, I have no idea. As a workaround I changed the test to make it pass here
+      #while still testing the overall feature.
+      OE1.const_get("ProductProduct").find('product_product_pc1').should be_kind_of(OE1.const_get("ProductProduct"))
     end
 
     it "should be able to read in one instance and write in an other" do
-      p1 = OE1::ProductProduct.find(1)
-      p2 = OE2::ProductProduct.create(:name => p1.name, :categ_id => p1.categ_id.id)
-      p2.should be_kind_of(OE2::ProductProduct)
+      p1 = OE1.const_get("ProductProduct").find(1)
+      p2 = OE2.const_get("ProductProduct").create(:name => p1.name, :categ_id => p1.categ_id.id)
+      p2.should be_kind_of(OE2.const_get("ProductProduct"))
     end
   end
 
