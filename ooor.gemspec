@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name = %q{ooor}
-  s.version = "1.7.0"
-  s.date = %q{2012-06-29}
+  s.version = "1.7.1"
+  s.date = %q{2012-08-17}
   s.authors = ["Raphael Valyi - www.akretion.com"]
   s.email = %q{rvalyi@akretion.com}
   s.summary = %q{OOOR - OpenObject On Ruby}
