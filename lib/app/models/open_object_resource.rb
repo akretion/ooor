@@ -463,7 +463,7 @@ module Ooor
     def load_association(model_key, ids, *arguments)
       options = arguments.extract_options!
       related_class = self.class.const_get(model_key, object_session)
-      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || object_session
+      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || object_session[:context]
     end
 
     def reload_fields(context)
