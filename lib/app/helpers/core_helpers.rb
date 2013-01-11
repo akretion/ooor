@@ -41,7 +41,7 @@ Ooor.xtend('ir.module.module') do
   #  - True
   # Usage Example:
   # res = IrModuleModule.install_modules(@openerp, modules)
-  def self.install_modules(openerp, modules, dependencies=false)
+  def self.install_modules(modules, dependencies=false)
     res = true
     if dependencies
       dependency_modules = get_dependencies(modules)
