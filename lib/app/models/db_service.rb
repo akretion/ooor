@@ -1,9 +1,3 @@
-#    OOOR: OpenObject On Ruby
-#    Copyright (C) 2009-2012 Akretion LTDA (<http://www.akretion.com>).
-#    Author: Raphaël Valyi
-#    Licensed under the MIT license, see MIT-LICENSE file
-
-#proxies all 'db' class of OpenERP server/bin/service/web_service.py properly
 module Ooor
   module DbService
     def create(password=@config[:db_password], db_name='ooor_db', demo=true, lang='en_US', user_password=@config[:password] || 'admin')
@@ -12,7 +6,7 @@ module Ooor
       @config[:username] = 'admin'
       @config[:passowrd] = user_password
       sleep(3)
-      while get_progress('admin', process_id)[0] != 1
+      while get_progress(password, process_id)[0] != 1
         @logger.info "..."
         sleep(0.5)
       end
