@@ -75,7 +75,7 @@ module Ooor
       @logger = ((defined?(Rails) && $0 != 'irb' && Rails.logger || @config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
       @logger.level = @config[:log_level] if @config[:log_level]
       OpenObjectResource.logger = @logger
-      @base_url = @config[:url].gsub(/\/$/,'')
+      @base_url = @config[:url] = "#{@config[:url].gsub(/\/$/,'').chomp('/xmlrpc')}/xmlrpc"
       @loaded_models = []
       scope = Module.new and Object.const_set(@config[:scope_prefix], scope) if @config[:scope_prefix]
       load_models() if @config[:database]
