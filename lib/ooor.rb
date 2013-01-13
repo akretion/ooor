@@ -5,8 +5,7 @@
 
 require 'logger'
 require 'app/models/open_object_resource'
-require 'app/models/db_service'
-require 'app/models/common_service'
+require 'app/models/services'
 require 'app/models/base64'
 require 'app/ui/client_base'
 
@@ -29,6 +28,7 @@ module Ooor
   class Ooor
     include DbService
     include CommonService
+    include ReportService
     include ClientBase
 
     cattr_accessor :default_ooor, :default_config
