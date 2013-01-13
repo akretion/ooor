@@ -47,6 +47,6 @@ ARGV[0] = "--readline"
 ARGV[1] = "--prompt"
 ARGV[2] = "inf-ruby"
 
-ooor = Ooor.new(:url => url, :database => database || 'demo', :username => username || 'admin', :password => password || 'admin', :log_level => Logger::INFO)
+@ooor = Ooor.new(:url => url, :database => database || 'demo', :username => username || 'admin', :password => password || 'admin', :log_level => Logger::INFO)
 
 IRB.start(__FILE__)
