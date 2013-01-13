@@ -39,7 +39,7 @@ module Ooor
   end
 
   module ReportService
-    %w[report, report_get, render_report].each do |meth|
+    %w[report report_get render_report].each do |meth|
       self.instance_eval do
         define_method meth do
           |*args| get_rpc_client(@base_url + "/report").call(meth, *args)
