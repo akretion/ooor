@@ -16,17 +16,14 @@ module Ooor
   end
 
   module DbService
-    def create(password=@config[:db_password], db_name='ooor_db', demo=true, lang='en_US', user_password=@config[:password] || 'admin')
+    def create(password=@config[:db_password], db_name='ooor_test', demo=true, lang='en_US', user_password=@config[:password] || 'admin')
       process_id = get_rpc_client(@base_url + "/db").call("create", password, db_name, demo, lang, user_password)
-      @config[:database] = db_name
-      @config[:username] = 'admin'
-      @config[:passowrd] = user_password
       sleep(2)
       while get_progress(password, process_id)[0] != 1
         @logger.info "..."
         sleep(0.5)
       end
-      load_models()
+      global_login('admin', user_password, db_name, false)
     end
 
     %w[get_progress drop dump restore rename db_exist list change_admin_password list_lang server_version migrate_databases create_database duplicate_database].each do |meth|
