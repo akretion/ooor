@@ -65,7 +65,7 @@ module Ooor
     end
 
     def get_ruby_rpc_client(url)
-      require 'app/models/ooor_client'
+      require 'app/models/client_xmlrpc'
       XMLClient.new2(self, url, nil, @config[:rpc_timeout] || 900)
     end
 
@@ -78,26 +78,29 @@ module Ooor
       @base_url = @config[:url] = "#{@config[:url].gsub(/\/$/,'').chomp('/xmlrpc')}/xmlrpc"
       @loaded_models = []
       scope = Module.new and Object.const_set(@config[:scope_prefix], scope) if @config[:scope_prefix]
-      load_models() if @config[:database]
+      global_login(@config[:username] || 'admin', @config[:password] || 'admin', @config[:database], @config[:models]) if @config[:database]
     end
 
     def const_get(model_key)
       @ir_model_class.const_get(model_key)
     end
 
-    def load_models(to_load_models=@config[:models])
+    def global_login(user, password, database=@config[:database], model_names=false)
+      @config[:username] = user
+      @config[:password] = password
+      @config[:database] = database
+      @config[:user_id] = login(database, user, password)
+      load_models(model_names, true)
+    end
+
+    def load_models(model_names=false, reload=@config[:reload])
       @global_context = @config[:global_context] || {}
-      global_login(@config[:username] || 'admin', @config[:password] || 'admin')
       ([File.dirname(__FILE__) + '/app/helpers/*'] + (@config[:helper_paths] || [])).each {|dir|  Dir[dir].each { |file| require file }}
       @ir_model_class = define_openerp_model({'model' => 'ir.model'}, @config[:scope_prefix])
-      if to_load_models #we load only a customized subset of the OpenERP models
-        model_ids = @ir_model_class.search([['model', 'in', to_load_models]])
-      else
-        model_ids = @ir_model_class.search() - [1]
-      end
-      models = @ir_model_class.read(model_ids, ['model'])#['name', 'model', 'id', 'info', 'state'])#, 'field_id', 'access_ids'])
-      @global_context.merge!({}).merge!(@config[:global_context] || {})
-      models.each {|openerp_model| define_openerp_model(openerp_model, @config[:scope_prefix], nil, nil, nil, nil, @config[:reload])}
+      model_ids = model_names && @ir_model_class.search([['model', 'in', model_names]]) || @ir_model_class.search() - [1]
+      models = @ir_model_class.read(model_ids, ['model'])#['name', 'model', 'id', 'info', 'state', 'field_id', 'access_ids'])
+      @global_context.merge!({}).merge!(@config[:global_context] || {}) #TODO ensure it's required
+      models.each {|openerp_model| define_openerp_model(openerp_model, @config[:scope_prefix], nil, nil, nil, nil, reload)}
     end
 
     def define_openerp_model(param, scope_prefix=nil, url=nil, database=nil, user_id=nil, pass=nil, reload=false)
