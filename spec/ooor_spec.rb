@@ -39,8 +39,8 @@ describe Ooor do
     end
 
     it "should be able to load a profile" do
-      accounting_module_ids = IrModuleModule.search(['|', ['name','=', 'sale'], ['name','=', 'account_voucher']])
-      accounting_module_ids.each do |accounting_module_id|
+      module_ids = IrModuleModule.search(['name','=', 'sale']) + IrModuleModule.search(['name','=', 'account_voucher']) + IrModuleModule.search(['name','=', 'sale_stock'])
+      module_ids.each do |accounting_module_id|
         mod = IrModuleModule.find(accounting_module_id) 
         unless mod.state == "installed"
           mod.button_install
@@ -95,9 +95,9 @@ describe Ooor do
       end
 
       it "should be able to find using ir.model.data absolute ids" do
-        p = ProductProduct.find('product_product_pc1')
+        p = ResPartner.find('res_partner_1')
         p.should_not be_nil
-        p = ProductProduct.find('product.product_product_pc1')#module scoping is optionnal
+        p = ResPartner.find('base.res_partner_1')#module scoping is optionnal
         p.should_not be_nil
       end
 
@@ -259,8 +259,9 @@ describe Ooor do
 
     describe "Relations assignations" do
       it "should be able to assign many2one relations on new" do
-        s = SaleOrder.new(:partner_id => 2)
-        s.partner_id.id.should == 2
+        new_partner_id = ResPartner.search()[0]
+        s = SaleOrder.new(:partner_id => new_partner_id)
+        s.partner_id.id.should == new_partner_id
       end
 
       it "should be able to do product.taxes_id = [id1, id2]" do
@@ -391,12 +392,12 @@ describe Ooor do
 
   describe "Multi-instance and class name scoping" do
     before(:all) do
-      @ooor1 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE1', :models => ['product.product'], :reload => true)
-      @ooor2 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE2', :models => ['product.product'], :reload => true)
+      @ooor1 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE1', :models => ['res.partner', 'product.product'], :reload => true)
+      @ooor2 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE2', :models => ['res.partner', 'product.product'], :reload => true)
     end
 
     it "should still be possible to find a ressource using an absolute id" do
-      OE1::ProductProduct.find('product_product_pc1').should be_kind_of(OE1::ProductProduct)
+      OE1::ResPartner.find('res_partner_1').should be_kind_of(OE1::ResPartner)
     end
 
     it "should be able to read in one instance and write in an other" do
