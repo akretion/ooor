@@ -231,7 +231,7 @@ module Ooor
 
       #actually finds many resources specified with scope = ids_array
       def find_single(scope, options)
-        fields = options[:fields] || options[:only] || []
+        fields = options[:fields] || options[:only] || (@fields.keys.select {|k| @fields[k]["type"] != "binary"} + @associations_keys)
         context = options[:context] || {}
 #        prefix_options, query_options = split_options(options[:params])
         is_collection = true
