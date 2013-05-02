@@ -302,19 +302,19 @@ module Ooor
       self.class.rpc_execute_with_all(object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
     end
 
-    def reload_from_record!(record) load(record.attributes, record.associations) end
+    def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
 
-    def load(attributes, associations={})#an attribute might actually be a association too, will be determined here
+    def load(attributes, remove_root=false)#an attribute might actually be a association too, will be determined here
       self.class.reload_fields_definition(false, object_session)
       raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
       @prefix_options, attributes = split_options(attributes)
-      @associations = associations
-      @attributes = {}
+      @associations ||= {}
+      @attributes ||= {}
       @loaded_associations = {}
       attributes.each do |key, value|
         skey = key.to_s
-        if self.class.associations_keys.index(skey) || value.is_a?(Array)
-          associations[skey] = value #the association because we want the method to load the association through method missing
+        if self.class.associations_keys.index(skey) || value.is_a?(Array) #FIXME may miss m2o with inherits!
+          @associations[skey] = value #the association because we want the method to load the association through method missing
         else
           @attributes[skey] = value
         end
@@ -392,7 +392,7 @@ module Ooor
         self.class.logger.info result["warning"]["title"]
         self.class.logger.info result["warning"]["message"]
       end
-      load(@attributes.merge({field_name => field_value}).merge(result["value"]), @associations)
+      load(@attributes.merge({field_name => field_value}).merge(result["value"]))
     end
 
     #wrapper for OpenERP exec_workflow Business Process Management engine
@@ -479,7 +479,7 @@ module Ooor
     end
 
     def reload_fields(context)
-      records = self.class.find(self.id, :context => context, :fields => @attributes.keys)
+      records = self.class.find(self.id, :context => context, :fields => @attributes.keys + @associations.keys)
       reload_from_record!(records)
     end
   end
