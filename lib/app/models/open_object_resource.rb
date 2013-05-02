@@ -240,9 +240,10 @@ module Ooor
 
       #actually finds many resources specified with scope = ids_array
       def find_single(scope, options)
+        context = options[:context] || {}
+        reload_fields_definition(false, context)
         all_fields = @fields.merge(@many2one_associations).merge(@one2many_associations).merge(@many2many_associations).merge(@polymorphic_m2o_associations)
         fields = options[:fields] || options[:only] || all_fields.keys.select {|k| all_fields[k]["type"] != "binary" && (options[:include_functions] || !all_fields[k]["function"])}
-        context = options[:context] || {}
 #        prefix_options, query_options = split_options(options[:params])
         is_collection = true
         scope = [scope] and is_collection = false if !scope.is_a? Array
