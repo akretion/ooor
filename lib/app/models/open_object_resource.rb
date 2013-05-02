@@ -24,9 +24,18 @@ module Ooor
     class << self
 
       cattr_accessor :logger
-      attr_accessor :openerp_id, :info, :access_ids, :name, :openerp_model, :field_ids, :state, #model class attributes associated to the OpenERP ir.model
+      attr_accessor :openerp_id, :info, :access_ids, :name, :description, :openerp_model, :field_ids, :state, #class attributes associated to the OpenERP ir.model
                     :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
                     :database, :user_id, :scope_prefix, :ooor, :association
+
+      def model_name
+        @_model_name ||= begin
+          namespace = self.parents.detect do |n|
+            n.respond_to?(:use_relative_model_naming?) && n.use_relative_model_naming?
+          end
+          ActiveModel::Name.new(self, namespace, description)
+        end
+      end
 
       def print_uml(options={})
         UML.print_uml([self], options)

@@ -98,7 +98,7 @@ module Ooor
       ([File.dirname(__FILE__) + '/app/helpers/*'] + (@config[:helper_paths] || [])).each {|dir|  Dir[dir].each { |file| require file }}
       @ir_model_class = define_openerp_model({'model' => 'ir.model'}, @config[:scope_prefix])
       model_ids = model_names && @ir_model_class.search([['model', 'in', model_names]]) || @ir_model_class.search() - [1]
-      models = @ir_model_class.read(model_ids, ['model'])#['name', 'model', 'id', 'info', 'state', 'field_id', 'access_ids'])
+      models = @ir_model_class.read(model_ids, ['model', 'name'])#['name', 'model', 'id', 'info', 'state', 'field_id', 'access_ids'])
       @global_context.merge!({}).merge!(@config[:global_context] || {}) #TODO ensure it's required
       models.each {|openerp_model| define_openerp_model(openerp_model, @config[:scope_prefix], nil, nil, nil, nil, reload)}
     end
@@ -117,6 +117,7 @@ module Ooor
         klass.openerp_id = url || param['id']
         klass.info = (param['info'] || '').gsub("'",' ')
         klass.name = model_class_name
+        klass.description = param['name']
         klass.state = param['state']
         #klass.field_ids = param['field_id']
         #klass.access_ids = param['access_ids']
