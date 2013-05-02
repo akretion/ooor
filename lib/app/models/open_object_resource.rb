@@ -323,12 +323,13 @@ module Ooor
     end
 
     def available_fields
-      msg = "\n*** AVAILABLE FIELDS ON OBJECT #{self.class.name} ARE: ***"
+      msg = "\n*** AVAILABLE FIELDS ON #{self.class.name} ARE: ***"
       msg << "\n\n" << self.class.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
-      msg << "\n\n" << self.class.many2one_associations.map {|k, v| "many2one --- #{v['relation']} --- #{k}"}.join("\n")
-      msg << "\n\n" << self.class.one2many_associations.map {|k, v| "one2many --- #{v['relation']} --- #{k}"}.join("\n")
-      msg << "\n\n" << self.class.many2many_associations.map {|k, v| "many2many --- #{v['relation']} --- #{k}"}.join("\n")
-      msg << "\n\n" << self.class.polymorphic_m2o_associations.map {|k, v| "polymorphic_m2o --- #{v['relation']} --- #{k}"}.join("\n")
+      %w[many2one one2many many2many polymorphic_m2o].each do |kind|
+        msg << "\n\n"
+        msg << (self.class.send "#{kind}_associations").map {|k, v| "{kind} --- #{v['relation']} --- #{k}"}.join("\n")
+      end
+      msg
     end
 
     #takes care of reading OpenERP default field values.
