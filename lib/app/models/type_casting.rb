@@ -85,7 +85,8 @@ module Ooor
     
     def to_openerp_hash!
       cast_relations_to_openerp!
-      @attributes.reject {|k, v| k == 'id'}.merge(@associations)
+      blacklist = %w[id write_date create_date write_ui create_ui]
+      @attributes.reject {|k, v| blacklist.index(k)}.merge(@associations)
     end
     
     def cast_relations_to_openerp!
