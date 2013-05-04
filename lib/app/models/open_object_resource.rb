@@ -5,7 +5,6 @@
 
 require 'rubygems'
 require 'active_resource'
-require 'app/ui/form_model'
 require 'app/models/uml'
 require 'app/models/type_casting'
 require 'app/models/relation'
@@ -157,19 +156,6 @@ module Ooor
         reload_fields_definition()
         logger.debug "OOOR RPC: 'exec_workflow', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, action: #{action}, *args: #{args.inspect}"
         cast_answer_to_ruby!(@ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/object").call("exec_workflow", db, uid, pass, obj, action, *args))
-      end
-
-      def old_wizard_step(wizard_name, ids, step='init', wizard_id=nil, form={}, context={}, report_type='pdf')
-        context = @ooor.global_context.merge(context)
-        cast_map_to_openerp!(form)
-        unless wizard_id
-          logger.debug "OOOR RPC: 'create old_wizard_step' #{wizard_name}"
-          wizard_id = cast_answer_to_ruby!(@ooor.get_rpc_client((@database && @site || @ooor.base_url) + "/wizard").call("create",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_name))
-        end
-        params = {'model' => @openerp_model, 'form' => form, 'report_type' => report_type}
-        params.merge!({'id' => ids[0], 'ids' => ids}) if ids
-        logger.debug "OOOR RPC: 'execute old_wizard_step' #{wizard_id}, #{params.inspect}, #{step}, #{context}"
-        [wizard_id, cast_answer_to_ruby!(@ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/wizard").call("execute",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], wizard_id, params, step, context))]
       end
 
       def method_missing(method_symbol, *arguments)        
@@ -401,11 +387,6 @@ module Ooor
       reload_fields(context) if reload
     end
 
-    def old_wizard_step(wizard_name, step='init', wizard_id=nil, form={}, context={})
-      result = self.class.old_wizard_step(wizard_name, [self.id], step, wizard_id, form, {})
-      FormModel.new(wizard_name, result[0], nil, nil, result[1], [self], self.class.ooor.global_context)
-    end   
-        
     def log(message, context={}) rpc_execute('log', id, message, context) end
 
     def type() method_missing(:type) end #skips deprecated Object#type method

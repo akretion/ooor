@@ -7,7 +7,6 @@ require 'logger'
 require 'app/models/open_object_resource'
 require 'app/models/services'
 require 'app/models/base64'
-require 'app/ui/client_base'
 
 module Ooor
   def self.new(*args)
@@ -29,7 +28,6 @@ module Ooor
     include DbService
     include CommonService
     include ReportService
-    include ClientBase
 
     cattr_accessor :default_ooor, :default_config
     attr_accessor :logger, :config, :loaded_models, :base_url, :global_context, :ir_model_class

@@ -9,7 +9,7 @@ require File.dirname(__FILE__) + '/../lib/ooor'
 #Run the file with the rspec command  from the rspec gem
 describe Ooor do
   before(:all) do
-    @url = 'http://localhost:8069/xmlrpc'
+    @url = 'http://localhost:8169/xmlrpc'
     @db_password = 'admin'
     @username = 'admin'
     @password = 'admin'
@@ -297,10 +297,7 @@ describe Ooor do
         voucher.save
         voucher.wkf_action 'proforma_voucher'
         
-        #wizard = inv.old_wizard_step('account.invoice.pay') #tip: you can inspect the wizard fields, arch and datas
-        #inv = wizard.reconcile({:journal_id => 6, :name =>"from_rails"}) #if you want to pay all; will give you a reloaded invoice
         inv.reload
-        # inv.state.should == "paid" #TODO!!
       end
 
       it "should be possible to call resource actions and workflow actions" do
@@ -336,37 +333,6 @@ describe Ooor do
       end
     end
 
-  end
-
-
-  describe "Offer Web Client core features" do
-    before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database,
-        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu'])
-    end
-
-    it "should find the default user action" do
-      @ooor.get_init_menu(1)
-    end
-
-    it "should be able to find the sub-menus of a menu" do
-      menu = IrUiMenu.find(:first, :domain => [['name', '=', 'Partners'], ['parent_id', '!=', false]])
-      menu.child_id.each do |sub_menu|
-        sub_menu.should be_kind_of(IrUiMenu)
-      end
-    end
-
-    it "should retrieve the action of a menu" do
-      Ooor::ActionWindow.from_menu(IrUiMenu.find(:first, :domain => [['name', '=', 'Customers']])).search.should be_kind_of Array
-    end
-
-    it "should be able to open a list view of a menu action" do
-      Ooor::ActionWindow.from_menu(IrUiMenu.find(:first, :domain => [['name', '=', 'Customers']])).get_fields 'tree'
-    end
-
-    it  "should be able to open a form view of a menu action" do
-      Ooor::ActionWindow.from_menu(IrUiMenu.find(:first, :domain => [['name', '=', 'Customers']])).get_fields 'form'
-    end
   end
 
 
