@@ -12,10 +12,11 @@ before_script:
     - cd ../openerp-server
     - REPOSITORIES=../openerp-addons
     - ./openerp-server --db_user=postgres --addons-path=$REPOSITORIES,../openerp-web/addons --db_user=openerp --db_password=admin --db_host=localhost &
+    - cd ../ooor
+    - bundle install
 
 script:
-    - cd ../ooor
-    - rake
+    - bundle exec rspec spec/
 
 rvm:
   - 1.9.3
