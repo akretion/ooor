@@ -13,6 +13,7 @@ require 'ooor/base64'
 module Ooor
   extend ActiveSupport::Autoload
   autoload :Base
+  autoload :XMLClient, 'ooor/connection'
 
   def self.new(*args)
     Ooor.send :new, *args
@@ -69,7 +70,6 @@ module Ooor
     end
 
     def get_ruby_rpc_client(url)
-      require 'app/models/client_xmlrpc'
       XMLClient.new2(self, url, nil, @config[:rpc_timeout] || 900)
     end
 
@@ -137,3 +137,5 @@ module Ooor
     end
   end
 end
+
+require 'ooor/railtie' if defined?(Rails)

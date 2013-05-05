@@ -1,7 +1,10 @@
+$:.push File.expand_path("../lib", __FILE__)
+
+require "ooor/version"
+
 Gem::Specification.new do |s|
   s.name = %q{ooor}
-  s.version = "1.9.2"
-  s.version     = Ooor::VERSION
+  s.version = Ooor::VERSION
 
   s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
 
