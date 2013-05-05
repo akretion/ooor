@@ -262,6 +262,8 @@ module Ooor
 
     end
 
+    self.name = "Base"
+
     # ******************** instance methods ********************
 
     attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
@@ -282,7 +284,7 @@ module Ooor
         skey = key.to_s
         if self.class.associations_keys.index(skey) || value.is_a?(Array) #FIXME may miss m2o with inherits!
           @associations[skey] = value #the association because we want the method to load the association through method missing
-        elsif value
+        else
           @attributes[skey] = value
         end
       end
