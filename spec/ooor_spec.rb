@@ -375,6 +375,14 @@ describe Ooor do
     end
   end
 
+  describe "Multi-format serialization" do
+    it "should serialize in json" do
+      ProductProduct.find(1).as_json
+    end
+    it "should serialize in json" do
+      ProductProduct.find(1).to_xml
+    end
+  end
 
   describe "Ruby OpenERP extensions" do
     before(:all) do
