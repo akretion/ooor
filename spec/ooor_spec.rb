@@ -286,7 +286,13 @@ describe Ooor do
       end
     end
 
-    describe "Old wizard management" do
+    describe "ARel emulation" do
+      it "should have an 'all' method" do
+        ResUsers.all be_kind_of(Array)
+      end
+    end
+
+    describe "wizard management" do
       it "should be possible to pay an invoice in one step" do        
         inv = AccountInvoice.find(:last).copy() #creates a draft invoice        
         inv.state.should == "draft"
@@ -312,10 +318,6 @@ describe Ooor do
         i.action_cancel_draft
         s.reload.state.should == "invoice_except"
       end
-    end
-
-    describe "New style wizards" do
-      #already tested, see database configuration test
     end
 
     describe "Delete resources" do

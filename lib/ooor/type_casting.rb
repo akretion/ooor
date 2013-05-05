@@ -90,7 +90,7 @@ module Ooor
       def cast_relation(k, v, one2many_associations, many2many_associations)
         if one2many_associations[k]
           return v.collect! do |value|
-            if value.is_a?(OpenObjectResource) #on the fly creation as in the GTK client
+            if value.is_a?(Base) #on the fly creation as in the GTK client
               [0, 0, value.to_openerp_hash!]
             else
               if value.is_a?(Hash)

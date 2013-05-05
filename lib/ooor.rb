@@ -3,12 +3,17 @@
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
+require 'active_support'
+require 'active_support/core_ext/class/attribute_accessors'
+require 'active_support/core_ext/hash/indifferent_access'
 require 'logger'
-require 'app/models/open_object_resource'
-require 'app/models/services'
-require 'app/models/base64'
+require 'ooor/services.rb'
+require 'ooor/base64'
 
 module Ooor
+  extend ActiveSupport::Autoload
+  autoload :Base
+
   def self.new(*args)
     Ooor.send :new, *args
   end
@@ -73,7 +78,7 @@ module Ooor
       @config.symbolize_keys!
       @logger = ((defined?(Rails) && $0 != 'irb' && Rails.logger || @config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
       @logger.level = @config[:log_level] if @config[:log_level]
-      OpenObjectResource.logger = @logger
+      Base.logger = @logger
       @base_url = @config[:url] = "#{@config[:url].gsub(/\/$/,'').chomp('/xmlrpc')}/xmlrpc"
       @loaded_models = []
       scope = Module.new and Object.const_set(@config[:scope_prefix], scope) if @config[:scope_prefix]
@@ -92,7 +97,7 @@ module Ooor
 
     def load_models(model_names=false, reload=@config[:reload])
       @global_context = {}.merge!(@config[:global_context] || {})
-      ([File.dirname(__FILE__) + '/app/helpers/*'] + (@config[:helper_paths] || [])).each {|dir|  Dir[dir].each { |file| require file }}
+      ([File.dirname(__FILE__) + '/ooor/helpers/*'] + (@config[:helper_paths] || [])).each {|dir|  Dir[dir].each { |file| require file }}
       @ir_model_class = define_openerp_model({'model' => 'ir.model'}, @config[:scope_prefix])
       model_ids = model_names && @ir_model_class.search([['model', 'in', model_names]]) || @ir_model_class.search() - [1]
       models = @ir_model_class.read(model_ids, ['model', 'name'])#['name', 'model', 'id', 'info', 'state', 'field_id', 'access_ids'])
@@ -100,10 +105,10 @@ module Ooor
     end
 
     def define_openerp_model(param, scope_prefix=nil, url=nil, database=nil, user_id=nil, pass=nil, reload=false)
-      model_class_name = OpenObjectResource.class_name_from_model_key(param['model'])
+      model_class_name = Base.class_name_from_model_key(param['model'])
       scope = scope_prefix ? Object.const_get(scope_prefix) : Object
       if reload || !scope.const_defined?(model_class_name)
-        klass = Class.new(OpenObjectResource)
+        klass = Class.new(Base)
         klass.ooor = self
         klass.site = url || @base_url
         klass.openerp_model = param['model']
@@ -130,19 +135,5 @@ module Ooor
         return scope.const_get(model_class_name)
       end
     end
-  end
-  
-  if defined?(Rails) #Optional autoload in Rails:
-    if Rails.version[0] == "3"[0] #Rails 3 bootstrap
-      class Railtie < Rails::Railtie
-        initializer "ooor.middleware" do |app|
-          Ooor.default_config = Ooor.load_config(false, Rails.env)
-          Ooor.default_ooor = Ooor.new(Ooor.default_config) if Ooor.default_config['bootstrap']
-        end
-      end
-    else #Rails 2.3.x bootstrap
-      Ooor.default_config = Ooor.load_config(false, RAILS_ENV)
-         Ooor.default_ooor = Ooor.new(Ooor.default_config) if Ooor.default_config['bootstrap']
-     end
   end
 end

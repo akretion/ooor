@@ -5,12 +5,14 @@
 
 require 'rubygems'
 require 'active_resource'
-require 'app/models/type_casting'
-require 'app/models/serialization'
-require 'app/models/relation'
 
 module Ooor
-  class OpenObjectResource < ActiveResource::Base
+  autoload :Relation
+  autoload :UML
+  autoload :TypeCasting
+  autoload :Serialization
+
+  class Base < ActiveResource::Base
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
     include TypeCasting
@@ -33,10 +35,7 @@ module Ooor
         end
       end
 
-      def print_uml(options={})
-        require 'app/models/uml'
-        UML.print_uml([self], options)
-      end
+      def print_uml(options={}); UML.print_uml([self], options); end
 
       def class_name_from_model_key(model_key=self.openerp_model)
         model_key.split('.').collect {|name_part| name_part.capitalize}.join
@@ -113,20 +112,6 @@ module Ooor
       def limit(value); relation.limit(value); end
       def order(value); relation.order(value); end
       def offset(value); relation.offset(value); end
-
-      def credentials_from_args(*args)
-        if args[-1].is_a? Hash #context
-          user_id = args[-1].delete(:user_id) || args[-1].delete('user_id') || @ooor.config[:user_id]
-          password = args[-1].delete(:password) || args[-1].delete('password') || @ooor.config[:password]
-          database = args[-1].delete(:database) || args[-1].delete('database') || @ooor.config[:database]
-          args[-1].delete(:context)
-        else
-          user_id = @ooor.config[:user_id] #TODO @user_id useless?
-          password = @ooor.config[:password]
-          database = @ooor.config[:database]
-        end
-        return database, user_id, password
-      end
 
       #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
       def rpc_execute(method, *args)
@@ -261,11 +246,22 @@ module Ooor
         return active_resources
       end
 
+      def credentials_from_args(*args)
+        if args[-1].is_a? Hash #context
+          user_id = args[-1].delete(:user_id) || args[-1].delete('user_id') || @ooor.config[:user_id]
+          password = args[-1].delete(:password) || args[-1].delete('password') || @ooor.config[:password]
+          database = args[-1].delete(:database) || args[-1].delete('database') || @ooor.config[:database]
+          args[-1].delete(:context)
+        else
+          user_id = @ooor.config[:user_id] #TODO @user_id useless?
+          password = @ooor.config[:password]
+          database = @ooor.config[:database]
+        end
+        return database, user_id, password
+      end
+
     end
 
-    self.name = "OpenObjectResource"
-    
-    
     # ******************** instance methods ********************
 
     attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
@@ -281,8 +277,6 @@ module Ooor
       args += [self.class.ooor.global_context.merge(object_session[:context])] unless args[-1].is_a? Hash
       self.class.rpc_execute_with_all(object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
     end
-
-    def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
 
     def load(attributes, remove_root=false)#an attribute might actually be a association too, will be determined here
       self.class.reload_fields_definition(false, object_session)
@@ -380,28 +374,15 @@ module Ooor
       reload_fields(context) if reload
     end
 
+    #Add get_report_data to obtain [report["result"],report["format]] of a concrete openERP Object
+    def get_report_data(report_name, report_type="pdf", context={})
+      self.class.get_report_data(report_name, [self.id], report_type, context)
+    end
+
     def log(message, context={}) rpc_execute('log', id, message, context) end
 
     def type() method_missing(:type) end #skips deprecated Object#type method
 
-    # fakes associations like much like ActiveRecord according to the cached OpenERP data model
-    def relationnal_result(method_name, *arguments)
-      self.class.reload_fields_definition(false, object_session)
-      if self.class.many2one_associations.has_key?(method_name)
-        return false unless @associations[method_name]
-        load_association(self.class.many2one_associations[method_name]['relation'], @associations[method_name].is_a?(Integer) && @associations[method_name] || @associations[method_name][0], *arguments)
-      elsif self.class.one2many_associations.has_key?(method_name)
-        load_association(self.class.one2many_associations[method_name]['relation'], @associations[method_name], *arguments) || []
-      elsif self.class.many2many_associations.has_key?(method_name)
-        load_association(self.class.many2many_associations[method_name]['relation'], @associations[method_name], *arguments) || []
-      elsif self.class.polymorphic_m2o_associations.has_key?(method_name)
-        values = @associations[method_name].split(',')
-        load_association(values[0], values[1].to_i, *arguments)
-      else
-        false
-      end
-    end
-    
     def method_missing(method_symbol, *arguments)      
       method_name = method_symbol.to_s
       is_assign = method_name.end_with?('=')
@@ -438,19 +419,34 @@ module Ooor
       e.message << "\n" + available_fields if e.message.index("AttributeError")
       raise e
     end
-    
-    #Add get_report_data to obtain [report["result"],report["format]] of a concrete openERP Object
-    def get_report_data(report_name, report_type="pdf", context={})
-      self.class.get_report_data(report_name, [self.id], report_type, context)        
-    end 
 
     private
     
+    # fakes associations like much like ActiveRecord according to the cached OpenERP data model
+    def relationnal_result(method_name, *arguments)
+      self.class.reload_fields_definition(false, object_session)
+      if self.class.many2one_associations.has_key?(method_name)
+        return false unless @associations[method_name]
+        load_association(self.class.many2one_associations[method_name]['relation'], @associations[method_name].is_a?(Integer) && @associations[method_name] || @associations[method_name][0], *arguments)
+      elsif self.class.one2many_associations.has_key?(method_name)
+        load_association(self.class.one2many_associations[method_name]['relation'], @associations[method_name], *arguments) || []
+      elsif self.class.many2many_associations.has_key?(method_name)
+        load_association(self.class.many2many_associations[method_name]['relation'], @associations[method_name], *arguments) || []
+      elsif self.class.polymorphic_m2o_associations.has_key?(method_name)
+        values = @associations[method_name].split(',')
+        load_association(values[0], values[1].to_i, *arguments)
+      else
+        false
+      end
+    end
+
     def load_association(model_key, ids, *arguments)
       options = arguments.extract_options!
       related_class = self.class.const_get(model_key, object_session)
       related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || object_session[:context]
     end
+
+    def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
 
     def reload_fields(context)
       records = self.class.find(self.id, :context => context, :fields => @attributes.keys + @associations.keys)
