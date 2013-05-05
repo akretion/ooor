@@ -13,6 +13,9 @@ before_script:
     - REPOSITORIES=../openerp-addons
     - ./openerp-server --db_user=postgres --addons-path=$REPOSITORIES,../openerp-web/addons --db_user=openerp --db_password=admin --db_host=localhost &
 
+script:
+    - rake
+
 rvm:
   - 1.9.3
 notifications:
