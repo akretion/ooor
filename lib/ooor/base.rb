@@ -415,11 +415,11 @@ module Ooor
       msg
     end
 
+    private
+
     # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
     def to_ary; nil; end # :nodoc:
 
-    private
-    
     # fakes associations like much like ActiveRecord according to the cached OpenERP data model
     def relationnal_result(method_name, *arguments)
       self.class.reload_fields_definition(false, object_session)
