@@ -14,7 +14,7 @@ before_script:
     - ./openerp-server --db_user=postgres --addons-path=$REPOSITORIES,../openerp-web/addons --db_user=openerp --db_password=admin --db_host=localhost &
 
 script:
-    - cd ooor
+    - cd ../ooor
     - rake
 
 rvm:
