@@ -1,16 +1,14 @@
 #    OOOR: OpenObject On Ruby
-#    Copyright (C) 2009-2012 Akretion LTDA (<http://www.akretion.com>).
+#    Copyright (C) 2009-2013 Akretion LTDA (<http://www.akretion.com>).
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
 require 'rubygems'
 require 'active_resource'
-require 'app/models/uml'
 require 'app/models/type_casting'
-require 'app/models/relation'
 require 'app/models/serialization'
-
-autoload :UML, 'app/models/uml'
+require 'app/models/relation'
+require 'app/models/uml'
 
 module Ooor
   class OpenObjectResource < ActiveResource::Base
@@ -25,7 +23,7 @@ module Ooor
       cattr_accessor :logger
       attr_accessor :openerp_id, :info, :access_ids, :name, :description, :openerp_model, :field_ids, :state, #class attributes associated to the OpenERP ir.model
                     :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
-                    :database, :user_id, :scope_prefix, :ooor, :association
+                    :scope_prefix, :ooor, :association
 
       def model_name
         @_model_name ||= begin
@@ -115,31 +113,34 @@ module Ooor
       def order(value); relation.order(value); end
       def offset(value); relation.offset(value); end
 
+      def credentials_from_args(*args)
+        if args[-1].is_a? Hash #context
+          user_id = args[-1].delete(:user_id) || args[-1].delete('user_id') || @ooor.config[:user_id]
+          password = args[-1].delete(:password) || args[-1].delete('password') || @ooor.config[:password]
+          database = args[-1].delete(:database) || args[-1].delete('database') || @ooor.config[:database]
+          args[-1].delete(:context)
+        else
+          user_id = @ooor.config[:user_id] #TODO @user_id useless?
+          password = @ooor.config[:password]
+          database = @ooor.config[:database]
+        end
+        return database, user_id, password
+      end
+
       #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
       def rpc_execute(method, *args)
         rpc_execute_with_object(@openerp_model, method, *args)
       end
 
       def rpc_execute_with_object(object, method, *args)
-        if args[-1].is_a? Hash #context
-          user_id = args[-1].delete(:user_id) || args[-1].delete('user_id') || @user_id || @ooor.config[:user_id]
-          password = args[-1].delete(:password) || args[-1].delete('password') || @password || @ooor.config[:password]
-          database = args[-1].delete(:database) || args[-1].delete('database') || @database || @ooor.config[:database]
-          args[-1].delete(:context)
-        else
-          user_id = @user_id || @ooor.config[:user_id] #TODO @user_id useless?
-          password = @password || @ooor.config[:password]
-          database = @database || @ooor.config[:database]
-        end
+        database, user_id, password = credentials_from_args(args)
         rpc_execute_with_all(database, user_id, password, object, method, *args)
       end
 
       #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
       def rpc_execute_with_all(db, uid, pass, obj, method, *args)
-        clean_request_args!(args)
-        reload_fields_definition(false, {:user_id => uid, :password => pass})
-        logger.debug "OOOR RPC: rpc_method: 'execute', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
-        cast_answer_to_ruby!(@ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/object").call("execute",  db, uid, pass, obj, method, *args))
+        reload_fields_definition(false, {:user_id => uid, :password => pass}) #FIXME sure?
+        cast_answer_to_ruby!(@ooor.execute(db, uid, pass, obj, method, *cast_request_to_openerp(args)))
       end
 
        #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
@@ -148,31 +149,32 @@ module Ooor
       end
 
       def rpc_exec_workflow_with_object(object, action, *args)
-        rpc_exec_workflow_with_all(@database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], object, action, *args)
+        database, user_id, password = credentials_from_args(args)
+        rpc_exec_workflow_with_all(@ooor.config[:database], @ooor.config[:user_id], @ooor.config[:password], object, action, *args)
       end
 
       def rpc_exec_workflow_with_all(db, uid, pass, obj, action, *args)
-        clean_request_args!(args)
-        reload_fields_definition()
-        logger.debug "OOOR RPC: 'exec_workflow', db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, action: #{action}, *args: #{args.inspect}"
-        cast_answer_to_ruby!(@ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/object").call("exec_workflow", db, uid, pass, obj, action, *args))
+        reload_fields_definition(false, {:user_id => uid, :password => pass})
+        cast_answer_to_ruby!(@ooor.exec_workflow(db, uid, pass, obj, action, *cast_request_to_openerp(args)))
       end
 
-      def method_missing(method_symbol, *arguments)        
+      def method_missing(method_symbol, *args)
         raise RuntimeError.new("Invalid RPC method:  #{method_symbol}") if [:type!, :allowed!].index(method_symbol)
-        self.rpc_execute(method_symbol.to_s, *arguments)
+        self.rpc_execute(method_symbol.to_s, *args)
       end
       
       #Added methods to obtain report data for a model
-      def report(report_name, ids, report_type='pdf', context={})
+      def report(report_name, ids, report_type='pdf', context={}) #TODO move to ReportService
+        database, user_id, password = credentials_from_args(args)
         context = @ooor.global_context.merge(context)
         params = {'model' => @openerp_model, 'id' => ids[0], 'report_type' => report_type}
-        @ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/report").call("report",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], report_name, ids, params, context)
+        @ooor.get_rpc_client("#{@ooor.base_url}/report").call("report",  database, user_id, password, report_name, ids, params, context)
       end
       
       def report_get(report_id, context={})
+        database, user_id, password = credentials_from_args(args)
         context = @ooor.global_context.merge(context)
-        @ooor.get_rpc_client("#{(@database && @site || @ooor.base_url)}/report").call("report_get",  @database || @ooor.config[:database], @user_id || @ooor.config[:user_id], @password || @ooor.config[:password], report_id)
+        @ooor.get_rpc_client("#{@ooor.base_url}/report").call("report_get",  database, user_id, password, report_id)
       end
       
       def get_report_data(report_name, ids, report_type='pdf', context={})
@@ -269,9 +271,9 @@ module Ooor
 
     attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
 
-    def object_db; object_session[:database] || self.class.database || self.class.ooor.config[:database]; end
-    def object_uid; object_session[:user_id] || self.class.user_id || self.class.ooor.config[:user_id]; end
-    def object_pass; object_session[:password] || self.class.password || self.class.ooor.config[:password]; end
+    def object_db; object_session[:database] || self.class.ooor.config[:database]; end
+    def object_uid; object_session[:user_id] || self.class.ooor.config[:user_id]; end
+    def object_pass; object_session[:password] || self.class.ooor.config[:password]; end
 
     # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
     def to_ary # :nodoc:
@@ -279,7 +281,7 @@ module Ooor
     end
 
     #try to wrap the object context inside the query.
-    def rpc_execute(method, *args)
+    def rpc_execute(method, *args) #TODO remove context stuff?
     if args[-1].is_a? Hash
       args[-1] = self.class.ooor.global_context.merge(object_session[:context]).merge(args[-1])
     elsif args.is_a?(Array)
@@ -301,8 +303,8 @@ module Ooor
         skey = key.to_s
         if self.class.associations_keys.index(skey) || value.is_a?(Array) #FIXME may miss m2o with inherits!
           @associations[skey] = value #the association because we want the method to load the association through method missing
-        else
-          @attributes[skey] = (value == false)? nil : value
+        elsif value
+          @attributes[skey] = value
         end
       end
       self

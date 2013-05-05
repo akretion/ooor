@@ -27,6 +27,7 @@ module Ooor
   class Ooor
     include DbService
     include CommonService
+    include ObjectService
     include ReportService
 
     cattr_accessor :default_ooor, :default_config
@@ -108,12 +109,9 @@ module Ooor
         klass = Class.new(OpenObjectResource)
         klass.ooor = self
         klass.site = url || @base_url
-        klass.user = user_id
-        klass.password = pass
-        klass.database = database
         klass.openerp_model = param['model']
         klass.openerp_id = url || param['id']
-        klass.info = (param['info'] || '').gsub("'",' ')
+#        klass.info = (param['info'] || '').gsub("'",' ')
         klass.name = model_class_name
         klass.description = param['name']
         klass.state = param['state']

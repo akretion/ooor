@@ -35,11 +35,25 @@ module Ooor
     end
   end
 
+  module ObjectService
+    %w[execute exec_workflow].each do |meth|
+      self.instance_eval do
+        define_method meth do |db, uid, pass, obj, method, *args|
+        if args[-1].is_a? Hash #if it's an Array, it's your responsability to ensure correct context!
+          args[-1] = global_context.merge(args[-1])
+        end
+          logger.debug "OOOR object service: rpc_method: #{meth}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
+          get_rpc_client(@base_url + "/object").call(meth, db, uid, pass, obj, method, *args)
+        end
+      end
+    end
+  end
+
   module ReportService
     %w[report report_get render_report].each do |meth|
       self.instance_eval do
-        define_method meth do
-          |*args| get_rpc_client(@base_url + "/report").call(meth, *args)
+        define_method meth do |*args|
+          get_rpc_client(@base_url + "/report").call(meth, *args)
         end
       end
     end

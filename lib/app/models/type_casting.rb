@@ -5,8 +5,7 @@
 
 module Ooor
   module TypeCasting
-  
-    def self.included(base) base.extend(ClassMethods) end
+    extend ActiveSupport::Concern
   
     module ClassMethods
       
@@ -25,16 +24,6 @@ module Ooor
           return domain
         end
       end
-
-      def clean_request_args!(args)
-        if args[-1].is_a? Hash
-          args[-1] = @ooor.global_context.merge(args[-1])
-        elsif args.is_a?(Array)
-          args.map! {|v| value_to_openerp(v)}
-          args += [@ooor.global_context]
-        end
-        cast_map_to_openerp!(args[-2]) if args[-2].is_a? Hash
-      end
       
       def value_to_openerp(v)
         if v == nil
@@ -52,9 +41,13 @@ module Ooor
         end
       end
 
-      def cast_map_to_openerp!(map)
-        map.each do |k, v|
-          map[k] = value_to_openerp(v)
+      def cast_request_to_openerp(request)
+        if request.is_a?(Array)
+          request.map { |item| cast_request_to_openerp(item) }
+        elsif request.is_a?(Hash)
+          request.each { |k, v| request[k] = cast_request_to_openerp(v) }
+        else
+          value_to_openerp(request)
         end
       end
 
