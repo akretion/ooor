@@ -1,13 +1,10 @@
 pillow
 docutils
 psutil
-psycopg2
-reportlab
 pytz
 Mako
 --find-links=http://download.gna.org/pychart/
 PyChart
-lxml
 vobject
 Babel
 simplejson
