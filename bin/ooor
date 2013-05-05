@@ -4,6 +4,7 @@ puts "*** OOOR - OpenObject on Ruby! Published under the MIT license by Akretion
 
 require 'irb'
 require 'rubygems'
+require 'logger'
 require 'ooor'
 require 'irb/completion'
   
