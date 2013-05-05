@@ -13,7 +13,7 @@ module Ooor
       attribute_names = attributes.keys.sort
       included_associations = {}
       self.class.many2one_associations.keys.each do |k|
-        if loaded_associations[k].is_a? OpenObjectResource
+        if loaded_associations[k].is_a? Base
           included_associations[k] = loaded_associations[k].as_json[loaded_associations[k].class.openerp_model.gsub('.', '_')]
         elsif associations[k].is_a? Array
           included_associations[k] = {"id" => associations[k][0], "name" => associations[k][1]}
