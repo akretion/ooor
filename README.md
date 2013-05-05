@@ -130,7 +130,7 @@ Please read details [https://github.com/rvalyi/ooor/wiki/(J)Ruby-on-Rails-applic
 API usage
 ------------
 
-Note: Ruby proxies objects are named after OpenERP models in but removing the '.' and using CamelCase.
+Note: Ruby proxy objects are named after OpenERP models in but removing the '.' and using CamelCase.
 (we remind you that OpenERP tables are also named after OpenERP models but replacing the '.' by '_'.)
 
 Basic finders:
