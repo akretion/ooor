@@ -1,0 +1,21 @@
+language: python
+python:
+  - "2.7"
+
+before_script:
+    - git clone --depth=1 --quiet https://github.com/akretion/openerp-server.git ../openerp-server
+    - git clone --depth=1 --quiet https://github.com/akretion/openerp-web.git ../openerp-web
+    - git clone --depth=1 --quiet https://github.com/akretion/openerp-addons.git ../openerp-addons
+    - pip install -r spec/requirements.txt --use-mirrors
+    - psql -c 'create database ooor_test;' -U postgres
+
+script:
+    - cd ../openerp-server
+    - REPOSITORIES=../openerp-addons
+    - ./openerp-server --db_user=postgres --addons-path=$REPOSITORIES,../openerp-web/addons
+
+rvm:
+  - 1.9.3
+notifications:
+  email:
+    - raphael.valyi@akretion.com
