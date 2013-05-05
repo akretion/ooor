@@ -103,6 +103,7 @@ module Ooor
 
       #OpenERP search method
       def search(domain=[], offset=0, limit=false, order=false, context={}, count=false)
+        context = @ooor.global_context.merge(context)
         rpc_execute('search', to_openerp_domain(domain), offset, limit, order, context, count)
       end
       
@@ -165,16 +166,14 @@ module Ooor
       
       #Added methods to obtain report data for a model
       def report(report_name, ids, report_type='pdf', context={}) #TODO move to ReportService
-        database, user_id, password = credentials_from_args(args)
-        context = @ooor.global_context.merge(context)
+        database, user_id, password = credentials_from_args(context)
         params = {'model' => @openerp_model, 'id' => ids[0], 'report_type' => report_type}
-        @ooor.get_rpc_client("#{@ooor.base_url}/report").call("report",  database, user_id, password, report_name, ids, params, context)
+        @ooor.report(database, user_uid, password, password, report_name, ids, params, context)
       end
       
       def report_get(report_id, context={})
-        database, user_id, password = credentials_from_args(args)
-        context = @ooor.global_context.merge(context)
-        @ooor.get_rpc_client("#{@ooor.base_url}/report").call("report_get",  database, user_id, password, report_id)
+        database, user_id, password = credentials_from_args(context)
+        @ooor.report_get(database, user_uid, password, password, report_id)
       end
       
       def get_report_data(report_name, ids, report_type='pdf', context={})
@@ -276,17 +275,10 @@ module Ooor
     def object_pass; object_session[:password] || self.class.ooor.config[:password]; end
 
     # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
-    def to_ary # :nodoc:
-        nil
-    end
+    def to_ary; nil; end # :nodoc:
 
-    #try to wrap the object context inside the query.
-    def rpc_execute(method, *args) #TODO remove context stuff?
-    if args[-1].is_a? Hash
-      args[-1] = self.class.ooor.global_context.merge(object_session[:context]).merge(args[-1])
-    elsif args.is_a?(Array)
-      args += [self.class.ooor.global_context.merge(object_session[:context])]
-    end
+    def rpc_execute(method, *args)
+      args += [self.class.ooor.global_context.merge(object_session[:context])] unless args[-1].is_a? Hash
       self.class.rpc_execute_with_all(object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
     end
 
@@ -358,7 +350,6 @@ module Ooor
       reload_fields(context) if reload
       @persisted = true
     end
-
 
     #compatible with the Rails way but also supports OpenERP context
     def destroy(context={})
