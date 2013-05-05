@@ -3,16 +3,16 @@ OOOR - OpenObject On Ruby:
 
 <table>
     <tr>
-        <td width="159px"><a href="http://github.com/rvalyi/ooor" title="OOOR - OpenObject On Ruby"><img src="http://akretion.s3.amazonaws.com/assets/ooor_m.jpg" width="159px" height="124px" /></a></td>
+        <td style="border:1px solid #CCC;width:159px"><a href="http://github.com/rvalyi/ooor" title="OOOR - OpenObject On Ruby"><img src="http://akretion.s3.amazonaws.com/assets/ooor_m.jpg" width="159px" height="124px" /></a></td>
         <td><b>BY</b></td>
-        <td width="320px"><a href="http://www.akretion.com" title="Akretion - open source to spin the world"><img src="http://akretion.s3.amazonaws.com/assets/logo.png" width="320px" height="154px" /></a></td>
-        <td width="285px">
+        <td style="border:1px solid #CCC;width:320px"><a href="http://www.akretion.com" title="Akretion - open source to spin the world"><img src="http://akretion.s3.amazonaws.com/assets/logo.png" width="320px" height="154px" /></a></td>
+        <td style="border:1px solid #CCC;width:285px">
 OOOR stands for OpenObject On Ruby. OpenObject is the RAD framework behind OpenERP,
 the ERP that doesn't hurt, just like Rails is "web development that doesn't hurt".
 So OOOR exposes seamlessly your OpenObject application, to your custom Ruby or Rails application.
-Needless to say, OOOR doubly doesn't hurt.
+Needless to say, OOOR doubly doesn't hurt!
 Furthermore, OOOR only depends on the "activeresource" gem. So it can even be used
-in any Ruby application without Rails. It's also fully JRuby compatible and hence make the bridge between the Python OpenERP and the Java ecosystem.
+in any Ruby application even without Rails. It's also fully JRuby compatible and hence make the bridge between the Python OpenERP and the Java ecosystem.
         </td>
     </tr>
 </table>
