@@ -57,37 +57,26 @@ module Ooor
         self.new(attributes, default_get_list, context).tap { |resource| resource.save(context, reload) }
       end
 
+      def reload_field_definition(k, field)
+        case field['type']
+        when 'many2one'
+          @many2one_associations[k] = field
+        when 'one2many'
+          @one2many_associations[k] = field
+        when 'many2many'
+          @many2many_associations[k] = field
+        when 'reference'
+          @polymorphic_m2o_associations[k] = field
+        else
+          @fields[k] = field if field['name'] != 'id'
+        end
+      end
+
       def reload_fields_definition(force=false, context={})
         if force or not @fields_defined
           @fields_defined = true
           @fields = {}
-          rpc_execute("fields_get").each do |k, field|
-            case field['type']
-            when 'many2one'
-              @many2one_associations[k] = field
-            when 'one2many'
-              @one2many_associations[k] = field
-            when 'many2many'
-              @many2many_associations[k] = field
-            when 'reference'
-              @polymorphic_m2o_associations[k] = field
-            else
-  #            if ['integer', 'int8'].index(field['type'])
-  #              self.send :validates_numericality_of, k, :only_integer => true
-  #            elsif field['type'] == 'float'
-  #              self.send :validates_numericality_of, k
-  #            elsif field['type'] == 'char'
-  #              self.send :validates_length_of, k, :maximum => field['size'] || 128
-  #            end
-              @fields[k] = field if field['name'] != 'id'
-            end
-  #          if field["required"]
-  #            if field['type'] == 'many2one'
-  #              next if PREDEFINED_INHERITS[self.openerp_model] == k
-  #            end
-  #            self.send :validates_presence_of, k
-  #          end
-          end
+          rpc_execute("fields_get").each { |k, field| reload_field_definition(k, field) }
           @associations_keys = @many2one_associations.keys + @one2many_associations.keys + @many2many_associations.keys + @polymorphic_m2o_associations.keys
           (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools such as jirb_swing
             unless self.respond_to?(meth)
