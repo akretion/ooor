@@ -7,12 +7,11 @@ before_script:
     - git clone --depth=1 --quiet https://github.com/akretion/openerp-web.git ../openerp-web
     - git clone --depth=1 --quiet https://github.com/akretion/openerp-addons.git ../openerp-addons
     - pip install -r spec/requirements.txt --use-mirrors
-    - psql -c 'create database ooor_test;' -U postgres
-
-script:
+    - psql -c "CREATE USER openerp WITH PASSWORD 'admin';" -U postgres
+    - psql -c 'create database ooor_test with owner openerp;' -U postgres
     - cd ../openerp-server
     - REPOSITORIES=../openerp-addons
-    - ./openerp-server --db_user=postgres --addons-path=$REPOSITORIES,../openerp-web/addons
+    - ./openerp-server --db_user=postgres --addons-path=$REPOSITORIES,../openerp-web/addons --db_user=openerp --db_password=admin --db_host=localhost &
 
 rvm:
   - 1.9.3

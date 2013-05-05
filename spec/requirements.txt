@@ -12,7 +12,6 @@ vobject
 Babel
 simplejson
 python-dateutil
-python-openid
 PyYaml
 werkzeug
 unittest2
