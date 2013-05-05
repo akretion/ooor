@@ -8,7 +8,6 @@ require 'active_resource'
 require 'app/models/type_casting'
 require 'app/models/serialization'
 require 'app/models/relation'
-require 'app/models/uml'
 
 module Ooor
   class OpenObjectResource < ActiveResource::Base
@@ -35,6 +34,7 @@ module Ooor
       end
 
       def print_uml(options={})
+        require 'app/models/uml'
         UML.print_uml([self], options)
       end
 
