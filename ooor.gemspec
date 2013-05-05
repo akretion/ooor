@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.description = %q{OOOR exposes OpenERP business object proxies to your Ruby (Rails or not) application. It extends the standard ActiveResource API. Running on JRuby, OOOR also offers a convenient bridge between OpenERP and the Java eco-system}
 
   s.files = Dir["{lib}/**/*"] + ["MIT-LICENSE", "ooor.yml", "README.md"]
-  s.test_files = Dir["test/**/*", "spec/**/*"]
+  s.test_files = Dir["spec/**/*"]
 
   s.add_dependency(%q<activeresource>, [">= 2.3.5"])
   s.bindir       = "bin"

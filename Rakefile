@@ -1,28 +1,7 @@
 require 'rake'
-require 'rake/testtask'
-require 'rake/rdoctask'
+require 'rspec'
 
-desc 'Default: run unit tests.'
-task :default => :test
-
-desc 'Test the ooor plugin.'
-Rake::TestTask.new(:test) do |t|
-  t.libs << 'lib'
-  t.libs << 'test'
-  t.pattern = 'test/**/*_test.rb'
-  t.verbose = true
+Spec::Rake::SpecTask.new(:spec) do |t|
 end
 
-desc 'Generate documentation for the ooor plugin.'
-Rake::RDocTask.new(:rdoc) do |rdoc|
-  rdoc.rdoc_dir = 'rdoc'
-  rdoc.title    = 'Ooor'
-  rdoc.options << '--line-numbers' << '--inline-source'
-  rdoc.rdoc_files.include('README')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-end
-
-require 'bundler/setup'
-
-Bundler::GemHelper.install_tasks
-
+task :default => :spec
