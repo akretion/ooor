@@ -1,3 +1,11 @@
 source "http://rubygems.org"
 
-gemspec
+gem 'ooor', :path => '.'
+
+group :test do
+  gem 'rspec'
+end
+
+group :development do
+  gem 'rake'
+end
