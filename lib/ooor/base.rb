@@ -266,13 +266,6 @@ module Ooor
 
     attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
 
-    def object_db; object_session[:database] || self.class.ooor.config[:database]; end
-    def object_uid; object_session[:user_id] || self.class.ooor.config[:user_id]; end
-    def object_pass; object_session[:password] || self.class.ooor.config[:password]; end
-
-    # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
-    def to_ary; nil; end # :nodoc:
-
     def rpc_execute(method, *args)
       args += [self.class.ooor.global_context.merge(object_session[:context])] unless args[-1].is_a? Hash
       self.class.rpc_execute_with_all(object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
@@ -294,16 +287,6 @@ module Ooor
         end
       end
       self
-    end
-
-    def available_fields
-      msg = "\n*** AVAILABLE FIELDS ON #{self.class.name} ARE: ***"
-      msg << "\n\n" << self.class.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
-      %w[many2one one2many many2many polymorphic_m2o].each do |kind|
-        msg << "\n\n"
-        msg << (self.class.send "#{kind}_associations").map {|k, v| "{kind} --- #{v['relation']} --- #{k}"}.join("\n")
-      end
-      msg
     end
 
     #takes care of reading OpenERP default field values.
@@ -420,6 +403,19 @@ module Ooor
       raise e
     end
 
+    def available_fields
+      msg = "\n*** AVAILABLE FIELDS ON #{self.class.name} ARE: ***"
+      msg << "\n\n" << self.class.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
+      %w[many2one one2many many2many polymorphic_m2o].each do |kind|
+        msg << "\n\n"
+        msg << (self.class.send "#{kind}_associations").map {|k, v| "{kind} --- #{v['relation']} --- #{k}"}.join("\n")
+      end
+      msg
+    end
+
+    # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
+    def to_ary; nil; end # :nodoc:
+
     private
     
     # fakes associations like much like ActiveRecord according to the cached OpenERP data model
@@ -452,5 +448,10 @@ module Ooor
       records = self.class.find(self.id, :context => context, :fields => @attributes.keys + @associations.keys)
       reload_from_record!(records)
     end
+
+    def object_db; object_session[:database] || self.class.ooor.config[:database]; end
+    def object_uid; object_session[:user_id] || self.class.ooor.config[:user_id]; end
+    def object_pass; object_session[:password] || self.class.ooor.config[:password]; end
+
   end
 end
