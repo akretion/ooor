@@ -21,10 +21,14 @@ module Ooor
     # ******************** class methods ********************
     class << self
 
-      cattr_accessor :logger
+      cattr_accessor :logger, :configurations
       attr_accessor :openerp_id, :info, :access_ids, :name, :description, :openerp_model, :field_ids, :state, #class attributes associated to the OpenERP ir.model
                     :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
-                    :scope_prefix, :ooor, :association
+                    :scope_prefix, :connection, :association
+
+#      def connection=(connection); @connection = connection; end
+
+#      def connection; @connection; end
 
       def model_name
         @_model_name ||= begin
@@ -44,7 +48,7 @@ module Ooor
       #similar to Object#const_get but for OpenERP model key
       def const_get(model_key, context={})
         klass_name = class_name_from_model_key(model_key)
-        klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : @ooor.define_openerp_model({'model' => model_key}, self.scope_prefix)
+        klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : connection.define_openerp_model({'model' => model_key}, self.scope_prefix)
         klass.reload_fields_definition(false, context)
         klass
       end
@@ -102,7 +106,7 @@ module Ooor
 
       #OpenERP search method
       def search(domain=[], offset=0, limit=false, order=false, context={}, count=false)
-        context = @ooor.global_context.merge(context)
+        context = connection.global_context.merge(context)
         rpc_execute('search', to_openerp_domain(domain), offset, limit, order, context, count)
       end
       
@@ -126,7 +130,7 @@ module Ooor
       #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
       def rpc_execute_with_all(db, uid, pass, obj, method, *args)
         reload_fields_definition(false, {:user_id => uid, :password => pass}) #FIXME sure?
-        cast_answer_to_ruby!(@ooor.execute(db, uid, pass, obj, method, *cast_request_to_openerp(args)))
+        cast_answer_to_ruby!(connection.execute(db, uid, pass, obj, method, *cast_request_to_openerp(args)))
       end
 
        #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
@@ -136,12 +140,12 @@ module Ooor
 
       def rpc_exec_workflow_with_object(object, action, *args)
         database, user_id, password = credentials_from_args(args)
-        rpc_exec_workflow_with_all(@ooor.config[:database], @ooor.config[:user_id], @ooor.config[:password], object, action, *args)
+        rpc_exec_workflow_with_all(connection.config[:database], connection.config[:user_id], connection.config[:password], object, action, *args)
       end
 
       def rpc_exec_workflow_with_all(db, uid, pass, obj, action, *args)
         reload_fields_definition(false, {:user_id => uid, :password => pass})
-        cast_answer_to_ruby!(@ooor.exec_workflow(db, uid, pass, obj, action, *cast_request_to_openerp(args)))
+        cast_answer_to_ruby!(connection.exec_workflow(db, uid, pass, obj, action, *cast_request_to_openerp(args)))
       end
 
       def method_missing(method_symbol, *args)
@@ -153,12 +157,12 @@ module Ooor
       def report(report_name, ids, report_type='pdf', context={}) #TODO move to ReportService
         database, user_id, password = credentials_from_args(context)
         params = {'model' => @openerp_model, 'id' => ids[0], 'report_type' => report_type}
-        @ooor.report(database, user_uid, password, password, report_name, ids, params, context)
+        connection.report(database, user_uid, password, password, report_name, ids, params, context)
       end
       
       def report_get(report_id, context={})
         database, user_id, password = credentials_from_args(context)
-        @ooor.report_get(database, user_uid, password, password, report_id)
+        connection.report_get(database, user_uid, password, password, report_id)
       end
       
       def get_report_data(report_name, ids, report_type='pdf', context={})
@@ -248,14 +252,14 @@ module Ooor
 
       def credentials_from_args(*args)
         if args[-1].is_a? Hash #context
-          user_id = args[-1].delete(:user_id) || args[-1].delete('user_id') || @ooor.config[:user_id]
-          password = args[-1].delete(:password) || args[-1].delete('password') || @ooor.config[:password]
-          database = args[-1].delete(:database) || args[-1].delete('database') || @ooor.config[:database]
+          user_id = args[-1].delete(:user_id) || args[-1].delete('user_id') || connection.config[:user_id]
+          password = args[-1].delete(:password) || args[-1].delete('password') || connection.config[:password]
+          database = args[-1].delete(:database) || args[-1].delete('database') || connection.config[:database]
           args[-1].delete(:context)
         else
-          user_id = @ooor.config[:user_id] #TODO @user_id useless?
-          password = @ooor.config[:password]
-          database = @ooor.config[:database]
+          user_id = connection.config[:user_id] #TODO @user_id useless?
+          password = connection.config[:password]
+          database = connection.config[:database]
         end
         return database, user_id, password
       end
@@ -269,7 +273,7 @@ module Ooor
     attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
 
     def rpc_execute(method, *args)
-      args += [self.class.ooor.global_context.merge(object_session[:context])] unless args[-1].is_a? Hash
+      args += [self.class.connection.global_context.merge(object_session[:context])] unless args[-1].is_a? Hash
       self.class.rpc_execute_with_all(object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
     end
 
@@ -451,9 +455,9 @@ module Ooor
       reload_from_record!(records)
     end
 
-    def object_db; object_session[:database] || self.class.ooor.config[:database]; end
-    def object_uid; object_session[:user_id] || self.class.ooor.config[:user_id]; end
-    def object_pass; object_session[:password] || self.class.ooor.config[:password]; end
+    def object_db; object_session[:database] || self.class.connection.config[:database]; end
+    def object_uid; object_session[:user_id] || self.class.connection.config[:user_id]; end
+    def object_pass; object_session[:password] || self.class.connection.config[:password]; end
 
   end
 end

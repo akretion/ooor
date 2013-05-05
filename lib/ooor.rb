@@ -109,7 +109,6 @@ module Ooor
       scope = scope_prefix ? Object.const_get(scope_prefix) : Object
       if reload || !scope.const_defined?(model_class_name)
         klass = Class.new(Base)
-        klass.ooor = self
         klass.site = url || @base_url
         klass.openerp_model = param['model']
         klass.openerp_id = url || param['id']
@@ -125,6 +124,7 @@ module Ooor
         klass.polymorphic_m2o_associations = {}
         klass.associations_keys = []
         klass.fields = {}
+        klass.connection = self
         klass.scope_prefix = scope_prefix
         @logger.debug "registering #{model_class_name} as an ActiveResource proxy for OpenObject #{param['model']} model"
         scope.const_set(model_class_name, klass)

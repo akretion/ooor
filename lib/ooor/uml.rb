@@ -8,7 +8,7 @@ module Ooor
     #usage: UML.print_uml or with options: UML.print_uml(:all, :detailed) or MyOpenObjectResource.print_uml or UML.print_uml([list_of_classes], :all, :detailed)
 
     def print_uml(options={})
-      ooor = self.class.ooor
+      ooor = self.class.connection
       UML.print_uml(ooor.config[:models] && ooor.loaded_models.select {|model| ooor.config[:models].index(model.openerp_model)} || ooor.loaded_models, options)
     end
 
@@ -23,7 +23,7 @@ module Ooor
         model.print_uml
         s = ""#"Hello world! #{model_name}"
         s << "<IMG SRC='/x.png' USEMAP='#UMLbyOOOR' />"
-        f=File.open('x.map')
+        f = File.open('x.map')
         f.each_line {|l| s << l}
         s
       end
@@ -50,7 +50,7 @@ module Ooor
       if classes.size > 8
         enabled_targets = classes.map {|i| i.openerp_model} #classes[0].ooor.config[:models] #defines the scope of the UML for option local
       else
-        enabled_targets = classes[0].ooor.config[:models] #defines the scope of the UML for option local
+        enabled_targets = classes[0].connection.config[:models] #defines the scope of the UML for option local
       end
 
       m2o_edges = {}

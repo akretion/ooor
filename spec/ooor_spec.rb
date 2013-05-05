@@ -9,7 +9,7 @@ require File.dirname(__FILE__) + '/../lib/ooor'
 #Run the file with the rspec command  from the rspec gem
 describe Ooor do
   before(:all) do
-    @url = 'http://localhost:8069/xmlrpc'
+    @url = 'http://localhost:8169/xmlrpc'
     @db_password = 'admin'
     @username = 'admin'
     @password = 'admin'
