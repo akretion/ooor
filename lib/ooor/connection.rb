@@ -5,32 +5,20 @@
 
 require 'xmlrpc/client'
 require 'active_support'
-require 'active_support/core_ext/class/attribute_accessors'
 require 'active_support/core_ext/hash/indifferent_access'
 require 'logger'
 require 'ooor/services.rb'
 
 module Ooor
+  autoload :Base
+
   class Connection
     include DbService
     include CommonService
     include ObjectService
     include ReportService
 
-    cattr_accessor :default_ooor, :default_config
     attr_accessor :logger, :config, :loaded_models, :base_url, :global_context, :ir_model_class
-
-    #load the custom configuration
-    def self.load_config(config_file=nil, env=nil)
-      config_file ||= defined?(Rails.root) && "#{Rails.root}/config/ooor.yml" || 'ooor.yml'
-      @config = YAML.load_file(config_file)[env || 'development']
-    rescue SystemCallError
-      puts """failed to load OOOR yaml configuration file.
-         make sure your app has a #{config_file} file correctly set up
-         if not, just copy/paste the default ooor.yml file from the OOOR Gem
-         to #{Rails.root}/config/ooor.yml and customize it properly\n\n"""
-      {}
-    end
 
     def get_rpc_client(url)
       @rpc_clients ||= {}
