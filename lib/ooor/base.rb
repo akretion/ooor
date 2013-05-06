@@ -278,7 +278,7 @@ module Ooor
         if self.class.associations_keys.index(skey) || value.is_a?(Array) #FIXME may miss m2o with inherits!
           @associations[skey] = value #the association because we want the method to load the association through method missing
         else
-          @attributes[skey] = value
+          @attributes[skey] = value || nil #don't bloat with false values
         end
       end
       self
