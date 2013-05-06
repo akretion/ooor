@@ -11,13 +11,12 @@ module Ooor
 
   module OoorBehavior
     extend ActiveSupport::Concern
-
-    attr_accessor :default_ooor, :default_config
-
     module ClassMethods
+
+      attr_accessor :default_ooor, :default_config
+
       #meant to be overriden in multi-tenant mode
       def connection(*args)
-        a = b 
         default_ooor
       end
 
