@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.authors = ["Raphael Valyi - www.akretion.com"]
   s.email = %q{raphael.valyi@akretion.com}
   s.summary = %q{OOOR - OpenObject On Ruby}
-  s.homepage = %q{http://github.com/rvalyi/ooor}
+  s.homepage = %q{http://github.com/akretion/ooor}
   s.description = %q{OOOR exposes OpenERP business object proxies to your Ruby (Rails or not) application. It extends the standard ActiveResource API. Running on JRuby, OOOR also offers a convenient bridge between OpenERP and the Java eco-system}
 
   s.files = Dir["{lib}/**/*"] + ["MIT-LICENSE", "ooor.yml", "README.md"]
