@@ -3,11 +3,14 @@
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
-require 'active_support'
+require 'active_support/dependencies/autoload'
+require 'active_support/concern'
+
 
 module Ooor
   extend ActiveSupport::Autoload
   autoload :Connection
+  autoload :Cache, 'active_support/cache'
 
   module OoorBehavior
     extend ActiveSupport::Concern
@@ -15,13 +18,12 @@ module Ooor
 
       attr_accessor :default_ooor, :default_config
 
-      #meant to be overriden in multi-tenant mode
-      def connection(*args)
-        default_ooor
-      end
-
       def new(*args)
         Connection.send :new, *args
+      end
+
+      def cache(store=nil)
+        @cache ||= ActiveSupport::Cache.lookup_store(store)
       end
 
       #load the custom configuration
