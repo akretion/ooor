@@ -25,6 +25,23 @@ module Ooor
         end
       end
       
+      def to_rails_type(type)
+        case type.to_sym
+        when :char
+          :string
+        when :binary
+          :file
+        when :many2one
+          :belongs_to
+        when :one2many
+          :has_many
+        when :many2many
+          :has_and_belongs_to_many
+        else
+          type.to_sym
+        end
+      end
+
       def value_to_openerp(v)
         if v == nil
           return false

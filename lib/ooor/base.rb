@@ -3,8 +3,9 @@
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
-require 'rubygems'
 require 'active_resource'
+require 'active_support/dependencies/autoload'
+
 
 module Ooor
   autoload :Relation
@@ -24,7 +25,7 @@ module Ooor
       cattr_accessor :logger, :configurations
       attr_accessor :openerp_id, :info, :access_ids, :name, :description, :openerp_model, :field_ids, :state, #class attributes associated to the OpenERP ir.model
                     :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
-                    :scope_prefix, :connection, :association
+                    :scope_prefix, :connection, :associations, :columns, :columns_hash
 
 #      def connection=(connection); @connection = connection; end
 
@@ -76,6 +77,7 @@ module Ooor
         if force or not @fields_defined
           @fields_defined = true
           @fields = {}
+          @columns_hash = {}
           rpc_execute("fields_get").each { |k, field| reload_field_definition(k, field) }
           @associations_keys = @many2one_associations.keys + @one2many_associations.keys + @many2many_associations.keys + @polymorphic_m2o_associations.keys
           (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools such as jirb_swing
@@ -90,6 +92,24 @@ module Ooor
           logger.debug "#{fields.size} fields loaded in model #{self.name}"
         end
       end
+
+      # ******************** Rails introspection utilities *****************
+
+      def set_columns_hash(view_fields={}) #FIXME force to compute if context + cache/expire?
+        @columns_hash = {}
+        @fields.each do |k, field|
+          unless @associations_keys.index(k) 
+            @columns_hash[k] = field.merge({type: to_rails_type(view_fields[k] && view_fields[k]['type'] || field['type'])})
+          end
+        end
+        @columns_hash
+      end
+
+      def column_for_attribute(name)
+        columns_hash[name.to_s]
+      end
+
+
 
       # ******************** remote communication ********************
 
@@ -403,7 +423,7 @@ module Ooor
       msg << "\n\n" << self.class.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
       %w[many2one one2many many2many polymorphic_m2o].each do |kind|
         msg << "\n\n"
-        msg << (self.class.send "#{kind}_associations").map {|k, v| "{kind} --- #{v['relation']} --- #{k}"}.join("\n")
+        msg << (self.class.send "#{kind}_associations").map {|k, v| "#{kind} --- #{v['relation']} --- #{k}"}.join("\n")
       end
       msg
     end
