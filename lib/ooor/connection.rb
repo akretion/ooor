@@ -4,7 +4,7 @@
 #    Licensed under the MIT license, see MIT-LICENSE file
 
 require 'xmlrpc/client'
-require 'active_support'
+require 'active_support/dependencies/autoload'
 require 'active_support/core_ext/hash/indifferent_access'
 require 'logger'
 require 'ooor/services.rb'
@@ -43,8 +43,7 @@ module Ooor
     end
 
     def initialize(config, env=false)
-      @config = config.is_a?(String) ? Ooor.load_config(config, env) : config
-      @config.symbolize_keys!
+      @config = HashWithIndifferentAccess.new(config.is_a?(String) ? Ooor.load_config(config, env) : config)
       @logger = ((defined?(Rails) && $0 != 'irb' && Rails.logger || @config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
       @logger.level = @config[:log_level] if @config[:log_level]
       Base.logger = @logger
