@@ -5,7 +5,7 @@
 
 require 'active_resource'
 require 'active_support/dependencies/autoload'
-
+require 'active_support/core_ext/hash/indifferent_access'
 
 module Ooor
   autoload :Relation
@@ -319,7 +319,7 @@ module Ooor
         load(attributes)
       else
         self.class.reload_fields_definition(false, object_session)
-        attributes = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session[:context]).symbolize_keys!.merge(attributes.symbolize_keys!)
+        attributes = HashWithIndifferentAccess.new(rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session[:context])).merge(attributes.reject {|k, v| v.blank? })
         load(attributes)
       end
     end
@@ -404,8 +404,12 @@ module Ooor
         know_fields = self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).fields.keys}.flatten
         @attributes[method_key] = arguments[0] and return if know_fields.index(method_key)
       elsif self.class.fields.has_key?(method_key) || self.class.associations_keys.index(method_name) #unloaded field/association
-        load(rpc_execute('read', [id], [method_key], *arguments || object_session)[0] || {})
-        return method_missing(method_key, *arguments)
+        if attributes["id"]
+          load(rpc_execute('read', [id], [method_key], *arguments || object_session)[0] || {})
+          return method_missing(method_key, *arguments)
+        else
+          return nil
+        end
       elsif id #it's an action
         arguments += [{}] unless arguments.last.is_a?(Hash)
         rpc_execute(method_key, [id], *arguments) #we assume that's an action
