@@ -188,6 +188,17 @@ describe Ooor do
         p.categ_id.id.should == 1
       end
 
+      it "should support read on new objects" do
+        u = ResUsers.new({name: "joe", login: "joe"})
+        u.id.should be_nil
+        u.name.should == "joe"
+        u.email.should == nil
+        u.save
+        u.id.should_not be_nil
+        u.name.should == "joe"
+        u.destroy
+      end
+
       it "should support the context at object creation" do
         p = ProductProduct.new({:name => "testProduct1", :categ_id => 1}, false, {:lang => 'en_US', :user_id=>1, :password => 'admin'})
         p.object_session[:context][:lang] .should == 'en_US'
