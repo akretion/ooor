@@ -1,7 +1,5 @@
-# <a name="title"></a> OOOR [![Build Status](https://secure.travis-ci.org/akretion/ooor.png?branch=master)](http://travis-ci.org/akretion/ooor)
-
-OOOR - OpenObject On Ruby:
-====
+OOOR - OpenObject On Ruby [![Build Status](https://secure.travis-ci.org/akretion/ooor.png?branch=master)](http://travis-ci.org/akretion/ooor) [![Code Climate](https://codeclimate.com/github/akretion/ooor.png)](https://codeclimate.com/github/akretion/ooor)
+=========================
 
 <table>
     <tr>
