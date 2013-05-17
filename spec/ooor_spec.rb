@@ -200,19 +200,19 @@ describe Ooor do
       end
 
       it "should support the context at object creation" do
-        p = ProductProduct.new({:name => "testProduct1", :categ_id => 1}, false, {:lang => 'en_US', :user_id=>1, :password => 'admin'})
+        p = ProductProduct.new({:name => "testProduct1", :categ_id => 1}, false, {:lang => 'en_US', :ooor_user_id=>1, :ooor_password => 'admin'})
         p.object_session[:lang].should == 'en_US'
-        p.object_session[:user_id].should == 1
-        p.object_session[:password].should == "admin"
+        p.object_session[:ooor_user_id].should == 1
+        p.object_session[:ooor_password].should == "admin"
         p.save
       end
 
       it "should support context when instanciating collections" do
-        products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US', :user_id=>1, :password => 'admin'})
+        products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US', :ooor_user_id=>1, :ooor_password => 'admin'})
         p = products[0]
         p.object_session[:lang].should == 'en_US'
-        p.object_session[:user_id].should == 1
-        p.object_session[:password].should == "admin"
+        p.object_session[:ooor_user_id].should == 1
+        p.object_session[:ooor_password].should == "admin"
         p.save
       end
 

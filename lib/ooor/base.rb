@@ -267,9 +267,9 @@ module Ooor
             i = -1
           end
           c = args[i].dup()
-          user_id = c.delete(:user_id) || c.delete('user_id') || connection.config[:user_id] || 1
-          password = c.delete(:password) || c.delete('password') || connection.config[:password] || 'admin'
-          database = c.delete(:database) || c.delete('database') || connection.config[:database]
+          user_id = c.delete(:ooor_user_id) || c.delete('ooor_user_id') || connection.config[:user_id] || 1
+          password = c.delete(:ooor_password) || c.delete('ooor_password') || connection.config[:password] || 'admin'
+          database = c.delete(:ooor_database) || c.delete('ooor_database') || connection.config[:database]
           args[i] = c
         else
           user_id = connection.config[:user_id] || 1
