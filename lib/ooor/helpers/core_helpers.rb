@@ -91,7 +91,7 @@ Ooor.xtend('ir.module.module') do
     rescue
     end
     classes.reject! {|m| m.openerp_model == "res.company"} if classes.size > 10
-    Ooor::UML.print_uml(classes, {:file_name => "#{name}_uml"})
+    OoorDoc::UML.print_uml(classes, {:file_name => "#{name}_uml"})
   end
 
   def print_dependency_graph

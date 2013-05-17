@@ -9,7 +9,6 @@ require 'active_support/core_ext/hash/indifferent_access'
 
 module Ooor
   autoload :Relation
-  autoload :UML
   autoload :TypeCasting
   autoload :Serialization
 
@@ -39,8 +38,6 @@ module Ooor
           ActiveModel::Name.new(self, namespace, description)
         end
       end
-
-      def print_uml(options={}); UML.print_uml([self], options); end
 
       def class_name_from_model_key(model_key=self.openerp_model)
         model_key.split('.').collect {|name_part| name_part.capitalize}.join

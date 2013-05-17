@@ -348,27 +348,6 @@ describe Ooor do
 
   end
 
-
-  describe "UML features" do
-    before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database,
-        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu'])
-    end
-
-    it "should be able to draw the UML of any class" do
-      SaleOrder.print_uml.should be_true
-    end
-
-    it "should be able to draw the UML of several classes" do
-      Ooor::UML.print_uml([SaleOrder, SaleShop]).should be_true
-    end
-
-    it "should accept rendering options" do
-      SaleOrder.print_uml({:detailed => true}).should be_true
-    end
-  end
-
-
   describe "Multi-instance and class name scoping" do
     before(:all) do
       @ooor1 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE1', :models => ['res.partner', 'product.product'], :reload => true)
