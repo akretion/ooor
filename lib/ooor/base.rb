@@ -378,7 +378,6 @@ module Ooor
 
     def method_missing(method_symbol, *arguments)      
       method_name = method_symbol.to_s
-      is_assign = method_name.end_with?('=')
       method_key = method_name.sub('=', '')
       self.class.reload_fields_definition(false, object_session)
 
@@ -389,15 +388,8 @@ module Ooor
       elsif @associations.has_key?(method_name)
         result = relationnal_result(method_name, *arguments)
         @loaded_associations[method_name] = result and return result if result
-      elsif is_assign
-        known_associations = self.class.associations_keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).associations_keys}.flatten
-        if known_associations.index(method_key)
-          @associations[method_key] = arguments[0]
-          @loaded_associations[method_key] = arguments[0]
-          return
-        end
-        know_fields = self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).fields.keys}.flatten
-        @attributes[method_key] = arguments[0] and return if know_fields.index(method_key)
+      elsif method_name.end_with?('=')
+        return method_missing_value_assign(method_key, arguments)
       elsif self.class.fields.has_key?(method_key) || self.class.associations_keys.index(method_name) #unloaded field/association
         if attributes["id"]
           load(rpc_execute('read', [id], [method_key], *arguments || object_session)[0] || {})
@@ -415,6 +407,17 @@ module Ooor
     rescue RuntimeError => e
       e.message << "\n" + available_fields if e.message.index("AttributeError")
       raise e
+    end
+
+    def method_missing_value_assign(method_key, arguments)
+      known_associations = self.class.associations_keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).associations_keys}.flatten
+      if known_associations.index(method_key)
+        @associations[method_key] = arguments[0]
+        @loaded_associations[method_key] = arguments[0]
+      else 
+        know_fields = self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).fields.keys}.flatten
+        @attributes[method_key] = arguments[0] if know_fields.index(method_key)
+      end
     end
 
     def available_fields
