@@ -1,4 +1,4 @@
-#    OOOR: OpenObject On Ruby
+##    OOOR: OpenObject On Ruby
 #    Copyright (C) 2009-2013 Akretion LTDA (<http://www.akretion.com>).
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
@@ -78,7 +78,7 @@ module Ooor
           @fields_defined = true
           @fields = {}
           @columns_hash = {}
-          rpc_execute("fields_get").each { |k, field| reload_field_definition(k, field) }
+          rpc_execute("fields_get", false, context.dup).each { |k, field| reload_field_definition(k, field) }
           @associations_keys = @many2one_associations.keys + @one2many_associations.keys + @many2many_associations.keys + @polymorphic_m2o_associations.keys
           (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools such as jirb_swing
             unless self.respond_to?(meth)
@@ -116,7 +116,7 @@ module Ooor
       #OpenERP search method
       def search(domain=[], offset=0, limit=false, order=false, context={}, count=false)
         context = connection.global_context.merge(context)
-        rpc_execute('search', to_openerp_domain(domain), offset, limit, order, context, count)
+        rpc_execute('search', to_openerp_domain(domain), offset, limit, order, context, count, context_index: 4)
       end
       
       def relation; @relation ||= Relation.new(self); end
@@ -126,32 +126,31 @@ module Ooor
       def order(value); relation.order(value); end
       def offset(value); relation.offset(value); end
 
-      #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
       def rpc_execute(method, *args)
         rpc_execute_with_object(@openerp_model, method, *args)
       end
 
       def rpc_execute_with_object(object, method, *args)
-        database, user_id, password = credentials_from_args(args)
+        database, user_id, password, args = credentials_from_args(*args)
         rpc_execute_with_all(database, user_id, password, object, method, *args)
       end
 
-      #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw) method
+      #corresponding method for OpenERP osv.execute(self, db, uid, obj, method, *args, **kw)
       def rpc_execute_with_all(db, uid, pass, obj, method, *args)
         reload_fields_definition(false, {:user_id => uid, :password => pass}) #FIXME sure?
         cast_answer_to_ruby!(connection.execute(db, uid, pass, obj, method, *cast_request_to_openerp(args)))
       end
 
-       #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
       def rpc_exec_workflow(action, *args)
         rpc_exec_workflow_with_object(@openerp_model, action, *args)
       end
 
       def rpc_exec_workflow_with_object(object, action, *args)
-        database, user_id, password = credentials_from_args(args)
+        database, user_id, password, args = credentials_from_args(*args)
         rpc_exec_workflow_with_all(connection.config[:database], connection.config[:user_id], connection.config[:password], object, action, *args)
       end
 
+      #corresponding method for OpenERP osv.exec_workflow(self, db, uid, obj, method, *args)
       def rpc_exec_workflow_with_all(db, uid, pass, obj, action, *args)
         reload_fields_definition(false, {:user_id => uid, :password => pass})
         cast_answer_to_ruby!(connection.exec_workflow(db, uid, pass, obj, action, *cast_request_to_openerp(args)))
@@ -164,13 +163,13 @@ module Ooor
       
       #Added methods to obtain report data for a model
       def report(report_name, ids, report_type='pdf', context={}) #TODO move to ReportService
-        database, user_id, password = credentials_from_args(context)
+        database, user_id, password, context = credentials_from_args(context)
         params = {'model' => @openerp_model, 'id' => ids[0], 'report_type' => report_type}
         connection.report(database, user_uid, password, password, report_name, ids, params, context)
       end
       
       def report_get(report_id, context={})
-        database, user_id, password = credentials_from_args(context)
+        database, user_id, password, context = credentials_from_args(context)
         connection.report_get(database, user_uid, password, password, report_id)
       end
       
@@ -261,16 +260,27 @@ module Ooor
 
       def credentials_from_args(*args)
         if args[-1].is_a? Hash #context
-          user_id = args[-1].delete(:user_id) || args[-1].delete('user_id') || connection.config[:user_id]
-          password = args[-1].delete(:password) || args[-1].delete('password') || connection.config[:password]
-          database = args[-1].delete(:database) || args[-1].delete('database') || connection.config[:database]
-          args[-1].delete(:context)
+          if args[-1][:context_index]
+            i = args[-1][:context_index]
+            args.delete_at -1
+          else
+            i = -1
+          end
+          c = args[i].dup()
+          user_id = c.delete(:user_id) || c.delete('user_id') || connection.config[:user_id] || 1
+          password = c.delete(:password) || c.delete('password') || connection.config[:password] || 'admin'
+          database = c.delete(:database) || c.delete('database') || connection.config[:database]
+          if c[:context]
+            c.merge!(args[-1][:context]) #FIXME a bit hacky
+            c.delete(:context)
+          end
+          args[i] = c
         else
-          user_id = connection.config[:user_id] #TODO @user_id useless?
-          password = connection.config[:password]
+          user_id = connection.config[:user_id] || 1
+          password = connection.config[:password] || "admin"
           database = connection.config[:database]
         end
-        return database, user_id, password
+        return database, user_id.to_i, password, args
       end
 
     end
@@ -310,6 +320,7 @@ module Ooor
       @prefix_options = {}
       @ir_model_data_id = attributes.delete(:ir_model_data_id)
       @object_session = {}
+      context = HashWithIndifferentAccess.new(context)
       @object_session[:user_id] = context.delete :user_id
       @object_session[:database] = context.delete :database
       @object_session[:password] = context.delete :password
@@ -319,7 +330,7 @@ module Ooor
         load(attributes)
       else
         self.class.reload_fields_definition(false, object_session)
-        attributes = HashWithIndifferentAccess.new(rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session[:context])).merge(attributes.reject {|k, v| v.blank? })
+        attributes = HashWithIndifferentAccess.new(rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session[:context].dup)).merge(attributes.reject {|k, v| v.blank? })
         load(attributes)
       end
     end
@@ -438,12 +449,14 @@ module Ooor
     def to_ary; nil; end # :nodoc:
 
     # fakes associations like much like ActiveRecord according to the cached OpenERP data model
+    #FIXME possible extra RPC inefficiency when an inherited relation is loaded already (but not in model association keys)
     def relationnal_result(method_name, *arguments)
       self.class.reload_fields_definition(false, object_session)
       if self.class.many2one_associations.has_key?(method_name)
         return false unless @associations[method_name]
         load_association(self.class.many2one_associations[method_name]['relation'], @associations[method_name].is_a?(Integer) && @associations[method_name] || @associations[method_name][0], *arguments)
       elsif self.class.one2many_associations.has_key?(method_name)
+#p "one2many_associations", method_name, arguments
         load_association(self.class.one2many_associations[method_name]['relation'], @associations[method_name], *arguments) || []
       elsif self.class.many2many_associations.has_key?(method_name)
         load_association(self.class.many2many_associations[method_name]['relation'], @associations[method_name], *arguments) || []
@@ -458,7 +471,7 @@ module Ooor
     def load_association(model_key, ids, *arguments)
       options = arguments.extract_options!
       related_class = self.class.const_get(model_key, object_session)
-      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || object_session[:context]
+      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || object_session#[:context]
     end
 
     def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
