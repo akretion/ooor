@@ -1,6 +1,6 @@
 source "http://rubygems.org"
 
-gem 'ooor', :path => '.'
+gemspec
 
 group :test do
   gem 'rspec'
