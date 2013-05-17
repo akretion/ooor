@@ -18,7 +18,7 @@ module Ooor
     include ObjectService
     include ReportService
 
-    attr_accessor :logger, :config, :loaded_models, :base_url, :global_context, :ir_model_class
+    attr_accessor :logger, :config, :loaded_models, :base_url, :connection_session, :ir_model_class
 
     def get_rpc_client(url)
       @rpc_clients ||= {}
@@ -66,8 +66,8 @@ module Ooor
       @ir_model_class.const_get(model_key, context)
     end
 
-    def global_context
-      @global_context ||= {}.merge!(@config[:global_context] || {})
+    def connection_session
+      @connection_session ||= {}.merge!(@config[:connection_session] || {})
     end
 
     def load_models(model_names=false, reload=@config[:reload])

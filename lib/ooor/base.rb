@@ -115,7 +115,7 @@ module Ooor
 
       #OpenERP search method
       def search(domain=[], offset=0, limit=false, order=false, context={}, count=false)
-        context = connection.global_context.merge(context)
+        context = connection.connection_session.merge(context)
         rpc_execute('search', to_openerp_domain(domain), offset, limit, order, context, count, context_index: 4)
       end
       
@@ -288,7 +288,7 @@ module Ooor
     attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
 
     def rpc_execute(method, *args)
-      args += [self.class.connection.global_context.merge(object_session)] unless args[-1].is_a? Hash
+      args += [self.class.connection.connection_session.merge(object_session)] unless args[-1].is_a? Hash
       self.class.rpc_execute_with_all(object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
     end
 

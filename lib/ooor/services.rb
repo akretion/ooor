@@ -39,7 +39,7 @@ module Ooor
     %w[execute exec_workflow].each do |meth|
       self.instance_eval do
         define_method meth do |db, uid, pass, obj, method, *args|
-          args[-1] = global_context.merge(args[-1]) if args[-1].is_a? Hash
+          args[-1] = connection_session.merge(args[-1]) if args[-1].is_a? Hash
           logger.debug "OOOR object service: rpc_method: #{meth}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
           get_rpc_client(@base_url + "/object").call(meth, db, uid, pass, obj, method, *args)
         end
@@ -51,7 +51,7 @@ module Ooor
     %w[report report_get render_report].each do |meth|
       self.instance_eval do
         define_method meth do |*args|
-          args[-1] = global_context.merge(args[-1]) if args[-1].is_a? Hash
+          args[-1] = connection_session.merge(args[-1]) if args[-1].is_a? Hash
           get_rpc_client(@base_url + "/report").call(meth, *args)
         end
       end

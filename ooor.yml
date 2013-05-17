@@ -9,7 +9,7 @@ development:
   #models: [res.partner, product.template, product.product, product.category, sale.order, sale.order.line, account.invoice] #you can allow only some models if you like
   bootstrap: true   #true if you want to load OpenObject models (will hit OpenERP server) at startup; else use Ooor.reload!(lambda {}) to reload the Ooor models at any time
   #log_level: 0
-  #global_context:
+  #connection_session:
     #'lang': en_US
 
 test:
