@@ -270,10 +270,6 @@ module Ooor
           user_id = c.delete(:user_id) || c.delete('user_id') || connection.config[:user_id] || 1
           password = c.delete(:password) || c.delete('password') || connection.config[:password] || 'admin'
           database = c.delete(:database) || c.delete('database') || connection.config[:database]
-          if c[:context]
-            c.merge!(args[-1][:context]) #FIXME a bit hacky
-            c.delete(:context)
-          end
           args[i] = c
         else
           user_id = connection.config[:user_id] || 1
@@ -292,7 +288,7 @@ module Ooor
     attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
 
     def rpc_execute(method, *args)
-      args += [self.class.connection.global_context.merge(object_session[:context])] unless args[-1].is_a? Hash
+      args += [self.class.connection.global_context.merge(object_session)] unless args[-1].is_a? Hash
       self.class.rpc_execute_with_all(object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
     end
 
@@ -320,17 +316,13 @@ module Ooor
       @prefix_options = {}
       @ir_model_data_id = attributes.delete(:ir_model_data_id)
       @object_session = {}
-      context = HashWithIndifferentAccess.new(context)
-      @object_session[:user_id] = context.delete :user_id
-      @object_session[:database] = context.delete :database
-      @object_session[:password] = context.delete :password
-      @object_session[:context] = context
+      @object_session = HashWithIndifferentAccess.new(context)
       @persisted = persisted #TODO match 3.1 ActiveResource API
       if default_get_list == []
         load(attributes)
       else
         self.class.reload_fields_definition(false, object_session)
-        attributes = HashWithIndifferentAccess.new(rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session[:context].dup)).merge(attributes.reject {|k, v| v.blank? })
+        attributes = HashWithIndifferentAccess.new(rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)).merge(attributes.reject {|k, v| v.blank? })
         load(attributes)
       end
     end
@@ -456,7 +448,6 @@ module Ooor
         return false unless @associations[method_name]
         load_association(self.class.many2one_associations[method_name]['relation'], @associations[method_name].is_a?(Integer) && @associations[method_name] || @associations[method_name][0], *arguments)
       elsif self.class.one2many_associations.has_key?(method_name)
-#p "one2many_associations", method_name, arguments
         load_association(self.class.one2many_associations[method_name]['relation'], @associations[method_name], *arguments) || []
       elsif self.class.many2many_associations.has_key?(method_name)
         load_association(self.class.many2many_associations[method_name]['relation'], @associations[method_name], *arguments) || []
@@ -471,7 +462,7 @@ module Ooor
     def load_association(model_key, ids, *arguments)
       options = arguments.extract_options!
       related_class = self.class.const_get(model_key, object_session)
-      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || object_session#[:context]
+      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || object_session
     end
 
     def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
