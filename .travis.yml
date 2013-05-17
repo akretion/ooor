@@ -19,7 +19,7 @@ before_script:
     - bundle install
 
 script:
-    - bundle exec rspec spec/
+    - rake
 
 rvm:
   - 1.9.3
