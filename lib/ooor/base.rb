@@ -221,17 +221,7 @@ module Ooor
 #        prefix_options, query_options = split_options(options[:params])
         is_collection = true
         scope = [scope] and is_collection = false if !scope.is_a? Array
-        scope.map! do |item|
-          if item.is_a?(String) && item.to_i == 0#triggers ir_model_data absolute reference lookup
-            tab = item.split(".")
-            domain = [['name', '=', tab[-1]]]
-            domain += [['module', '=', tab[-2]]] if tab[-2]
-            ir_model_data = const_get('ir.model.data', context).find(:first, :domain => domain)
-            ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]])[0]
-          else
-            item
-          end
-        end.reject! {|item| !item}
+        scope.map! { |item| item_to_id(item, context) }.reject! {|item| !item}
         records = rpc_execute('read', scope, fields, context.dup)
         records = records.sort_by {|r| scope.index(r["id"])} #TODO use sort_by! in Ruby 1.9
         active_resources = []
@@ -246,6 +236,18 @@ module Ooor
           return active_resources[0]
         end
         return active_resources
+      end
+
+      def item_to_id(item, context)
+        if item.is_a?(String) && item.to_i == 0#triggers ir_model_data absolute reference lookup
+          tab = item.split(".")
+          domain = [['name', '=', tab[-1]]]
+          domain += [['module', '=', tab[-2]]] if tab[-2]
+          ir_model_data = const_get('ir.model.data', context).find(:first, :domain => domain)
+          ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]], 0, false, false, context)[0]
+        else
+          item
+        end
       end
 
       def credentials_from_args(*args)
