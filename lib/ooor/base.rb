@@ -51,25 +51,6 @@ module Ooor
         klass
       end
 
-      def create(attributes = {}, context={}, default_get_list=false, reload=true)
-        self.new(attributes, default_get_list, context).tap { |resource| resource.save(context, reload) }
-      end
-
-      def reload_field_definition(k, field)
-        case field['type']
-        when 'many2one'
-          @many2one_associations[k] = field
-        when 'one2many'
-          @one2many_associations[k] = field
-        when 'many2many'
-          @many2many_associations[k] = field
-        when 'reference'
-          @polymorphic_m2o_associations[k] = field
-        else
-          @fields[k] = field if field['name'] != 'id'
-        end
-      end
-
       def reload_fields_definition(force=false, context={})
         if force or not @fields_defined
           @fields_defined = true
@@ -90,6 +71,7 @@ module Ooor
         end
       end
 
+
       # ******************** Rails introspection utilities *****************
 
       def set_columns_hash(view_fields={}) #FIXME force to compute if context + cache/expire?
@@ -107,8 +89,11 @@ module Ooor
       end
 
 
-
       # ******************** remote communication ********************
+
+      def create(attributes = {}, context={}, default_get_list=false, reload=true)
+        self.new(attributes, default_get_list, context).tap { |resource| resource.save(context, reload) }
+      end
 
       #OpenERP search method
       def search(domain=[], offset=0, limit=false, order=false, context={}, count=false)
@@ -242,11 +227,26 @@ module Ooor
         if item.is_a?(String) && item.to_i == 0#triggers ir_model_data absolute reference lookup
           tab = item.split(".")
           domain = [['name', '=', tab[-1]]]
-          domain += [['module', '=', tab[-2]]] if tab[-2]
-          ir_model_data = const_get('ir.model.data', context).find(:first, :domain => domain)
+          domain << ['module', '=', tab[-2]] if tab[-2]
+          ir_model_data = const_get('ir.model.data', context).find(:first, domain: domain, context: context)
           ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]], 0, false, false, context)[0]
         else
           item
+        end
+      end
+
+      def reload_field_definition(k, field)
+        case field['type']
+        when 'many2one'
+          @many2one_associations[k] = field
+        when 'one2many'
+          @one2many_associations[k] = field
+        when 'many2many'
+          @many2many_associations[k] = field
+        when 'reference'
+          @polymorphic_m2o_associations[k] = field
+        else
+          @fields[k] = field if field['name'] != 'id'
         end
       end
 
@@ -410,13 +410,11 @@ module Ooor
     end
 
     def method_missing_value_assign(method_key, arguments)
-      known_associations = self.class.associations_keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).associations_keys}.flatten
-      if known_associations.index(method_key)
+      if (self.class.associations_keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).associations_keys}.flatten).index(method_key)
         @associations[method_key] = arguments[0]
         @loaded_associations[method_key] = arguments[0]
-      else 
-        know_fields = self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).fields.keys}.flatten
-        @attributes[method_key] = arguments[0] if know_fields.index(method_key)
+      elsif (self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).fields.keys}.flatten).index(method_key)
+        @attributes[method_key] = arguments[0]
       end
     end
 
