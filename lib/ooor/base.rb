@@ -441,7 +441,6 @@ module Ooor
     def to_ary; nil; end # :nodoc:
 
     # fakes associations like much like ActiveRecord according to the cached OpenERP data model
-    #FIXME possible extra RPC inefficiency when an inherited relation is loaded already (but not in model association keys)
     def relationnal_result(method_name, *arguments)
       self.class.reload_fields_definition(false, object_session)
       if self.class.many2one_associations.has_key?(method_name)
