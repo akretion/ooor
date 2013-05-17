@@ -50,7 +50,7 @@ module Ooor
       @base_url = @config[:url] = "#{@config[:url].gsub(/\/$/,'').chomp('/xmlrpc')}/xmlrpc"
       @loaded_models = []
       scope = Module.new and Object.const_set(@config[:scope_prefix], scope) if @config[:scope_prefix]
-      global_login(@config[:username] || 'admin', @config[:password] || 'admin', @config[:database], @config[:models]) if @config[:database]
+      global_login(@config[:username] || 'admin', @config[:password] || 'admin', @config[:database], @config[:models]) if @config[:database] && @config[:password]
     end
 
     def global_login(user, password, database=@config[:database], model_names=false)
@@ -61,10 +61,16 @@ module Ooor
       load_models(model_names, true)
     end
 
-    def const_get(model_key); @ir_model_class.const_get(model_key); end
+    def const_get(model_key, context={});
+      @ir_model_class ||= define_openerp_model({'model' => 'ir.model'}, @config[:scope_prefix])
+      @ir_model_class.const_get(model_key, context)
+    end
+
+    def global_context
+      @global_context ||= {}.merge!(@config[:global_context] || {})
+    end
 
     def load_models(model_names=false, reload=@config[:reload])
-      @global_context = {}.merge!(@config[:global_context] || {})
       ([File.dirname(__FILE__) + '/helpers/*'] + (@config[:helper_paths] || [])).each {|dir|  Dir[dir].each { |file| require file }}
       @ir_model_class = define_openerp_model({'model' => 'ir.model'}, @config[:scope_prefix])
       model_ids = model_names && @ir_model_class.search([['model', 'in', model_names]]) || @ir_model_class.search() - [1]
