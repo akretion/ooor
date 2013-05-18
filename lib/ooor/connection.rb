@@ -145,7 +145,7 @@ module Ooor
     end
 
     def _config(config)
-      c = {user_id: 1, password: 'admin'}.merge(config.is_a?(String) ? Ooor.load_config(config, env) : config)
+      c = config.is_a?(String) ? Ooor.load_config(config, env) : config
       HashWithIndifferentAccess.new(c)
     end
 
