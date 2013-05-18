@@ -64,15 +64,23 @@ module Ooor
       Ooor::XmlRpcClient.new2(self, url, nil, @config[:rpc_timeout] || 900)
     end
 
+    def logger
+      @logger ||= ((defined?(Rails) && $0 != 'irb' && Rails.logger || @config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
+    end
+
     def initialize(config, env=false)
       @config = HashWithIndifferentAccess.new(config.is_a?(String) ? Ooor.load_config(config, env) : config)
-      @logger = ((defined?(Rails) && $0 != 'irb' && Rails.logger || @config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
-      @logger.level = @config[:log_level] if @config[:log_level]
-      Base.logger = @logger
+      logger.level = @config[:log_level] if @config[:log_level]
+      Base.logger = logger
       @base_url = @config[:url] = "#{@config[:url].gsub(/\/$/,'').chomp('/xmlrpc')}/xmlrpc"
       @loaded_models = []
-      scope = Module.new and Object.const_set(@config[:scope_prefix], scope) if @config[:scope_prefix]
-      global_login(@config[:username] || 'admin', @config[:password] || 'admin', @config[:database], @config[:models]) if @config[:database] && @config[:password]
+      if @config[:scope_prefix]
+        scope = Module.new
+        Object.const_set(@config[:scope_prefix], scope)
+      end
+      if @config[:database] && @config[:password]
+        global_login(@config[:username] || 'admin', @config[:password] || 'admin', @config[:database], @config[:models])
+      end
     end
 
     def global_login(user, password, database=@config[:database], model_names=false)
