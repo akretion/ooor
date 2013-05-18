@@ -20,6 +20,16 @@ module Ooor
                     :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
                     :scope_prefix, :connection, :associations, :columns, :columns_hash
 
+      def define_field_method(meth)
+        unless self.respond_to?(meth)
+          self.instance_eval do
+            define_method meth do |*args|
+              self.send :method_missing, *[meth, *args]
+            end
+          end
+        end
+      end
+
       def reload_fields_definition(force=false, context={})
         if force or not @fields_defined
           @fields_defined = true
@@ -28,13 +38,7 @@ module Ooor
           rpc_execute("fields_get", false, context.dup).each { |k, field| reload_field_definition(k, field) }
           @associations_keys = @many2one_associations.keys + @one2many_associations.keys + @many2many_associations.keys + @polymorphic_m2o_associations.keys
           (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools such as jirb_swing
-            unless self.respond_to?(meth)
-              self.instance_eval do
-                define_method meth do |*args|
-                  self.send :method_missing, *[meth, *args]
-                end
-              end
-            end
+            define_field_method(meth)
           end
           logger.debug "#{fields.size} fields loaded in model #{self.name}"
         end
@@ -272,11 +276,12 @@ module Ooor
       @object_session = {}
       @object_session = HashWithIndifferentAccess.new(context)
       @persisted = persisted #TODO match 3.1 ActiveResource API
+      self.class.reload_fields_definition(false, @object_session)
       if default_get_list == []
         load(attributes)
       else
-        self.class.reload_fields_definition(false, object_session)
-        attributes = HashWithIndifferentAccess.new(rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)).merge(attributes.reject {|k, v| v.blank? })
+        defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
+        attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
         load(attributes)
       end
     end
