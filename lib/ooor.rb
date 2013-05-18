@@ -11,6 +11,10 @@ module Ooor
   extend ActiveSupport::Autoload
   autoload :Connection
   autoload :Cache, 'active_support/cache'
+  autoload :Reflection
+  autoload :Serialization
+  autoload :Relation
+  autoload :TypeCasting
 
   module OoorBehavior
     extend ActiveSupport::Concern

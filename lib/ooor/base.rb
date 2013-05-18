@@ -8,15 +8,10 @@ require 'active_support/dependencies/autoload'
 require 'active_support/core_ext/hash/indifferent_access'
 
 module Ooor
-  autoload :Relation
-  autoload :TypeCasting
-  autoload :Serialization
-
   class Base < ActiveResource::Base
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
-    include TypeCasting
-    include Serialization
+    include TypeCasting, Serialization, Reflection
 
     # ******************** class methods ********************
     class << self
@@ -25,10 +20,6 @@ module Ooor
       attr_accessor :openerp_id, :info, :access_ids, :name, :description, :openerp_model, :field_ids, :state, #class attributes associated to the OpenERP ir.model
                     :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
                     :scope_prefix, :connection, :associations, :columns, :columns_hash
-
-#      def connection=(connection); @connection = connection; end
-
-#      def connection; @connection; end
 
       def model_name
         @_model_name ||= begin
@@ -69,23 +60,6 @@ module Ooor
           end
           logger.debug "#{fields.size} fields loaded in model #{self.name}"
         end
-      end
-
-
-      # ******************** Rails introspection utilities *****************
-
-      def set_columns_hash(view_fields={}) #FIXME force to compute if context + cache/expire?
-        @columns_hash = {}
-        @fields.each do |k, field|
-          unless @associations_keys.index(k) 
-            @columns_hash[k] = field.merge({type: to_rails_type(view_fields[k] && view_fields[k]['type'] || field['type'])})
-          end
-        end
-        @columns_hash
-      end
-
-      def column_for_attribute(name)
-        columns_hash[name.to_s]
       end
 
 
