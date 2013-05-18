@@ -104,32 +104,33 @@ module Ooor
       model_class_name = Base.class_name_from_model_key(param['model'])
       scope = scope_prefix ? Object.const_get(scope_prefix) : Object
       if reload || !scope.const_defined?(model_class_name)
-        klass = Class.new(Base)
-        klass.site = url || @base_url
-        klass.openerp_model = param['model']
-        klass.openerp_id = url || param['id']
-        klass.name = model_class_name
-        klass.description = param['name']
-        klass.state = param['state']
-        #klass.field_ids = param['field_id']
-        #klass.access_ids = param['access_ids']
-        klass.many2one_associations = {}
-        klass.one2many_associations = {}
-        klass.many2many_associations = {}
-        klass.polymorphic_m2o_associations = {}
-        klass.associations_keys = []
-        klass.fields = {}
-        klass.connection = self
-        klass.scope_prefix = scope_prefix
-        @logger.debug "registering #{model_class_name} as an ActiveResource proxy for OpenObject #{param['model']} model"
-        scope.const_set(model_class_name, klass)
-        (Ooor.extensions[param['model']] || []).each {|block| klass.class_eval(&block)}
-        @loaded_models.push(klass)
-        return klass
+        create_openerp_model(param, scope, scope_prefix, model_class_name, url, database, user_id, pass)
       else
-        return scope.const_get(model_class_name)
+        scope.const_get(model_class_name)
       end
     end
-  end
 
+    def create_openerp_model(param, scope, scope_prefix, model_class_name, url=nil, database=nil, user_id=nil, pass=nil)
+      klass = Class.new(Base)
+      klass.site = url || @base_url
+      klass.openerp_model = param['model']
+      klass.openerp_id = url || param['id']
+      klass.name = model_class_name
+      klass.description = param['name']
+      klass.state = param['state']
+      klass.many2one_associations = {}
+      klass.one2many_associations = {}
+      klass.many2many_associations = {}
+      klass.polymorphic_m2o_associations = {}
+      klass.associations_keys = []
+      klass.fields = {}
+      klass.connection = self
+      klass.scope_prefix = scope_prefix
+      @logger.debug "registering #{model_class_name} as an ActiveResource proxy for OpenObject #{param['model']} model"
+      scope.const_set(model_class_name, klass)
+      (Ooor.extensions[param['model']] || []).each {|block| klass.class_eval(&block)}
+      klass.tap {|k| @loaded_models.push(k)}
+    end
+
+  end
 end
