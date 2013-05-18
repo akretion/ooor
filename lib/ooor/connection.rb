@@ -64,14 +64,9 @@ module Ooor
       Ooor::XmlRpcClient.new2(self, url, nil, @config[:rpc_timeout] || 900)
     end
 
-    def logger
-      @logger ||= ((defined?(Rails) && $0 != 'irb' && Rails.logger || @config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout))
-    end
-
     def initialize(config, env=false)
-      @config = HashWithIndifferentAccess.new(config.is_a?(String) ? Ooor.load_config(config, env) : config)
-      logger.level = @config[:log_level] if @config[:log_level]
-      Base.logger = logger
+      @config = set_config(config)
+      @logger = set_logger
       @base_url = @config[:url] = "#{@config[:url].gsub(/\/$/,'').chomp('/xmlrpc')}/xmlrpc"
       @loaded_models = []
       if @config[:scope_prefix]
@@ -118,6 +113,8 @@ module Ooor
       end
     end
 
+    private
+
     def create_openerp_model(param, scope, scope_prefix, model_class_name, url=nil, database=nil, user_id=nil, pass=nil)
       klass = Class.new(Base)
       klass.site = url || @base_url
@@ -138,6 +135,18 @@ module Ooor
       scope.const_set(model_class_name, klass)
       (Ooor.extensions[param['model']] || []).each {|block| klass.class_eval(&block)}
       klass.tap {|k| @loaded_models.push(k)}
+    end
+
+    def set_logger
+      ((defined?(Rails) && $0 != 'irb' && Rails.logger || @config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout)).tap do |l|
+        l.level = @config[:log_level] if @config[:log_level]
+        Base.logger = l
+      end
+    end
+
+    def set_config(config)
+      c = config.is_a?(String) ? Ooor.load_config(config, env) : config
+      HashWithIndifferentAccess.new(c)
     end
 
   end
