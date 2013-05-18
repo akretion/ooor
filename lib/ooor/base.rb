@@ -4,14 +4,13 @@
 #    Licensed under the MIT license, see MIT-LICENSE file
 
 require 'active_resource'
-require 'active_support/dependencies/autoload'
 require 'active_support/core_ext/hash/indifferent_access'
 
 module Ooor
   class Base < ActiveResource::Base
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
-    include TypeCasting, Serialization, Reflection
+    include Naming, TypeCasting, Serialization, Reflection
 
     # ******************** class methods ********************
     class << self
@@ -20,27 +19,6 @@ module Ooor
       attr_accessor :openerp_id, :info, :access_ids, :name, :description, :openerp_model, :field_ids, :state, #class attributes associated to the OpenERP ir.model
                     :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
                     :scope_prefix, :connection, :associations, :columns, :columns_hash
-
-      def model_name
-        @_model_name ||= begin
-          namespace = self.parents.detect do |n|
-            n.respond_to?(:use_relative_model_naming?) && n.use_relative_model_naming?
-          end
-          ActiveModel::Name.new(self, namespace, description)
-        end
-      end
-
-      def class_name_from_model_key(model_key=self.openerp_model)
-        model_key.split('.').collect {|name_part| name_part.capitalize}.join
-      end
-
-      #similar to Object#const_get but for OpenERP model key
-      def const_get(model_key, context={})
-        klass_name = class_name_from_model_key(model_key)
-        klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : connection.define_openerp_model({'model' => model_key}, self.scope_prefix)
-        klass.reload_fields_definition(false, context)
-        klass
-      end
 
       def reload_fields_definition(force=false, context={})
         if force or not @fields_defined

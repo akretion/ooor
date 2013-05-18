@@ -15,6 +15,7 @@ module Ooor
   autoload :Serialization
   autoload :Relation
   autoload :TypeCasting
+  autoload :Naming
 
   module OoorBehavior
     extend ActiveSupport::Concern
