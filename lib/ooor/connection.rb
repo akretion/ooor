@@ -21,21 +21,19 @@ module Ooor
     attr_accessor :logger, :config, :loaded_models, :base_url, :connection_session, :ir_model_class
 
     def get_rpc_client(url)
-      @rpc_clients ||= {}
-      unless @rpc_clients[url]
+      Ooor.cache.fetch("rpc-client-#{url}") do
         if defined?(Java) && @config[:rpc_client] != 'ruby'
           begin
             require 'jooor'
-            @rpc_clients[url] = get_java_rpc_client(url)
+            get_java_rpc_client(url)
           rescue LoadError
             puts "WARNING falling back on Ruby xmlrpc/client client (much slower). Install the 'jooor' gem if you want Java speed for the RPC!"
-            @rpc_clients[url] = get_ruby_rpc_client(url)
+            get_ruby_rpc_client(url)
           end
         else
-          @rpc_clients[url] = get_ruby_rpc_client(url)
+          get_ruby_rpc_client(url)
         end
       end
-      @rpc_clients[url]
     end
 
     def get_ruby_rpc_client(url)
