@@ -199,23 +199,6 @@ describe Ooor do
         u.destroy
       end
 
-      it "should support the context at object creation" do
-        p = ProductProduct.new({:name => "testProduct1", :categ_id => 1}, false, {:lang => 'en_US', :ooor_user_id=>1, :ooor_password => 'admin'})
-        p.object_session[:lang].should == 'en_US'
-        p.object_session[:ooor_user_id].should == 1
-        p.object_session[:ooor_password].should == "admin"
-        p.save
-      end
-
-      it "should support context when instanciating collections" do
-        products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US', :ooor_user_id=>1, :ooor_password => 'admin'})
-        p = products[0]
-        p.object_session[:lang].should == 'en_US'
-        p.object_session[:ooor_user_id].should == 1
-        p.object_session[:ooor_password].should == "admin"
-        p.save
-      end
-
       it "should be able to create an order" do
         o = SaleOrder.create(:partner_id => ResPartner.search([['name', 'ilike', 'Agrolait']])[0], 
           :partner_order_id => 1, :partner_invoice_id => 1, :partner_shipping_id => 1, :pricelist_id => 1)
@@ -346,6 +329,45 @@ describe Ooor do
       end
     end
 
+  end
+
+  describe "Multi-session abilities" do
+    before(:all) do
+      @ooor = Ooor.new(:url => @url, :database => @database)
+    end
+
+    it "should be able to read objects meta-info with session user credentials" do
+      ctx = {ooor_user_id: 'demo', ooor_password: 'demo'}
+      user_obj = @ooor.const_get('res.users', ctx)
+      user = user_obj.find(:first, context: ctx)
+      user.name.should be_kind_of String
+      user.object_session[:ooor_password].should == 'demo'
+    end
+
+    it "should support the context at object creation" do
+      ctx = {ooor_user_id: 'demo', ooor_password: 'demo'}
+      @ooor.const_get('product.product', ctx)
+      p = ProductProduct.new({:name => "testProduct1", :categ_id => 1}, false, {:lang => 'en_US', :ooor_user_id=>1, :ooor_password => 'admin'})
+      p.object_session[:lang].should == 'en_US'
+      p.object_session[:ooor_user_id].should == 1
+      p.object_session[:ooor_password].should == "admin"
+      p.save
+    end
+
+    it "should support context when instanciating collections" do
+      ctx = {ooor_user_id: 'demo', ooor_password: 'demo'}
+      @ooor.const_get('product.product', ctx)
+      products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US', :ooor_user_id=>1, :ooor_password => 'admin'})
+      p = products[0]
+      p.object_session[:lang].should == 'en_US'
+      p.object_session[:ooor_user_id].should == 1
+      p.object_session[:ooor_password].should == "admin"
+      p.save
+    end
+
+    it "should be able to pass session credentials even in methods where context isn't the last argument" do
+      #TODO
+    end
   end
 
   describe "Multi-instance and class name scoping" do
