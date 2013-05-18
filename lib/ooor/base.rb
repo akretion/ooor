@@ -84,7 +84,6 @@ module Ooor
 
       def oe_service(service, db, uid, pass, obj, method, *args)
         reload_fields_definition(false, {:user_id => uid, :password => pass}) 
-        args[-1] = connection.connection_session.merge(args[-1]) if args[-1].is_a? Hash
         logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
         cast_answer_to_ruby!(connection.send service, db, uid, pass, obj, method, *cast_request_to_openerp(args))
       end
