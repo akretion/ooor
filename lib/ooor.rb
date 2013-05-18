@@ -16,6 +16,7 @@ module Ooor
   autoload :Relation
   autoload :TypeCasting
   autoload :Naming
+  autoload :UnknownAttributeOrAssociationError, 'ooor/errors'
 
   module OoorBehavior
     extend ActiveSupport::Concern

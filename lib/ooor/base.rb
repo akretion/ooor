@@ -360,8 +360,7 @@ module Ooor
       end     
 
     rescue RuntimeError => e
-      e.message << "\n" + available_fields if e.message.index("AttributeError")
-      raise e
+      raise UnknownAttributeOrAssociationError.new(e, self.class)
     end
 
     def method_missing_value_assign(method_key, arguments)
@@ -371,16 +370,6 @@ module Ooor
       elsif (self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).fields.keys}.flatten).index(method_key)
         @attributes[method_key] = arguments[0]
       end
-    end
-
-    def available_fields
-      msg = "\n*** AVAILABLE FIELDS ON #{self.class.name} ARE: ***"
-      msg << "\n\n" << self.class.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
-      %w[many2one one2many many2many polymorphic_m2o].each do |kind|
-        msg << "\n\n"
-        msg << (self.class.send "#{kind}_associations").map {|k, v| "#{kind} --- #{v['relation']} --- #{k}"}.join("\n")
-      end
-      msg
     end
 
     private
