@@ -65,8 +65,8 @@ module Ooor
     end
 
     def initialize(config, env=false)
-      @config = set_config(config)
-      @logger = set_logger
+      @config = _config(config)
+      @logger = _logger
       @base_url = @config[:url] = "#{@config[:url].gsub(/\/$/,'').chomp('/xmlrpc')}/xmlrpc"
       @loaded_models = []
       if @config[:scope_prefix]
@@ -137,15 +137,15 @@ module Ooor
       klass.tap {|k| @loaded_models.push(k)}
     end
 
-    def set_logger
+    def _logger
       ((defined?(Rails) && $0 != 'irb' && Rails.logger || @config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout)).tap do |l|
         l.level = @config[:log_level] if @config[:log_level]
         Base.logger = l
       end
     end
 
-    def set_config(config)
-      c = config.is_a?(String) ? Ooor.load_config(config, env) : config
+    def _config(config)
+      c = {user_id: 1, password: 'admin'}.merge(config.is_a?(String) ? Ooor.load_config(config, env) : config)
       HashWithIndifferentAccess.new(c)
     end
 

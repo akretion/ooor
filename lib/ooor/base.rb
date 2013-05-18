@@ -204,22 +204,27 @@ module Ooor
         end
       end
 
+      def credentials_from_context(*args)
+        if args[-1][:context_index]
+          i = args[-1][:context_index]
+          args.delete_at -1
+        else
+          i = -1
+        end
+        c = HashWithIndifferentAccess.new(args[i])
+        user_id = c.delete(:ooor_user_id) || connection.config[:user_id]
+        password = c.delete(:ooor_password) || connection.config[:password]
+        database = c.delete(:ooor_database) || connection.config[:database]
+        args[i] = c
+        return database, user_id, password, args
+      end
+
       def credentials_from_args(*args)
         if args[-1].is_a? Hash #context
-          if args[-1][:context_index]
-            i = args[-1][:context_index]
-            args.delete_at -1
-          else
-            i = -1
-          end
-          c = args[i].dup()
-          user_id = c.delete(:ooor_user_id) || c.delete('ooor_user_id') || connection.config[:user_id] || 1
-          password = c.delete(:ooor_password) || c.delete('ooor_password') || connection.config[:password] || 'admin'
-          database = c.delete(:ooor_database) || c.delete('ooor_database') || connection.config[:database]
-          args[i] = c
+          database, user_id, password, args = credentials_from_context(*args) 
         else
-          user_id = connection.config[:user_id] || 1
-          password = connection.config[:password] || "admin"
+          user_id = connection.config[:user_id]
+          password = connection.config[:password]
           database = connection.config[:database]
         end
         if user_id.is_a?(String) && user_id.to_i == 0
