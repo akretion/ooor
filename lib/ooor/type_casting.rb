@@ -104,24 +104,6 @@ module Ooor
         v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String))
       end
 
-      def cast_relation(k, v, one2many_associations, many2many_associations)
-        if one2many_associations[k]
-          return v.collect! do |value|
-            if value.is_a?(Base) #on the fly creation as in the GTK client
-              [0, 0, value.to_openerp_hash!]
-            else
-              if value.is_a?(Hash)
-                [0, 0, value]
-              else
-                [1, value, {}]
-              end
-            end
-          end
-        elsif many2many_associations[k]
-          return v = [[6, 0, v]]
-        end
-      end
-
       @associations.each do |k, v| #see OpenERP awkward associations API
         #already casted, possibly before server error!
         next if (v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array)) \
@@ -139,6 +121,24 @@ module Ooor
         end
       end
     end
-    
+
+    def cast_relation(k, v, one2many_associations, many2many_associations)
+      if one2many_associations[k]
+        return v.collect! do |value|
+          if value.is_a?(Base) #on the fly creation as in the GTK client
+            [0, 0, value.to_openerp_hash!]
+          else
+            if value.is_a?(Hash)
+              [0, 0, value]
+            else
+              [1, value, {}]
+            end
+          end
+        end
+      elsif many2many_associations[k]
+        return v = [[6, 0, v]]
+      end
+    end
+ 
   end
 end
