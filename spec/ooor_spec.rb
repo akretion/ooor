@@ -18,7 +18,7 @@ describe Ooor do
   end
 
   it "should keep quiet if no database is mentioned" do
-    @ooor.loaded_models.should be_empty
+    @ooor.models.should be_empty
   end
 
   it "should be able to list databases" do
@@ -49,20 +49,16 @@ describe Ooor do
       wizard = BaseModuleUpgrade.create
       wizard.upgrade_module
       @ooor.load_models
-#          config5 = AccountInstaller.create(:charts => 'configurable')
-#          config5.action_next
-      @ooor.loaded_models.should_not be_empty
+p "MMMMMMMMMMMMMMMMMMMMMMMMMM", @ooor.models
+      @ooor.models.keys.should_not be_empty
     end
 
     it "should be able to configure the database" do
-#      chart_module_id = IrModuleModule.search([['category_id', '=', 'Account Charts'], ['name','=', 'l10n_fr']])[0]
       if AccountTax.search.empty?
         w1 = @ooor.const_get('account.installer').create(:charts => "configurable")
         w1.action_next
         w1 = @ooor.const_get('wizard.multi.charts.accounts').create(:charts => "configurable", :code_digits => 2)
         w1.action_next
-#        w3 = @ooor.const_get('wizard.multi.charts.accounts').create
-#        w3.action_create
       end
     end
   end
@@ -336,27 +332,8 @@ describe Ooor do
       @ooor = Ooor.new(:url => @url, :database => @database)
     end
 
-    it "should be able to read objects meta-info with session user credentials" do
-      ctx = {ooor_user_id: 'demo', ooor_password: 'demo'}
-      user_obj = @ooor.const_get('res.users', ctx)
-      user = user_obj.find(:first, context: ctx)
-      user.name.should be_kind_of String
-      user.object_session[:ooor_password].should == 'demo'
-    end
-
-    it "should support the context at object creation" do
-      ctx = {ooor_user_id: 'demo', ooor_password: 'demo'}
-      @ooor.const_get('product.product', ctx)
-      p = ProductProduct.new({:name => "testProduct1", :categ_id => 1}, false, {:lang => 'en_US', :ooor_user_id=>1, :ooor_password => 'admin'})
-      p.object_session[:lang].should == 'en_US'
-      p.object_session[:ooor_user_id].should == 1
-      p.object_session[:ooor_password].should == "admin"
-      p.save
-    end
-
     it "should support context when instanciating collections" do
-      ctx = {ooor_user_id: 'demo', ooor_password: 'demo'}
-      @ooor.const_get('product.product', ctx)
+      @ooor.const_get('product.product')
       products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US', :ooor_user_id=>1, :ooor_password => 'admin'})
       p = products[0]
       p.object_session[:lang].should == 'en_US'

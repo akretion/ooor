@@ -5,12 +5,14 @@
 
 require 'active_resource'
 require 'active_support/core_ext/hash/indifferent_access'
+require 'ooor/reflection'
+require 'ooor/reflection_ooor'
 
 module Ooor
   class Base < ActiveResource::Base
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
-    include Naming, TypeCasting, Serialization, Reflection
+    include Naming, TypeCasting, Serialization, ::ActiveRecord::Reflection, ::Ooor::Reflection
 
     # ******************** class methods ********************
     class << self
@@ -19,6 +21,21 @@ module Ooor
       attr_accessor :openerp_id, :info, :access_ids, :name, :description, :openerp_model, :field_ids, :state, #class attributes associated to the OpenERP ir.model
                     :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
                     :scope_prefix, :connection, :associations, :columns, :columns_hash
+
+      def retrieve_connection(config) #TODO cheap impl of connection pool
+        connections.each do |c| #TODO limit pool size, create a queue etc...
+          if Connection.connection_spec(c.config) == Connection.connection_spec(config)
+            c.config.merge(config)
+            return c
+          end
+        end #TODO may be use something like ActiveRecord::Base.connection_id ||= Thread.current.object_id
+        config = Ooor.default_config.merge(config) if Ooor.default_config.is_a? Hash
+        Connection.new(config).tap { |c| @connections << c }
+      end
+
+      def connections
+        @connections ||= []
+      end
 
       def define_field_method(meth)
         unless self.respond_to?(meth)
@@ -30,14 +47,16 @@ module Ooor
         end
       end
 
-      def reload_fields_definition(force=false, context={})
+      def reload_fields_definition(force=false, context=nil)
         if force or not @fields_defined
           @fields_defined = true
           @fields = {}
           @columns_hash = {}
-          rpc_execute("fields_get", false, context.dup).each { |k, field| reload_field_definition(k, field) }
+#          connection.meta_session ||= context
+          ctx = context || connection.meta_session
+          rpc_execute("fields_get", false, ctx.dup).each { |k, field| reload_field_definition(k, field) }
           @associations_keys = @many2one_associations.keys + @one2many_associations.keys + @many2many_associations.keys + @polymorphic_m2o_associations.keys
-          (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools such as jirb_swing
+          (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools
             define_field_method(meth)
           end
           logger.debug "#{fields.size} fields loaded in model #{self.name}"
@@ -53,8 +72,11 @@ module Ooor
 
       #OpenERP search method
       def search(domain=[], offset=0, limit=false, order=false, context={}, count=false)
-        context = connection.connection_session.merge(context)
-        rpc_execute('search', to_openerp_domain(domain), offset, limit, order, context, count, context_index: 4)
+        rpc_execute(:search, to_openerp_domain(domain), offset, limit, order, context, count, context_index: 4)
+      end
+
+      def name_search(name='', domain=[], operator='ilike', context={}, limit=100)
+        rpc_execute(:name_search, name, to_openerp_domain(domain), operator, context, limit, context_index: 3)
       end
       
       def relation; @relation ||= Relation.new(self); end
@@ -218,7 +240,7 @@ module Ooor
         user_id = c.delete(:ooor_user_id) || connection.config[:user_id]
         password = c.delete(:ooor_password) || connection.config[:password]
         database = c.delete(:ooor_database) || connection.config[:database]
-        args[i] = c
+        args[i] = connection.connection_session.merge(c)
         return database, user_id, password, args
       end
 

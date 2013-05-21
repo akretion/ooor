@@ -14,14 +14,10 @@ module Ooor
         end
       end
 
-      def class_name_from_model_key(model_key=self.openerp_model)
-        model_key.split('.').collect {|name_part| name_part.capitalize}.join
-      end
-
       #similar to Object#const_get but for OpenERP model key
-      def const_get(model_key, context={})
-        klass_name = class_name_from_model_key(model_key)
-        klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : connection.define_openerp_model({'model' => model_key}, self.scope_prefix)
+      def const_get(model_key, context=nil)
+        klass_name = connection.class_name_from_model_key(model_key)
+        klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : connection.define_openerp_model(model: model_key, scope_prefix: self.scope_prefix)
         klass.reload_fields_definition(false, context)
         klass
       end

@@ -10,8 +10,10 @@ require 'active_support/concern'
 module Ooor
   extend ActiveSupport::Autoload
   autoload :Connection
+  autoload :Base
   autoload :Cache, 'active_support/cache'
   autoload :Reflection
+  autoload :ReflectionOoor
   autoload :Serialization
   autoload :Relation
   autoload :TypeCasting
@@ -24,8 +26,13 @@ module Ooor
 
       attr_accessor :default_ooor, :default_config
 
-      def new(*args)
-        Connection.send :new, *args
+      def new(config={})
+        Ooor.default_config = config
+        connection = Ooor::Base.retrieve_connection(config)
+        if config[:database] && config[:password]
+          connection.global_login(config)
+        end
+        Ooor.default_ooor = connection
       end
 
       def cache(store=nil)
