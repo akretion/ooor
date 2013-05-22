@@ -33,7 +33,7 @@ module Ooor
         elsif one2many_associations.keys.include?(name)
           macro = :has_many
         end
-        reflection = AssociationReflection.new(macro, name, options, nil)#active_record) #TODO active_record?
+        reflection = ActiveRecord::Reflection::AssociationReflection.new(macro, name, options, nil)#active_record) #TODO active_record?
 #        case macro
 #          when :has_many, :belongs_to, :has_one, :has_and_belongs_to_many
 #            klass = options[:through] ? ThroughReflection : AssociationReflection
@@ -45,6 +45,12 @@ module Ooor
         self.reflections = self.reflections.merge(name => reflection)
         reflection
       end
+
+      def reflect_on_association(association)
+        reflections[association] ||= create_reflection(association.to_s).tap do |reflection|
+          reflection.connection = connection
+        end
+      end
     end
 
   end
@@ -54,6 +60,10 @@ end
 module ActiveRecord
   # = Active Record Reflection
   module Reflection # :nodoc:
+
+    class MacroReflection
+      attr_accessor :connection
+    end
 
     # Holds all the meta-data about an association as it was specified in the
     # Active Record class.
@@ -72,7 +82,7 @@ module ActiveRecord
       # instead. This allows plugins to hook into association object creation.
       def klass
 #        @klass ||= active_record.send(:compute_type, class_name)
-        @klass ||= Ooor::Base.class_name_from_model_key(class_name).constantize
+        @klass ||= connection.class_name_from_model_key(class_name).constantize
       end
 
     end
