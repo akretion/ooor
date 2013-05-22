@@ -107,8 +107,8 @@ module ActiveRecord
         @name          = name
         @options       = options
         @active_record = active_record
-        @plural_name   = active_record.pluralize_table_names ?
-                            name.to_s.pluralize : name.to_s
+#        @plural_name   = active_record.pluralize_table_names ? #FIXME hacked for OOOR
+#                            name.to_s.pluralize : name.to_s
       end
 
       # Returns the class for the macro.
@@ -370,7 +370,7 @@ module ActiveRecord
     # Holds all the meta-data about a :through association as it was specified
     # in the Active Record class.
     class ThroughReflection < AssociationReflection #:nodoc:
-#      delegate :foreign_key, :foreign_type, :association_foreign_key,
+#      delegate :foreign_key, :foreign_type, :association_foreign_key,       #FIXME hacked for OOOR
 #               :active_record_primary_key, :type, :to => :source_reflection
 
       # Gets the source of the through reflection. It checks both a singularized
