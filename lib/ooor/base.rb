@@ -370,8 +370,10 @@ module Ooor
           return nil
         end
       elsif id
-        if method_name.end_with?("_id") && @associations.has_key?(method_name.gsub(/_id$/, "")) #could be ActiveRecord tool appending '_id'
-          obj = method_missing(method_name.gsub(/_id$/, "").to_sym, *arguments)
+        if method_name.end_with?("_id") && self.class.associations_keys.index(method_name.gsub(/_id$/, "")) #could be ActiveRecord tool appending '_id'
+          rel = method_name.gsub(/_id$/, "")
+          return @associations[rel][0] if @associations[rel]
+          obj = method_missing(rel.to_sym, *arguments)
           return obj.is_a?(Base) ? obj.id : obj
         else #it's an action
           rpc_execute(method_key, [id], *arguments) #we assume that's an action
