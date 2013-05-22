@@ -12,7 +12,7 @@ module Ooor
   class Base < ActiveResource::Base
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
-    include Naming, TypeCasting, Serialization, ::ActiveRecord::Reflection, ::Ooor::Reflection
+    include Naming, TypeCasting, Serialization, ::Ooor::Reflection, ::ActiveRecord::Reflection
 
     # ******************** class methods ********************
     class << self
@@ -21,21 +21,6 @@ module Ooor
       attr_accessor :openerp_id, :info, :access_ids, :name, :description, :openerp_model, :field_ids, :state, #class attributes associated to the OpenERP ir.model
                     :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
                     :scope_prefix, :connection, :associations, :columns, :columns_hash
-
-      def retrieve_connection(config) #TODO cheap impl of connection pool
-        connections.each do |c| #TODO limit pool size, create a queue etc...
-          if Connection.connection_spec(c.config) == Connection.connection_spec(config)
-            c.config.merge(config)
-            return c
-          end
-        end #TODO may be use something like ActiveRecord::Base.connection_id ||= Thread.current.object_id
-        config = Ooor.default_config.merge(config) if Ooor.default_config.is_a? Hash
-        Connection.new(config).tap { |c| @connections << c }
-      end
-
-      def connections
-        @connections ||= []
-      end
 
       def define_field_method(meth)
         unless self.respond_to?(meth)
@@ -47,14 +32,13 @@ module Ooor
         end
       end
 
-      def reload_fields_definition(force=false, context=nil)
+      def reload_fields_definition(force=false, context)
         if force or not @fields_defined
           @fields_defined = true
           @fields = {}
           @columns_hash = {}
-#          connection.meta_session ||= context
-          ctx = context || connection.meta_session
-          rpc_execute("fields_get", false, ctx.dup).each { |k, field| reload_field_definition(k, field) }
+          context ||= connection.connection_session
+          rpc_execute("fields_get", false, context).each { |k, field| reload_field_definition(k, field) }
           @associations_keys = @many2one_associations.keys + @one2many_associations.keys + @many2many_associations.keys + @polymorphic_m2o_associations.keys
           (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools
             define_field_method(meth)
@@ -385,9 +369,13 @@ module Ooor
         else
           return nil
         end
-      elsif id #it's an action
-        arguments += [{}] unless arguments.last.is_a?(Hash)
-        rpc_execute(method_key, [id], *arguments) #we assume that's an action
+      elsif id
+        if method_name.end_with?("_id") && @associations.has_key?(method_name.gsub(/_id$/, "")) #could be ActiveRecord tool appending '_id'
+          obj = method_missing(method_name.gsub(/_id$/, "").to_sym, *arguments)
+          return obj.is_a?(Base) ? obj.id : obj
+        else #it's an action
+          rpc_execute(method_key, [id], *arguments) #we assume that's an action
+        end
       else
         super
       end     

@@ -12,13 +12,12 @@ module Ooor
   autoload :Connection
   autoload :Base
   autoload :Cache, 'active_support/cache'
-  autoload :Reflection
-  autoload :ReflectionOoor
   autoload :Serialization
   autoload :Relation
   autoload :TypeCasting
   autoload :Naming
   autoload :UnknownAttributeOrAssociationError, 'ooor/errors'
+  autoload :OpenERPServerError, 'ooor/errors'
 
   module OoorBehavior
     extend ActiveSupport::Concern
@@ -28,7 +27,7 @@ module Ooor
 
       def new(config={})
         Ooor.default_config = config
-        connection = Ooor::Base.retrieve_connection(config)
+        connection = Ooor::Connection.retrieve_connection(config)
         if config[:database] && config[:password]
           connection.global_login(config)
         end
