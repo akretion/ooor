@@ -6,6 +6,7 @@
 require 'active_support/dependencies/autoload'
 require 'active_support/core_ext/hash/indifferent_access'
 require 'logger'
+require 'ooor/services'
 
 module Ooor
   autoload :Base
@@ -32,43 +33,15 @@ module Ooor
         Connection.new(config).tap { |c| @connections << c }
       end
 
-      def connections
-        @connections ||= []
-      end
-
-    def define_service(service, methods)
-      methods.each do |meth|
-        self.instance_eval do
-          define_method meth do |*args|
-            args[-1] = connection_session.merge(args[-1]) if args[-1].is_a? Hash
-            get_rpc_client("#{base_url}/#{service}").call(meth, *args)
-          end
-        end
-      end
-    end
-
+      def connections; @connections ||= []; end
     end
 
     attr_accessor :logger, :config, :models, :connection_session, :ir_model_class, :meta_session
 
-    define_service(:common, %w[ir_get ir_set ir_del about login logout timezone_get get_available_updates get_migration_scripts get_server_environment login_message check_connectivity about get_stats list_http_services version authenticate get_available_updates set_loglevel get_os_time get_sqlcount])
-
-    define_service(:db, %w[get_progress drop dump restore rename db_exist list change_admin_password list_lang server_version migrate_databases create_database duplicate_database])
-
-    def create(password=@config[:db_password], db_name='ooor_test', demo=true, lang='en_US', user_password=@config[:password] || 'admin')
-      @logger.info "creating database #{db_name} this may take a while..."
-      process_id = get_rpc_client(base_url + "/db").call("create", password, db_name, demo, lang, user_password)
-      sleep(2)
-      while get_progress(password, process_id)[0] != 1
-        @logger.info "..."
-        sleep(0.5)
-      end
-      global_login('admin', user_password, db_name, false)
-    end
-
-    define_service(:object, %w[execute exec_workflow])
-
-    define_service(:report, %w[report report_get render_report])
+    def common(); @common_service ||= CommonService.new(self); end
+    def db(); @db_service ||= DbService.new(self); end
+    def object(); @object_service ||= ObjectService.new(self); end
+    def report(); @report_service ||= ReportService.new(self); end
 
     def get_rpc_client(url)
       Ooor.cache.fetch("rpc-client-#{url}") do
@@ -103,7 +76,7 @@ module Ooor
 
     def global_login(options)
       @config.merge!(options)
-      @config[:user_id] = login(@config[:database], @config[:username], @config[:password])
+      @config[:user_id] = common.login(@config[:database], @config[:username], @config[:password])
       load_models(@config[:models], options[:reload] == false ? false : true)
     end
 

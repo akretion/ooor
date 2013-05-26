@@ -76,7 +76,7 @@ module Ooor
 
       def rpc_execute_with_object(object, method, *args)
         database, user_id, password, args = credentials_from_args(*args)
-        oe_service(:execute, database, user_id, password, object, method, *args)
+        object_service(:execute, database, user_id, password, object, method, *args)
       end
 
       def rpc_exec_workflow(action, *args)
@@ -85,13 +85,13 @@ module Ooor
 
       def rpc_exec_workflow_with_object(object, action, *args)
         database, user_id, password, args = credentials_from_args(*args)
-        oe_service(:exec_workflow, connection.config[:database], connection.config[:user_id], connection.config[:password], object, action, *args)
+        object_service(:exec_workflow, connection.config[:database], connection.config[:user_id], connection.config[:password], object, action, *args)
       end
 
-      def oe_service(service, db, uid, pass, obj, method, *args)
+      def object_service(service, db, uid, pass, obj, method, *args)
         reload_fields_definition(false, {:user_id => uid, :password => pass}) 
         logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
-        cast_answer_to_ruby!(connection.send service, db, uid, pass, obj, method, *cast_request_to_openerp(args))
+        cast_answer_to_ruby!(connection.object.send(service, db, uid, pass, obj, method, *cast_request_to_openerp(args)))
       end
 
       def method_missing(method_symbol, *args)
@@ -252,7 +252,7 @@ module Ooor
 
     def rpc_execute(method, *args)
       args += [self.class.connection.connection_session.merge(object_session)] unless args[-1].is_a? Hash
-      self.class.oe_service(:execute, object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
+      self.class.object_service(:execute, object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
     end
 
     def load(attributes, remove_root=false)#an attribute might actually be a association too, will be determined here
@@ -325,7 +325,7 @@ module Ooor
 
     #Generic OpenERP on_change method
     def on_change(on_change_method, field_name, field_value, *args)
-      result = self.class.oe_service(:execute, object_db, object_uid, object_pass, self.class.openerp_model, on_change_method, self.id && [id] || [], *args) #OpenERP doesn't accept context systematically in on_change events unfortunately
+      result = self.class.object_service(:execute, object_db, object_uid, object_pass, self.class.openerp_model, on_change_method, self.id && [id] || [], *args) #OpenERP doesn't accept context systematically in on_change events unfortunately
       if result["warning"]
         self.class.logger.info result["warning"]["title"]
         self.class.logger.info result["warning"]["message"]
@@ -335,7 +335,7 @@ module Ooor
 
     #wrapper for OpenERP exec_workflow Business Process Management engine
     def wkf_action(action, context={}, reload=true)
-      self.class.oe_service(:exec_workflow, object_db, object_uid, object_pass, self.class.openerp_model, action, self.id, object_session)
+      self.class.object_service(:exec_workflow, object_db, object_uid, object_pass, self.class.openerp_model, action, self.id, object_session)
       reload_fields(context) if reload
     end
 

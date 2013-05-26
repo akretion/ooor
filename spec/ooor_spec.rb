@@ -22,14 +22,14 @@ describe Ooor do
   end
 
   it "should be able to list databases" do
-    @ooor.list.should be_kind_of(Array) 
+    @ooor.db.list.should be_kind_of(Array) 
   end
 
   it "should be able to create a new database with demo data" do
-    unless @ooor.list.index(@database)
-      @ooor.create(@db_password, @database)
+    unless @ooor.db.list.index(@database)
+      @ooor.db.create(@db_password, @database)
     end
-    @ooor.list.index(@database).should_not be_nil
+    @ooor.db.list.index(@database).should_not be_nil
   end
 
   
