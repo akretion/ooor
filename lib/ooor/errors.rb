@@ -29,8 +29,8 @@ module Ooor
           args[2] = "####"
         end
         line = "********************************************"
-        message = "#{line}\n***********     OOOR Request     ***********\nmethod: #{method} - args: #{args.inspect}\n#{line}\n\n"
-        message << "\n#{line}\n*********** OpenERP Server ERROR ***********\n#{line}\n#{openerp_error_hash["faultCode"]}\n#{openerp_error_hash["faultString"]}#{line}\n."
+        message = "\n\n#{line}\n***********     OOOR Request     ***********\nmethod: #{method} - args: #{args.inspect}\n#{line}\n\n"
+        message << "\n#{line}\n*********** OpenERP Server ERROR ***********\n#{line}\n#{openerp_error_hash["faultCode"]}\n#{openerp_error_hash["faultString"]}\n#{line}\n."
       end
       super(message)
     end
