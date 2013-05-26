@@ -32,7 +32,7 @@ module Ooor
         end
       end
 
-      def reload_fields_definition(force=false, context)
+      def reload_fields_definition(force=false, context=nil)
         if force or not @fields_defined
           @fields_defined = true
           @fields = {}
