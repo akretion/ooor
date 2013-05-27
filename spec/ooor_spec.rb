@@ -49,7 +49,6 @@ describe Ooor do
       wizard = BaseModuleUpgrade.create
       wizard.upgrade_module
       @ooor.load_models
-p "MMMMMMMMMMMMMMMMMMMMMMMMMM", @ooor.models
       @ooor.models.keys.should_not be_empty
     end
 
@@ -119,6 +118,13 @@ p "MMMMMMMMMMMMMMMMMMMMMMMMMM", @ooor.models
         p.should_not be_nil
         products = ProductProduct.find(:all, :context => {:lang => 'es_ES'})
         products.should be_kind_of(Array)
+      end
+
+      it "should support writing with a context" do
+        p = ProductProduct.find(1, fields: ['name'])
+        ProductProduct.write(1, {name: p.name}, {lang: 'en_US'})
+        ProductProduct.write(1, {name: p.name}, lang: 'en_US')
+        p.write({name: p.name}, lang: 'en_US')
       end
 
       it "should support OpenERP search method" do
