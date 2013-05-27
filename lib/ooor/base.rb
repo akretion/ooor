@@ -171,7 +171,9 @@ module Ooor
         context = options[:context] || {}
         reload_fields_definition(false, context)
         all_fields = @fields.merge(@many2one_associations).merge(@one2many_associations).merge(@many2many_associations).merge(@polymorphic_m2o_associations)
-        fields = options[:fields] || options[:only] || all_fields.keys.select {|k| all_fields[k]["type"] != "binary" && (options[:include_functions] || !all_fields[k]["function"])}
+        fields = options[:fields] || options[:only] || all_fields.keys.select do |k|
+          all_fields[k]["type"] != "binary" && (options[:include_functions] || !all_fields[k]["function"])
+        end
 #        prefix_options, query_options = split_options(options[:params])
         is_collection = true
         scope = [scope] and is_collection = false if !scope.is_a? Array
@@ -253,7 +255,7 @@ module Ooor
     self.name = "Base"
 
 
-    # ******************** instance methods ********************
+    # ********************** instance methods **********************************
 
     attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
 
@@ -305,8 +307,13 @@ module Ooor
     #compatible with the Rails way but also supports OpenERP context
     def create(context={}, reload=true)
       self.id = rpc_execute('create', to_openerp_hash!, context)
-      IrModelData.create(:model => self.class.openerp_model, :module => @ir_model_data_id[0], :name=> @ir_model_data_id[1], :res_id => self.id) if @ir_model_data_id
-      reload_from_record!(self.class.find(self.id, :context => context)) if reload
+      if @ir_model_data_id
+        IrModelData.create(model: self.class.openerp_model,
+                           module: @ir_model_data_id[0],
+                           name: @ir_model_data_id[1],
+                           res_id: self.id)
+      end
+      reload_from_record!(self.class.find(self.id, context: context)) if reload
       @persisted = true
     end
 
@@ -324,7 +331,7 @@ module Ooor
 
     #OpenERP copy method, load persisted copied Object
     def copy(defaults={}, context={})
-      self.class.find(rpc_execute('copy', self.id, defaults, context), :context => context)
+      self.class.find(rpc_execute('copy', self.id, defaults, context), context: context)
     end
 
     #Generic OpenERP rpc method call
