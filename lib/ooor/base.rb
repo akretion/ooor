@@ -340,12 +340,13 @@ module Ooor
     #Generic OpenERP on_change method
     def on_change(on_change_method, field_name, field_value, *args)
       ids = self.id ? [id] : []
-      result = self.class.object_service(:execute, object_db, object_uid, object_pass, self.class.openerp_model, on_change_method, ids, *args) #OpenERP doesn't accept context systematically in on_change events unfortunately
+      # NOTE: OpenERP doesn't accept context systematically in on_change events unfortunately
+      result = self.class.object_service(:execute, object_db, object_uid, object_pass, self.class.openerp_model, on_change_method, ids, *args)
       if result["warning"]
         self.class.logger.info result["warning"]["title"]
         self.class.logger.info result["warning"]["message"]
       end
-      attrs = @attributes.merge({field_name => field_value})
+      attrs = @attributes.merge(field_name => field_value)
       load(attrs.merge(result["value"]))
     end
 
@@ -403,10 +404,14 @@ module Ooor
     end
 
     def method_missing_value_assign(method_key, arguments)
-      if (self.class.associations_keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).associations_keys}.flatten).index(method_key)
+      if (self.class.associations_keys + self.class.many2one_associations.collect do |k, field|
+          self.class.const_get(field['relation'], object_session).associations_keys
+        end.flatten).index(method_key)
         @associations[method_key] = arguments[0]
         @loaded_associations[method_key] = arguments[0]
-      elsif (self.class.fields.keys + self.class.many2one_associations.collect {|k, field| self.class.const_get(field['relation'], object_session).fields.keys}.flatten).index(method_key)
+      elsif (self.class.fields.keys + self.class.many2one_associations.collect do |k, field|
+          self.class.const_get(field['relation'], object_session).fields.keys
+        end.flatten).index(method_key)
         @attributes[method_key] = arguments[0]
       end
     end
@@ -444,13 +449,13 @@ module Ooor
     def load_association(model_key, ids, *arguments)
       options = arguments.extract_options!
       related_class = self.class.const_get(model_key, object_session)
-      related_class.send :find, ids, :fields => options[:fields] || options[:only] || [], :context => options[:context] || object_session
+      related_class.send :find, ids, fields: options[:fields] || options[:only] || [], context: options[:context] || object_session
     end
 
     def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
 
     def reload_fields(context)
-      records = self.class.find(self.id, :context => context, :fields => @attributes.keys + @associations.keys)
+      records = self.class.find(self.id, context: context, fields: @attributes.keys + @associations.keys)
       reload_from_record!(records)
     end
 
