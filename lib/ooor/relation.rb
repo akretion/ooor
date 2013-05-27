@@ -1,5 +1,5 @@
 #    OOOR: OpenObject On Ruby
-#    Copyright (C) 2009-2012 Akretion LTDA (<http://www.akretion.com>).
+#    Copyright (C) 2009-2013 Akretion LTDA (<http://www.akretion.com>).
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
@@ -9,14 +9,13 @@
 module Ooor
   # = Similar to Active Record Relation
   class Relation
-    
     attr_reader :klass, :loaded
-    attr_accessor :context, :count_field, :includes_values, :eager_load_values, :preload_values,
+    attr_accessor :options, :count_field, :includes_values, :eager_load_values, :preload_values,
                   :select_values, :group_values, :order_values, :reorder_flag, :joins_values, :where_values, :having_values,
-                  :limit_value, :offset_value, :lock_value, :readonly_value, :create_with_value, :from_value
+                  :limit_value, :offset_value, :lock_value, :readonly_value, :create_with_value, :from_value, :page_value, :per_value
     alias :loaded? :loaded
-    
-    def build_where(opts, other = [])
+
+    def build_where(opts, other = [])#TODO OpenERP domain is more than just the intersection of restrictions
       case opts
       when Array
         [opts]
@@ -60,14 +59,13 @@ module Ooor
       calculate(:count, column_name, options)
     end
     
-    def initialize(klass)
+    def initialize(klass, options={})
       @klass = klass
       @where_values = []
       @loaded = false
-      @context = {}
+      @options = options
       @count_field = false
-      @limit_value = false
-      @offset_value = false
+      @offset_value = 0
       @order_values = []
     end
     
@@ -93,11 +91,24 @@ module Ooor
       self
     end
 
+    def apply_finder_options(options)
+      relation = clone
+      relation.options = options #TODO this may be too simplified for chainability, merge smartly instead?
+      relation
+    end
+
+    def where_values
+      if @option && @options[:domain]
+        @options[:domain]
+      else
+        @where_values
+      end
+    end
+
     # A convenience wrapper for <tt>find(:all, *args)</tt>. You can pass in all the
     # same arguments to this method as you can to <tt>find(:all)</tt>.
     def all(*args)
-      #args.any? ? apply_finder_options(args.first).to_a : to_a TODO
-      to_a
+      args.any? ? apply_finder_options(args.first).to_a : to_a
     end
 
     def to_a
@@ -107,10 +118,16 @@ module Ooor
       else
         search_order = @order_values.join(", ")
       end
-      ids = @klass.rpc_execute('search', @where_values, @offset_value, @limit_value, search_order, @context, @count_field)
-      @records = @klass.find(ids)
+      if @per_value && @page_value
+        offset = @per_value * @page_value
+        limit = @per_value
+      else
+        offset = @offset_value
+        limit = @limit_value || false
+      end
+      ids = @klass.rpc_execute('search', where_values, offset, limit, search_order, @options[:context] || {}, @count_field)
       @loaded = true
-      @records
+      @records = @klass.find(ids, @options)
     end
   
     def eager_loading?

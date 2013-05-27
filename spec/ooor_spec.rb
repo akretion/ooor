@@ -278,7 +278,15 @@ p "MMMMMMMMMMMMMMMMMMMMMMMMMM", @ooor.models
 
     describe "ARel emulation" do
       it "should have an 'all' method" do
-        ResUsers.all be_kind_of(Array)
+        ResUsers.all.should be_kind_of(Array)
+      end
+
+      it "should be read for Kaminari pagination vi ARel scoping" do
+        num = 2
+        default_per_page = 5
+        collection = ProductProduct.limit(default_per_page).offset(default_per_page * ([num.to_i, 1].max - 1))
+        collection.all(fields:['name']).should be_kind_of(Array)
+        collection.all.size.should == 5
       end
     end
 
