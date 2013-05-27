@@ -1,14 +1,6 @@
 [![Build Status](https://secure.travis-ci.org/akretion/ooor.png?branch=master)](http://travis-ci.org/akretion/ooor) [![Code Climate](https://codeclimate.com/github/akretion/ooor.png)](https://codeclimate.com/github/akretion/ooor)
 
-<div>
-<div style="float:left">
-<a href="http://github.com/rvalyi/ooor" title="OOOR - OpenObject On Ruby"><img src="http://akretion.s3.amazonaws.com/assets/ooor_m.jpg" width="159px" height="124px" style="margin-top:15px;padding-right:20px"/></a>
-</div>
-<div style="float:left">
-<br></br><br></br><b>BY</b>
-</div>
-<a href="http://www.akretion.com" title="Akretion - open source to spin the world"><img src="http://akretion.s3.amazonaws.com/assets/logo.png" width="320px" height="154px" /></a>
-</div>
+![OOOR by Akretion](https://s3.amazonaws.com/akretion/assets/ooor_by_akretion.png)](https://s3.amazonaws.com/akretion/assets/ooor_by_akretion.png)
 
 
 Why?
