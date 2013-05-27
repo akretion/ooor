@@ -1,6 +1,6 @@
 [![Build Status](https://secure.travis-ci.org/akretion/ooor.png?branch=master)](http://travis-ci.org/akretion/ooor) [![Code Climate](https://codeclimate.com/github/akretion/ooor.png)](https://codeclimate.com/github/akretion/ooor)
 
-[![OOOR by Akretion](https://s3.amazonaws.com/akretion/assets/ooor_by_akretion.png)]
+[![OOOR by Akretion](https://s3.amazonaws.com/akretion/assets/ooor_by_akretion.png)](http://akretion.com)
 
 
 Why?
