@@ -19,7 +19,8 @@ module Ooor
 
       cattr_accessor :logger, :configurations
       attr_accessor :openerp_id, :info, :access_ids, :name, :description, :openerp_model, :field_ids, :state, #class attributes associated to the OpenERP ir.model
-                    :fields, :fields_defined, :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
+                    :fields, 
+                    :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
                     :scope_prefix, :connection, :associations, :columns, :columns_hash
 
       def define_field_method(meth)
@@ -63,7 +64,8 @@ module Ooor
         rpc_execute(:name_search, name, to_openerp_domain(domain), operator, context, limit, context_index: 3)
       end
       
-      def relation; @relation ||= Relation.new(self); end
+      def relation(context={}); @relation ||= Relation.new(self, context); end
+      def scoped(context={}); relation(context); end
       def where(opts, *rest); relation.where(opts, *rest); end
       def all(*args); relation.all(*args); end
       def limit(value); relation.limit(value); end
@@ -143,7 +145,7 @@ module Ooor
         case scope
           when :all   then find_every(options)
           when :first then find_every(options.merge(:limit => 1)).first
-          when :last  then find_every(options).last
+          when :last  then find_every(options).last #FIXME terribly inefficient
           when :one   then find_one(options)
           else             find_single(scope, options)
         end
@@ -171,7 +173,7 @@ module Ooor
         scope = [scope] and is_collection = false if !scope.is_a? Array
         scope.map! { |item| item_to_id(item, context) }.reject! {|item| !item}
         records = rpc_execute('read', scope, fields, context.dup)
-        records = records.sort_by {|r| scope.index(r["id"])} #TODO use sort_by! in Ruby 1.9
+        records.sort_by! {|r| scope.index(r["id"])}
         active_resources = []
         records.each do |record|
           r = {}
@@ -245,6 +247,7 @@ module Ooor
     end
 
     self.name = "Base"
+
 
     # ******************** instance methods ********************
 
@@ -325,12 +328,14 @@ module Ooor
 
     #Generic OpenERP on_change method
     def on_change(on_change_method, field_name, field_value, *args)
-      result = self.class.object_service(:execute, object_db, object_uid, object_pass, self.class.openerp_model, on_change_method, self.id && [id] || [], *args) #OpenERP doesn't accept context systematically in on_change events unfortunately
+      ids = self.id ? [id] : []
+      result = self.class.object_service(:execute, object_db, object_uid, object_pass, self.class.openerp_model, on_change_method, ids, *args) #OpenERP doesn't accept context systematically in on_change events unfortunately
       if result["warning"]
         self.class.logger.info result["warning"]["title"]
         self.class.logger.info result["warning"]["message"]
       end
-      load(@attributes.merge({field_name => field_value}).merge(result["value"]))
+      attrs = @attributes.merge({field_name => field_value})
+      load(attrs.merge(result["value"]))
     end
 
     #wrapper for OpenERP exec_workflow Business Process Management engine
