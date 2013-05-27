@@ -1,4 +1,4 @@
-##    OOOR: OpenObject On Ruby
+#    OOOR: OpenObject On Ruby
 #    Copyright (C) 2009-2013 Akretion LTDA (<http://www.akretion.com>).
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
@@ -14,14 +14,14 @@ module Ooor
     #include ActiveModel::Validations
     include Naming, TypeCasting, Serialization, ::Ooor::Reflection, ::ActiveRecord::Reflection
 
-    # ******************** class methods ********************
+    # ********************** class methods ************************************
     class << self
 
       cattr_accessor :logger, :configurations
-      attr_accessor :openerp_id, :info, :access_ids, :name, :description, :openerp_model, :field_ids, :state, #class attributes associated to the OpenERP ir.model
-                    :fields, 
-                    :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
-                    :scope_prefix, :connection, :associations, :columns, :columns_hash
+      attr_accessor  :openerp_id, :info, :access_ids, :name, :description,
+                     :openerp_model, :field_ids, :state, :fields, #class attributes associated to the OpenERP ir.model
+                     :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
+                     :scope_prefix, :connection, :associations, :columns, :columns_hash
 
       def define_field_method(meth)
         unless self.respond_to?(meth)
@@ -49,7 +49,7 @@ module Ooor
       end
 
 
-      # ******************** remote communication ********************
+      # ******************** remote communication *****************************
 
       def create(attributes = {}, context={}, default_get_list=false, reload=true)
         self.new(attributes, default_get_list, context).tap { |resource| resource.save(context, reload) }
@@ -63,14 +63,6 @@ module Ooor
       def name_search(name='', domain=[], operator='ilike', context={}, limit=100)
         rpc_execute(:name_search, name, to_openerp_domain(domain), operator, context, limit, context_index: 3)
       end
-      
-      def relation(context={}); @relation ||= Relation.new(self, context); end
-      def scoped(context={}); relation(context); end
-      def where(opts, *rest); relation.where(opts, *rest); end
-      def all(*args); relation.all(*args); end
-      def limit(value); relation.limit(value); end
-      def order(value); relation.order(value); end
-      def offset(value); relation.offset(value); end
 
       def rpc_execute(method, *args)
         rpc_execute_with_object(@openerp_model, method, *args)
@@ -91,7 +83,7 @@ module Ooor
       end
 
       def object_service(service, db, uid, pass, obj, method, *args)
-        reload_fields_definition(false, {:user_id => uid, :password => pass}) 
+        reload_fields_definition(false, {user_id: uid, password: pass}) 
         logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
         cast_answer_to_ruby!(connection.object.send(service, db, uid, pass, obj, method, *cast_request_to_openerp(args)))
       end
@@ -104,7 +96,7 @@ module Ooor
       #Added methods to obtain report data for a model
       def report(report_name, ids, report_type='pdf', context={}) #TODO move to ReportService
         database, user_id, password, context = credentials_from_args(context)
-        params = {'model' => @openerp_model, 'id' => ids[0], 'report_type' => report_type}
+        params = {model: @openerp_model, id: ids[0], report_type: report_type}
         connection.report(database, user_uid, password, password, report_name, ids, params, context)
       end
       
@@ -144,14 +136,26 @@ module Ooor
         options = arguments.slice!(0) || {}
         case scope
           when :all   then find_every(options)
-          when :first then find_every(options.merge(:limit => 1)).first
+          when :first then find_every(options.merge(limit: 1)).first
           when :last  then find_every(options).last #FIXME terribly inefficient
           when :one   then find_one(options)
           else             find_single(scope, options)
         end
       end
 
-      #******************** finders low level implementation ********************
+
+      # ******************** AREL Minimal implementation ***********************
+
+      def relation(context={}); @relation ||= Relation.new(self, context); end
+      def scoped(context={}); relation(context); end
+      def where(opts, *rest); relation.where(opts, *rest); end
+      def all(*args); relation.all(*args); end
+      def limit(value); relation.limit(value); end
+      def order(value); relation.order(value); end
+      def offset(value); relation.offset(value); end
+
+
+      # ******************** finders low level implementation ******************
       private
 
       def find_every(options)
