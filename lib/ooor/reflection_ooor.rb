@@ -33,7 +33,7 @@ module Ooor
         elsif one2many_associations.keys.include?(name)
           macro = :has_many
         end
-        reflection = ActiveRecord::Reflection::AssociationReflection.new(macro, name, options, nil)#active_record) #TODO active_record?
+        reflection = Reflection::AssociationReflection.new(macro, name, options, nil)#active_record) #TODO active_record?
 #        case macro
 #          when :has_many, :belongs_to, :has_one, :has_and_belongs_to_many
 #            klass = options[:through] ? ThroughReflection : AssociationReflection
