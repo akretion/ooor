@@ -6,7 +6,7 @@ module Ooor
     initializer "ooor.middleware" do |app|
       Ooor.default_config = Ooor.load_config(false, Rails.env)
       if Ooor.default_config['bootstrap']
-        Ooor::Base.connection(Ooor.default_config)
+        Ooor::Connection.retrieve_connection(Ooor.default_config)
       end
     end
   end
