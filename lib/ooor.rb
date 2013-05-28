@@ -18,6 +18,7 @@ module Ooor
   autoload :Naming
   autoload :UnknownAttributeOrAssociationError, 'ooor/errors'
   autoload :OpenERPServerError, 'ooor/errors'
+  autoload :HashWithIndifferentAccess, 'active_support/core_ext/hash/indifferent_access'
 
   module OoorBehavior
     extend ActiveSupport::Concern
@@ -41,7 +42,7 @@ module Ooor
       #load the custom configuration
       def load_config(config_file=nil, env=nil)
         config_file ||= defined?(Rails.root) && "#{Rails.root}/config/ooor.yml" || 'ooor.yml'
-        @config = YAML.load_file(config_file)[env || 'development']
+        @config = HashWithIndifferentAccess.new(YAML.load_file(config_file)[env || 'development'])
       rescue SystemCallError
         puts """failed to load OOOR yaml configuration file.
            make sure your app has a #{config_file} file correctly set up
