@@ -3,7 +3,7 @@ require 'active_support/core_ext/object/inclusion'
 
 module Ooor
   # = Ooor Reflection
-  module Reflection # :nodoc:
+  module ReflectionOoor # :nodoc:
     extend ActiveSupport::Concern
 
     module ClassMethods
@@ -57,7 +57,7 @@ module Ooor
 end
 
 
-module ActiveRecord
+module Ooor
   # = Active Record Reflection
   module Reflection # :nodoc:
 

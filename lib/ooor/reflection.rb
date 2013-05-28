@@ -1,7 +1,10 @@
 require 'active_support/core_ext/class/attribute'
 require 'active_support/core_ext/object/inclusion'
 
-module ActiveRecord
+# NOTE this is a scoped copy of ActiveRecord reflection.rb
+# the few necessary hacks are explicited with a FIXME
+# an addition Ooor specific reflection module completes this one explicitely
+module Ooor
   # = Active Record Reflection
   module Reflection # :nodoc:
     extend ActiveSupport::Concern
