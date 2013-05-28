@@ -12,7 +12,7 @@ module Ooor
   class Base < ActiveResource::Base
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
-    include Naming, TypeCasting, Serialization, Reflection, ReflectionOoor
+    include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection
 
     # ********************** class methods ************************************
     class << self
