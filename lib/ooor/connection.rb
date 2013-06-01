@@ -11,6 +11,7 @@ require 'ooor/services'
 module Ooor
   autoload :Base
   autoload :XmlRpcClient
+  autoload :UnAuthorizedError, 'ooor/errors'
 
   class Connection
     class << self
@@ -78,6 +79,7 @@ module Ooor
     def global_login(options)
       @config.merge!(options)
       @config[:user_id] = common.login(@config[:database], @config[:username], @config[:password])
+      raise UnAuthorizedError.new unless @config[:user_id]
       load_models(@config[:models], options[:reload] == false ? false : true)
     end
 

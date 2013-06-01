@@ -16,6 +16,9 @@ module Ooor
     end
   end
 
+  class UnAuthorizedError < RuntimeError
+  end
+
   class OpenERPServerError < RuntimeError
     def initialize(error, method, *args)
       begin
