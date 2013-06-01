@@ -3,6 +3,10 @@
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
+if ENV["CI"]
+ require 'coveralls'
+ Coveralls.wear!
+end
 require File.dirname(__FILE__) + '/../lib/ooor'
 
 #RSpec executable specification; see http://rspec.info/ for more information.
