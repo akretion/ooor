@@ -4,8 +4,8 @@
 #    Licensed under the MIT license, see MIT-LICENSE file
 
 if ENV["CI"]
- require 'coveralls'
- Coveralls.wear!
+  require 'coveralls'
+  Coveralls.wear!
 end
 require File.dirname(__FILE__) + '/../lib/ooor'
 
