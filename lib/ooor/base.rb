@@ -7,6 +7,7 @@ require 'active_resource'
 require 'active_support/core_ext/hash/indifferent_access'
 require 'ooor/reflection'
 require 'ooor/reflection_ooor'
+require 'ooor/connection_handler'
 
 module Ooor
   class Base < ActiveResource::Base
@@ -14,14 +15,17 @@ module Ooor
     #include ActiveModel::Validations
     include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection
 
+
     # ********************** class methods ************************************
     class << self
 
-      cattr_accessor :logger, :configurations
+      cattr_accessor :logger, :connection_handler
       attr_accessor  :openerp_id, :info, :access_ids, :name, :description,
                      :openerp_model, :field_ids, :state, :fields, #class attributes associated to the OpenERP ir.model
                      :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
                      :scope_prefix, :connection, :associations, :columns, :columns_hash
+
+#      connection_handler = ConnectionHandler.new
 
       def define_field_method(meth)
         unless self.respond_to?(meth)
@@ -253,6 +257,7 @@ module Ooor
     end
 
     self.name = "Base"
+    self.connection_handler = ConnectionHandler.new
 
 
     # ********************** instance methods **********************************

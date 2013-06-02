@@ -9,7 +9,6 @@ require 'active_support/concern'
 
 module Ooor
   extend ActiveSupport::Autoload
-  autoload :Connection
   autoload :Base
   autoload :Cache, 'active_support/cache'
   autoload :Serialization
@@ -28,7 +27,7 @@ module Ooor
 
       def new(config={})
         Ooor.default_config = config
-        connection = Ooor::Connection.retrieve_connection(config)
+        connection = Ooor::Base.connection_handler.retrieve_connection(config)
         if config[:database] && config[:password]
           connection.global_login(config)
         end
