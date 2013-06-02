@@ -203,7 +203,7 @@ module Ooor
           tab = item.split(".")
           domain = [['name', '=', tab[-1]]]
           domain << ['module', '=', tab[-2]] if tab[-2]
-          ir_model_data = const_get('ir.model.data', context).find(:first, domain: domain, context: context)
+          ir_model_data = const_get('ir.model.data').find(:first, domain: domain, context: context)
           ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]], 0, false, false, context)[0]
         else
           item
@@ -410,12 +410,16 @@ module Ooor
 
     def method_missing_value_assign(method_key, arguments)
       if (self.class.associations_keys + self.class.many2one_associations.collect do |k, field|
-          self.class.const_get(field['relation'], object_session).associations_keys
+          klass = self.class.const_get(field['relation'])
+          klass.reload_fields_definition(false, object_session)
+          klass.associations_keys
         end.flatten).index(method_key)
         @associations[method_key] = arguments[0]
         @loaded_associations[method_key] = arguments[0]
       elsif (self.class.fields.keys + self.class.many2one_associations.collect do |k, field|
-          self.class.const_get(field['relation'], object_session).fields.keys
+          klass = self.class.const_get(field['relation'])
+          klass.reload_fields_definition(false, object_session)
+          klass.fields.keys
         end.flatten).index(method_key)
         @attributes[method_key] = arguments[0]
       end
@@ -453,7 +457,7 @@ module Ooor
 
     def load_association(model_key, ids, *arguments)
       options = arguments.extract_options!
-      related_class = self.class.const_get(model_key, object_session)
+      related_class = self.class.const_get(model_key)
       related_class.send :find, ids, fields: options[:fields] || options[:only] || [], context: options[:context] || object_session
     end
 
