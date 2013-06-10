@@ -23,7 +23,14 @@ module Ooor
         end
       end #TODO may be use something like ActiveRecord::Base.connection_id ||= Thread.current.object_id
       config = Ooor.default_config.merge(config) if Ooor.default_config.is_a? Hash
-      Connection.new(config).tap { |c| @connections << c }
+      Connection.new(config).tap do |c|
+        if config[:database] && config[:username] && !config[:user_id]
+          c.config[:user_id] = Ooor.cache.fetch("login-id-#{config[:username]}") do
+            c.common.login(config[:database], config[:username], config[:password])
+          end
+        end
+        @connections << c
+      end
     end
 
     def connections; @connections ||= []; end

@@ -249,7 +249,9 @@ module Ooor
           database = connection.config[:database]
         end
         if user_id.is_a?(String) && user_id.to_i == 0
-          user_id = Ooor.cache.fetch("login-id-#{user_id}") {connection.login(database, user_id, password)}
+          user_id = Ooor.cache.fetch("login-id-#{user_id}") do
+            connection.common.login(database, user_id, password)
+          end
         end
         return database, user_id.to_i, password, args
       end
