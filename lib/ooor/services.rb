@@ -30,15 +30,15 @@ module Ooor
   class DbService < Service
     define_service(:db, %w[get_progress drop dump restore rename db_exist list change_admin_password list_lang server_version migrate_databases create_database duplicate_database])
 
-    def create(password=@config[:db_password], db_name='ooor_test', demo=true, lang='en_US', user_password=@config[:password] || 'admin')
-      @logger.info "creating database #{db_name} this may take a while..."
-      process_id = get_rpc_client(base_url + "/db").call("create", password, db_name, demo, lang, user_password)
+    def create(password=@connection.config[:db_password], db_name='ooor_test', demo=true, lang='en_US', user_password=@connection.config[:password] || 'admin')
+      @connection.logger.info "creating database #{db_name} this may take a while..."
+      process_id = @connection.get_rpc_client(@connection.base_url + "/db").call("create", password, db_name, demo, lang, user_password)
       sleep(2)
       while get_progress(password, process_id)[0] != 1
-        @logger.info "..."
+        @connection.logger.info "..."
         sleep(0.5)
       end
-      global_login('admin', user_password, db_name, false)
+      @connection.global_login(username: 'admin', password: user_password, database: db_name)
     end
   end
 
