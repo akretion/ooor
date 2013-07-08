@@ -31,6 +31,21 @@ module Ooor
         if args[0].is_a?(String) && (args[1].is_a?(Integer) || args[1].to_i != 0) && args[2].is_a?(String)
           args[2] = "####"
         end
+        args.map! do |arg|
+          if arg.is_a?(Hash)# && (arg.keys.index('password') || arg.keys.index(:password))
+            r = {}
+            arg.each do |k, v|
+              if k.to_s.index('password')
+                r[k] = "####"
+              else
+                r[k] = v
+              end
+            end
+            r
+          else
+            arg
+          end
+        end
         line = "********************************************"
         message = "\n\n#{line}\n***********     OOOR Request     ***********\nmethod: #{method} - args: #{args.inspect}\n#{line}\n\n"
         message << "\n#{line}\n*********** OpenERP Server ERROR ***********\n#{line}\n#{openerp_error_hash["faultCode"]}\n#{openerp_error_hash["faultString"]}\n#{line}\n."
