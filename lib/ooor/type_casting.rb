@@ -9,7 +9,7 @@ module Ooor
   
     module ClassMethods
       
-      def openerp_string_domain_to_ruby(string_domain)
+      def openerp_string_domain_to_ruby(string_domain) #FIXME: used? broken?
         eval(string_domain.gsub('(', '[').gsub(')',']'))
       end
       
