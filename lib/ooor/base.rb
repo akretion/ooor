@@ -37,6 +37,21 @@ module Ooor
         end
       end
 
+      def define_nested_attributes_method(meth)
+        unless self.respond_to?(meth)
+          self.instance_eval do
+            define_method "#{meth}_attributes=" do |*args|
+              self.send :method_missing, *[meth, *args]
+            end
+
+            define_method "#{meth}_attributes" do |*args|
+              self.send :method_missing, *[meth, *args]
+            end
+
+          end
+        end
+      end
+
       def reload_fields_definition(force=false, context=nil)
         if force or not @fields_defined
           @fields_defined = true
@@ -47,6 +62,9 @@ module Ooor
           @associations_keys = @many2one_associations.keys + @one2many_associations.keys + @many2many_associations.keys + @polymorphic_m2o_associations.keys
           (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools
             define_field_method(meth)
+          end
+          @one2many_associations.keys.each do |meth|
+            define_nested_attributes_method(meth)
           end
           logger.debug "#{fields.size} fields loaded in model #{self.name}"
         end
