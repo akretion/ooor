@@ -53,6 +53,8 @@ module Ooor
           return "%d-%02d-%02d" % [v.year, v.month, v.day]
         elsif v == "false" #may happen with OOORBIT
           return false
+        elsif v.respond_to?(:read)
+          return Base64.encode64(v.read())
         else
           v
         end
