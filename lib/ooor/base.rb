@@ -477,7 +477,7 @@ module Ooor
       end
     end
 
-    def load_association(model_key, ids, substitute=nil, arguments)
+    def load_association(model_key, ids, substitute=nil, *arguments)
       options = arguments.extract_options!
       related_class = self.class.const_get(model_key)
       r = related_class.send(:find, ids, fields: options[:fields] || options[:only] || [], context: options[:context] || object_session) || substitute
