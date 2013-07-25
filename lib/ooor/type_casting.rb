@@ -64,7 +64,28 @@ module Ooor
         if request.is_a?(Array)
           request.map { |item| cast_request_to_openerp(item) }
         elsif request.is_a?(Hash)
-          request.each { |k, v| request[k] = cast_request_to_openerp(v) }
+          request2 = {}
+          request.each do |k, v|
+
+            if k.to_s.end_with?("_attributes")
+              attrs = []
+              if v.is_a?(Hash)
+                v.each do |key, val|
+                  if val[:id] || val['id']
+                    attrs << [1, val[:id] || val['id'], cast_request_to_openerp(val)]
+                  else
+                    attrs << [0, 0, cast_request_to_openerp(val)]
+                  end
+                end
+              end
+
+              request2[k.to_s.gsub("_attributes", "")] = attrs
+            else
+              request2[k] = cast_request_to_openerp(v)
+            end
+          end
+          request2
+
         else
           value_to_openerp(request)
         end
