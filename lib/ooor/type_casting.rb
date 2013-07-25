@@ -71,7 +71,9 @@ module Ooor
               attrs = []
               if v.is_a?(Hash)
                 v.each do |key, val|
-                  if val[:id] || val['id']
+                  if !val["_destroy"].empty?
+                    attrs << [2, val[:id] || val['id']]
+                  elsif val[:id] || val['id']
                     attrs << [1, val[:id] || val['id'], cast_request_to_openerp(val)]
                   else
                     attrs << [0, 0, cast_request_to_openerp(val)]
