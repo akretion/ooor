@@ -394,7 +394,6 @@ module Ooor
       method_name = method_symbol.to_s
       method_key = method_name.sub('=', '')
       self.class.reload_fields_definition(false, object_session)
-
       if attributes.has_key?(method_key)
         return super
       elsif @loaded_associations.has_key?(method_name)
@@ -420,6 +419,15 @@ module Ooor
           obj = method_missing(rel.to_sym, *arguments)
           return obj.is_a?(Base) ? obj.id : obj
         end
+      elsif method_name.end_with?("_ids") && self.class.associations_keys.index(method_name.gsub(/_ids$/, "")) 
+        rel = method_name.gsub(/_ids$/, "")
+        if @associations[rel]
+          return @associations[rel]
+        else
+          return method_missing(rel.to_sym, *arguments)
+        end
+
+
       elsif id
         rpc_execute(method_key, [id], *arguments) #we assume that's an action
       else
