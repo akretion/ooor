@@ -119,10 +119,10 @@ module Ooor
     end
     
     def to_openerp_hash!
-      cast_relations_to_openerp!
+      associations = cast_relations_to_openerp
       blacklist = %w[id write_date create_date write_ui create_ui]
       r = {}
-      @attributes.reject {|k, v| blacklist.index(k)}.merge(@associations).each do |k, v|
+      @attributes.reject {|k, v| blacklist.index(k)}.merge(associations).each do |k, v|
         if k.end_with?("_id") && !self.class.associations_keys.index(k) && self.class.associations_keys.index(k.gsub(/_id$/, ""))
           r[k.gsub(/_id$/, "")] = v && v.to_i || v
         else
@@ -132,32 +132,33 @@ module Ooor
       r
     end
     
-    def cast_relations_to_openerp!
-      @associations.reject! do |k, v| #reject non assigned many2one or empty list
+    def cast_relations_to_openerp
+      associations = @associations.reject do |k, v| #reject non assigned many2one or empty list
         v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String))
       end
 
-      @associations.each do |k, v| #see OpenERP awkward associations API
+      associations.each do |k, v| #see OpenERP awkward associations API
         #already casted, possibly before server error!
         next if (v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array)) \
                 || self.class.many2one_associations[k] \
                 || !v.is_a?(Array)
         new_rel = self.cast_relation(k, v, self.class.one2many_associations, self.class.many2many_associations)
         if new_rel #matches a known o2m or m2m
-          @associations[k] = new_rel
+          associations[k] = new_rel
         else
           self.class.many2one_associations.each do |k2, field| #try to cast the association to an inherited o2m or m2m:
             linked_class = self.class.const_get(field['relation'])
             new_rel = self.cast_relation(k, v, linked_class.one2many_associations, linked_class.many2many_associations)
-            @associations[k] = new_rel and break if new_rel
+            associations[k] = new_rel and break if new_rel
           end
         end
       end
+      associations
     end
 
     def cast_relation(k, v, one2many_associations, many2many_associations)
       if one2many_associations[k]
-        return v.collect! do |value|
+        return v.collect do |value|
           if value.is_a?(Base) #on the fly creation as in the GTK client
             [0, 0, value.to_openerp_hash!]
           else

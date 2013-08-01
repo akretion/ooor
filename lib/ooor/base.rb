@@ -327,6 +327,19 @@ module Ooor
 
     def save(context={}, reload=true)
       new? ? create(context, reload) : update(context, reload)
+      rescue OpenERPServerError => e
+        if e.faultCode && e.faultCode.index('ValidateError') #TODO raise other kind of error?
+          e.faultCode.split("\n").each do |line|
+            if line.index(': ')
+              fields = line.split(": ")[0].split(' ').last.split(',')
+              msg = line.split(": ")[1]
+              fields.each do |field|
+                errors.add(field.strip.to_sym, msg)
+              end
+            end
+          end
+        end
+        return false
     end
 
     #compatible with the Rails way but also supports OpenERP context
