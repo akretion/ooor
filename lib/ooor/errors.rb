@@ -20,6 +20,8 @@ module Ooor
   end
 
   class OpenERPServerError < RuntimeError
+    attr_accessor :request, :faultCode, :faultString
+
     def initialize(error, method, *args)
       begin
         #extracts the eventual error log from OpenERP response as OpenERP doesn't enforce carefully*
@@ -46,9 +48,12 @@ module Ooor
             arg
           end
         end
+        @request = "method: #{method} - args: #{args.inspect}"
+        @faultCode = openerp_error_hash["faultCode"]
+        @faultString = openerp_error_hash["faultString"]
         line = "********************************************"
-        message = "\n\n#{line}\n***********     OOOR Request     ***********\nmethod: #{method} - args: #{args.inspect}\n#{line}\n\n"
-        message << "\n#{line}\n*********** OpenERP Server ERROR ***********\n#{line}\n#{openerp_error_hash["faultCode"]}\n#{openerp_error_hash["faultString"]}\n#{line}\n."
+        message = "\n\n#{line}\n***********     OOOR Request     ***********\n#{@request}\n#{line}\n\n"
+        message << "\n#{line}\n*********** OpenERP Server ERROR ***********\n#{line}\n#{@faultCode}\n#{@faultString}\n#{line}\n."
       end
       super(message)
     end
