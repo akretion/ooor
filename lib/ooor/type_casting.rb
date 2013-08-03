@@ -133,27 +133,37 @@ module Ooor
     end
     
     def cast_relations_to_openerp
-      associations = @associations.reject do |k, v| #reject non assigned many2one or empty list
-        v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String))
+      associations2 = {}
+      @associations.each do |k, v|
+        if k.match(/_ids$/) && !self.class.associations_keys.index(k) && self.class.associations_keys.index(rel = k.gsub(/_ids$/, ""))
+          if v.is_a? Array
+           v.reject! {|i| i == ''}.map! {|i| i.to_i}
+          end
+          associations2[rel] = v
+        elsif v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String)) #reject non assigned many2one or empty list
+         next
+        else
+          associations2[k] = v
+        end
       end
 
-      associations.each do |k, v| #see OpenERP awkward associations API
+      associations2.each do |k, v| #see OpenERP awkward associations API
         #already casted, possibly before server error!
         next if (v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array)) \
                 || self.class.many2one_associations[k] \
                 || !v.is_a?(Array)
         new_rel = self.cast_relation(k, v, self.class.one2many_associations, self.class.many2many_associations)
         if new_rel #matches a known o2m or m2m
-          associations[k] = new_rel
+          associations2[k] = new_rel
         else
           self.class.many2one_associations.each do |k2, field| #try to cast the association to an inherited o2m or m2m:
             linked_class = self.class.const_get(field['relation'])
             new_rel = self.cast_relation(k, v, linked_class.one2many_associations, linked_class.many2many_associations)
-            associations[k] = new_rel and break if new_rel
+            associations2[k] = new_rel and break if new_rel
           end
         end
       end
-      associations
+      associations2
     end
 
     def cast_relation(k, v, one2many_associations, many2many_associations)

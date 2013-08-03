@@ -423,23 +423,20 @@ module Ooor
         else
           return nil
         end
-      # check if that is not a Rails style association with an _id suffix:
-      elsif method_name.end_with?("_id") && self.class.associations_keys.index(method_name.gsub(/_id$/, "")) 
-        rel = method_name.gsub(/_id$/, "")
+      # check if that is not a Rails style association with an _id[s][=] suffix:
+      elsif method_name.match(/_id[=]?$/) && self.class.associations_keys.index(rel=method_name.gsub(/_id[=]?$/, ""))
         if @associations[rel]
           return @associations[rel][0]
         else
           obj = method_missing(rel.to_sym, *arguments)
           return obj.is_a?(Base) ? obj.id : obj
         end
-      elsif method_name.end_with?("_ids") && self.class.associations_keys.index(method_name.gsub(/_ids$/, "")) 
-        rel = method_name.gsub(/_ids$/, "")
+      elsif method_name.match(/_ids[=]?$/) && self.class.associations_keys.index(rel=method_name.gsub(/_ids[=]?$/, ""))
         if @associations[rel]
           return @associations[rel]
         else
           return method_missing(rel.to_sym, *arguments)
         end
-
 
       elsif id
         rpc_execute(method_key, [id], *arguments) #we assume that's an action
