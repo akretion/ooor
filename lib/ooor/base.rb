@@ -344,7 +344,7 @@ module Ooor
 
     #compatible with the Rails way but also supports OpenERP context
     def create(context={}, reload=true)
-      self.id = rpc_execute('create', to_openerp_hash!, context)
+      self.id = rpc_execute('create', to_openerp_hash, context)
       if @ir_model_data_id
         IrModelData.create(model: self.class.openerp_model,
                            module: @ir_model_data_id[0],
@@ -355,9 +355,13 @@ module Ooor
       @persisted = true
     end
 
+    def update_attributes(attributes, context={}, reload=true)
+      load(attributes, false) && save(context, reload)
+    end
+
     #compatible with the Rails way but also supports OpenERP context
     def update(context={}, reload=true)
-      rpc_execute('write', [self.id], to_openerp_hash!, context)
+      rpc_execute('write', [self.id], to_openerp_hash, context)
       reload_fields(context) if reload
       @persisted = true
     end
