@@ -88,7 +88,7 @@ module Ooor
       scope_prefix = options[:scope_prefix]
       scope = scope_prefix ? Object.const_get(scope_prefix) : Object
       model_class_name = class_name_from_model_key(options[:model])
-      if !models[options[:model]] || options[:reload] || !scope.const_defined?(model_class_name)
+      if !@models[options[:model]] || options[:reload] || !scope.const_defined?(model_class_name)
         @logger.debug "registering #{model_class_name}"
         klass = Class.new(Base)
         klass.name = model_class_name

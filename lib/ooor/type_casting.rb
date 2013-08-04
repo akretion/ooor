@@ -118,11 +118,11 @@ module Ooor
       
     end
     
-    def to_openerp_hash!
-      associations = cast_relations_to_openerp
+    def to_openerp_hash(attributes=@attributes, associations=@associations)
+      associations = cast_relations_to_openerp(associations)
       blacklist = %w[id write_date create_date write_ui create_ui]
       r = {}
-      @attributes.reject {|k, v| blacklist.index(k)}.merge(associations).each do |k, v|
+      attributes.reject {|k, v| blacklist.index(k)}.merge(associations).each do |k, v|
         if k.end_with?("_id") && !self.class.associations_keys.index(k) && self.class.associations_keys.index(k.gsub(/_id$/, ""))
           r[k.gsub(/_id$/, "")] = v && v.to_i || v
         else
@@ -132,9 +132,9 @@ module Ooor
       r
     end
     
-    def cast_relations_to_openerp
+    def cast_relations_to_openerp(associations=@associations)
       associations2 = {}
-      @associations.each do |k, v|
+      associations.each do |k, v|
         if k.match(/_ids$/) && !self.class.associations_keys.index(k) && self.class.associations_keys.index(rel = k.gsub(/_ids$/, ""))
           if v.is_a? Array
            v.reject! {|i| i == ''}.map! {|i| i.to_i}
@@ -170,7 +170,7 @@ module Ooor
       if one2many_associations[k]
         return v.collect do |value|
           if value.is_a?(Base) #on the fly creation as in the GTK client
-            [0, 0, value.to_openerp_hash!]
+            [0, 0, value.to_openerp_hash]
           else
             if value.is_a?(Hash)
               [0, 0, value]
