@@ -17,7 +17,7 @@ before_script:
     - bundle install
 
 install:
-    - ./install_nightly.sh
+    - ./spec/install_nightly.sh
 
 script:
     - rake
