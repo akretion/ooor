@@ -286,6 +286,37 @@ describe Ooor do
       end
     end
 
+    describe "Rails associations methods" do
+      it "should read m2o id with an extra _id suffix" do
+        p = ProductProduct.find(1)
+        p.categ_id_id.should be_kind_of(Integer)
+      end
+
+      it "should read o2m with an extra _ids suffix" do
+        so = SaleOrder.find :first
+        so.order_line_ids.should be_kind_of(Array)
+      end
+
+      it "should read m2m with an extra _ids suffix" do
+        p = ProductProduct.find(1)
+        p.taxes_id_ids.should be_kind_of(Array)
+      end
+
+      it "should be able to call build upon a o2m association" do
+        so = SaleOrder.find :first
+        so.order_line.build().should be_kind_of(SaleOrderLine)
+      end
+    end
+
+    describe "Fields validations" do
+      it "should point to invalid fields" do
+        p = ProductProduct.find :first
+        p.ean13 = 'invalid_ean'
+        p.save.should == false
+        p.errors.messages[:ean13].should_not be_nil 
+      end
+    end
+
     describe "ARel emulation" do
       it "should have an 'all' method" do
         ResUsers.all.should be_kind_of(Array)
