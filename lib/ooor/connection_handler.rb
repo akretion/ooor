@@ -1,9 +1,10 @@
+require 'active_support/core_ext/hash/indifferent_access'
 require 'ooor/connection'
 
 module Ooor
   class ConnectionHandler
     def connection_spec(config)
-      config.slice(:url, :user_id, :password, :database, :scope_prefix)
+      HashWithIndifferentAccess.new(config.slice(:url, :user_id, :password, :database, :scope_prefix))
     end
 
     # meant to be overriden for Omniauth, Devise...
