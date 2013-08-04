@@ -13,7 +13,7 @@ before_script:
     - psql -c 'create database ooor_test with owner openerp;' -U postgres
     - cd openerp
     - ./openerp-server --db_user=postgres --db_user=openerp --db_password=admin --db_host=localhost &
-    - cd ../ooor
+    - cd ..
     - bundle install
 
 install:
