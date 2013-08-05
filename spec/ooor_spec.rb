@@ -322,7 +322,7 @@ describe Ooor do
         ResUsers.all.should be_kind_of(Array)
       end
 
-      it "should be read for Kaminari pagination vi ARel scoping" do
+      it "should be ready for Kaminari pagination via ARel scoping" do
         num = 2
         default_per_page = 5
         collection = ProductProduct.limit(default_per_page).offset(default_per_page * ([num.to_i, 1].max - 1))
