@@ -16,10 +16,13 @@ module Ooor
 
       #similar to Object#const_get but for OpenERP model key
       def const_get(model_key)
-        klass = connection.define_openerp_model(model: model_key, scope_prefix: self.scope_prefix)
+        scope = self.scope_prefix ? Object.const_get(self.scope_prefix) : Object
         klass_name = connection.class_name_from_model_key(model_key)
-        klass = (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_defined?(klass_name) ? (self.scope_prefix ? Object.const_get(self.scope_prefix) : Object).const_get(klass_name) : connection.define_openerp_model(model: model_key, scope_prefix: self.scope_prefix)
-        klass
+        if scope.const_defined?(klass_name) && Ooor::Base.connection_handler.connection_spec(scope.const_get(klass_name).connection.config) == Ooor::Base.connection_handler.connection_spec(connection.config)
+          scope.const_get(klass_name)
+        else
+          connection.define_openerp_model(model: model_key, scope_prefix: self.scope_prefix)
+        end
       end
     end
 
