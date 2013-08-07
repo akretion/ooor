@@ -56,7 +56,7 @@ module Ooor
       @config.merge!(options)
       @config[:user_id] = common.login(@config[:database], @config[:username], @config[:password])
       raise UnAuthorizedError.new unless @config[:user_id]
-      load_models(@config[:models], options[:reload] == false ? false : true)
+      load_models(@config[:models], options[:reload])
     end
 
     def const_get(openerp_model);
