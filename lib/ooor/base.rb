@@ -338,8 +338,10 @@ module Ooor
               end
             end
           end
+          return false
+        else
+          raise e
         end
-        return false
     end
 
     #compatible with the Rails way but also supports OpenERP context
