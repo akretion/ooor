@@ -25,8 +25,6 @@ module Ooor
                      :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
                      :scope_prefix, :connection, :associations, :columns, :columns_hash
 
-#      connection_handler = ConnectionHandler.new
-
       def define_field_method(meth)
         unless self.respond_to?(meth)
           self.instance_eval do

@@ -1,10 +1,16 @@
 #    OOOR: OpenObject On Ruby
-#    Copyright (C) 2009-2012 Akretion LTDA (<http://www.akretion.com>).
+#    Copyright (C) 2009-TODAY Akretion LTDA (<http://www.akretion.com>).
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
 module Ooor
   module Serialization
+
+    extend ActiveSupport::Concern
+
+    included do
+      self.include_root_in_json = false
+    end
 
     def serializable_hash(options = nil)
       options ||= {}
@@ -34,4 +40,3 @@ module Ooor
 
   end
 end
-
