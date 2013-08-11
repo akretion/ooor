@@ -48,7 +48,7 @@ module Ooor
   end
 
 
-  class ObjectService < Service
+  class ReportService < Service
     define_service(:report, %w[report report_get render_report])
   end
 
