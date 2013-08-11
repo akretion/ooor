@@ -48,7 +48,7 @@ module Ooor
 
       def object_service(service, obj, method, *args)
         db, uid, pass, args = credentials_from_args(*args)
-        reload_fields_definition(false, {user_id: uid, password: pass}) 
+        reload_fields_definition(false, {user_id: uid, password: pass})
         logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
         cast_answer_to_ruby!(connection.object.send(service, db, uid, pass, obj, method, *cast_request_to_openerp(args)))
       end

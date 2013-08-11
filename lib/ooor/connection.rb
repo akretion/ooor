@@ -102,7 +102,6 @@ module Ooor
         klass.many2many_associations = {}
         klass.polymorphic_m2o_associations = {}
         klass.associations_keys = []
-        klass.fields = {}
         klass.connection = self
         klass.scope_prefix = scope_prefix
         if options[:reload] || !scope.const_defined?(model_class_name)

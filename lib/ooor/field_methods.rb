@@ -7,8 +7,7 @@ module Ooor
     module ClassMethods
 
       def reload_fields_definition(force=false, context=nil)
-        if force or not @fields_defined
-          @fields_defined = true
+        if force or not @fields
           @fields = {}
           @columns_hash = {}
           context ||= connection.connection_session
