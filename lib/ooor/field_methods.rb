@@ -6,11 +6,10 @@ module Ooor
 
     module ClassMethods
 
-      def reload_fields_definition(force=false, context=nil)
+      def reload_fields_definition(force=false, context=connection.connection_session)
         if force or not @fields
           @fields = {}
           @columns_hash = {}
-          context ||= connection.connection_session
           rpc_execute("fields_get", false, context).each { |k, field| reload_field_definition(k, field) }
           @associations_keys = @many2one_associations.keys + @one2many_associations.keys + @many2many_associations.keys + @polymorphic_m2o_associations.keys
           (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools

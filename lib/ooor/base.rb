@@ -48,7 +48,7 @@ module Ooor
 
       def object_service(service, obj, method, *args)
         db, uid, pass, args = credentials_from_args(*args)
-        reload_fields_definition(false, {user_id: uid, password: pass})
+        reload_fields_definition(false, args)
         logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
         cast_answer_to_ruby!(connection.object.send(service, db, uid, pass, obj, method, *cast_request_to_openerp(args)))
       end
@@ -232,8 +232,6 @@ module Ooor
     def get_report_data(report_name, report_type="pdf", context={})
       self.class.get_report_data(report_name, [self.id], report_type, context)
     end
-
-    def log(message, context={}) rpc_execute('log', id, message, context) end
 
     def type() method_missing(:type) end #skips deprecated Object#type method
 
