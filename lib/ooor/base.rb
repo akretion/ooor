@@ -11,7 +11,7 @@ module Ooor
   class Base < Ooor::MiniActiveResource
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
-    include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection, Associations, Report, FinderMethods
+    include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection, Associations, Report, FinderMethods, FieldMethods
 
 
     # ********************** class methods ************************************
@@ -67,25 +67,6 @@ module Ooor
         self.rpc_execute(method_symbol.to_s, *args)
       end
 
-      def reload_fields_definition(force=false, context=nil)
-        if force or not @fields_defined
-          @fields_defined = true
-          @fields = {}
-          @columns_hash = {}
-          context ||= connection.connection_session
-          rpc_execute("fields_get", false, context).each { |k, field| reload_field_definition(k, field) }
-          @associations_keys = @many2one_associations.keys + @one2many_associations.keys + @many2many_associations.keys + @polymorphic_m2o_associations.keys
-          (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools
-            define_field_method(meth)
-          end
-          @one2many_associations.keys.each do |meth|
-            define_nested_attributes_method(meth)
-          end
-          logger.debug "#{fields.size} fields loaded in model #{self.name}"
-        end
-      end
-
-
       # ******************** AREL Minimal implementation ***********************
 
       def relation(context={}); @relation ||= Relation.new(self, context); end
@@ -97,33 +78,7 @@ module Ooor
       def offset(value); relation.offset(value); end
 
 
-      # ******************** finders low level implementation ******************
       private
-
-      def define_field_method(meth)
-        unless self.respond_to?(meth)
-          self.instance_eval do
-            define_method meth do |*args|
-              self.send :method_missing, *[meth, *args]
-            end
-          end
-        end
-      end
-
-      def define_nested_attributes_method(meth)
-        unless self.respond_to?(meth)
-          self.instance_eval do
-            define_method "#{meth}_attributes=" do |*args|
-              self.send :method_missing, *[meth, *args]
-            end
-
-            define_method "#{meth}_attributes" do |*args|
-              self.send :method_missing, *[meth, *args]
-            end
-
-          end
-        end
-      end
 
       def item_to_id(item, context)
         if item.is_a?(String) && item.to_i == 0#triggers ir_model_data absolute reference lookup
@@ -134,21 +89,6 @@ module Ooor
           ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]], 0, false, false, context)[0]
         else
           item
-        end
-      end
-
-      def reload_field_definition(k, field)
-        case field['type']
-        when 'many2one'
-          @many2one_associations[k] = field
-        when 'one2many'
-          @one2many_associations[k] = field
-        when 'many2many'
-          @many2many_associations[k] = field
-        when 'reference'
-          @polymorphic_m2o_associations[k] = field
-        else
-          @fields[k] = field if field['name'] != 'id'
         end
       end
 

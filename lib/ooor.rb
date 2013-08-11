@@ -16,6 +16,7 @@ module Ooor
   autoload :TypeCasting
   autoload :Naming
   autoload :Associations
+  autoload :FieldMethods
   autoload :Report
   autoload :MiniActiveResource
   autoload :ConnectionHandler
