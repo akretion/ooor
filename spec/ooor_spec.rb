@@ -70,7 +70,7 @@ describe Ooor do
   describe "Do operations on configured database" do
     before(:all) do
       @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database,
-        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu'])
+        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu', 'sale.order.line'])
     end
 
     describe "Finders operations" do

@@ -49,6 +49,8 @@ module Ooor
       def object_service(service, obj, method, *args)
         db, uid, pass, args = credentials_from_args(*args)
         reload_fields_definition(false, args)
+#raise "ee" if args == [[217], ["state"], {}]
+#raise "ee" if args == [[1], ["name"], {}]
         logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
         cast_answer_to_ruby!(connection.object.send(service, db, uid, pass, obj, method, *cast_request_to_openerp(args)))
       end
@@ -240,7 +242,7 @@ module Ooor
       method_key = method_name.sub('=', '')
       self.class.reload_fields_definition(false, object_session)
       if attributes.has_key?(method_key)
-        return super
+        return attributes[method_key]
       elsif @loaded_associations.has_key?(method_name)
         @loaded_associations[method_name]
       elsif @associations.has_key?(method_name)
@@ -290,12 +292,6 @@ module Ooor
           end.flatten).index(method_key)
           @associations[method_key] = arguments[0]
           @loaded_associations[method_key] = arguments[0]
-        elsif (self.class.fields.keys + self.class.many2one_associations.collect do |k, field|
-            klass = self.class.const_get(field['relation'])
-            klass.reload_fields_definition(false, object_session)
-            klass.fields.keys
-          end.flatten).index(method_key)
-          @attributes[method_key] = arguments[0]
         end
       end
 
