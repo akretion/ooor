@@ -39,24 +39,15 @@ module Ooor
       end
 
       def rpc_execute(method, *args)
-        rpc_execute_with_object(@openerp_model, method, *args)
-      end
-
-      def rpc_execute_with_object(object, method, *args)
-        database, user_id, password, args = credentials_from_args(*args)
-        object_service(:execute, database, user_id, password, object, method, *args)
+        object_service(:execute, @openerp_model, method, *args)
       end
 
       def rpc_exec_workflow(action, *args)
-        rpc_exec_workflow_with_object(@openerp_model, action, *args)
+        object_service(:exec_workflow, @openerp_model, action, *args)
       end
 
-      def rpc_exec_workflow_with_object(object, action, *args)
-        database, user_id, password, args = credentials_from_args(*args)
-        object_service(:exec_workflow, connection.config[:database], connection.config[:user_id], connection.config[:password], object, action, *args)
-      end
-
-      def object_service(service, db, uid, pass, obj, method, *args)
+      def object_service(service, obj, method, *args)
+        db, uid, pass, args = credentials_from_args(*args)
         reload_fields_definition(false, {user_id: uid, password: pass}) 
         logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
         cast_answer_to_ruby!(connection.object.send(service, db, uid, pass, obj, method, *cast_request_to_openerp(args)))
@@ -123,7 +114,7 @@ module Ooor
 
     def rpc_execute(method, *args)
       args += [self.class.connection.connection_session.merge(object_session)] unless args[-1].is_a? Hash
-      self.class.object_service(:execute, object_db, object_uid, object_pass, self.class.openerp_model, method, *args)
+      self.class.object_service(:execute, self.class.openerp_model, method, *args)
     end
 
     def load(attributes, remove_root=false, persisted=false)#an attribute might actually be a association too, will be determined here
@@ -222,7 +213,7 @@ module Ooor
     def on_change(on_change_method, field_name, field_value, *args)
       ids = self.id ? [id] : []
       # NOTE: OpenERP doesn't accept context systematically in on_change events unfortunately
-      result = self.class.object_service(:execute, object_db, object_uid, object_pass, self.class.openerp_model, on_change_method, ids, *args)
+      result = self.class.object_service(:execute, self.class.openerp_model, on_change_method, ids, *args)
       if result["warning"]
         self.class.logger.info result["warning"]["title"]
         self.class.logger.info result["warning"]["message"]
@@ -233,7 +224,7 @@ module Ooor
 
     #wrapper for OpenERP exec_workflow Business Process Management engine
     def wkf_action(action, context={}, reload=true)
-      self.class.object_service(:exec_workflow, object_db, object_uid, object_pass, self.class.openerp_model, action, self.id, object_session)
+      self.class.object_service(:exec_workflow, self.class.openerp_model, action, self.id, object_session)
       reload_fields(context) if reload
     end
 
@@ -291,38 +282,34 @@ module Ooor
       raise UnknownAttributeOrAssociationError.new(e, self.class)
     end
 
-    def method_missing_value_assign(method_key, arguments)
-      if (self.class.associations_keys + self.class.many2one_associations.collect do |k, field|
-          klass = self.class.const_get(field['relation'])
-          klass.reload_fields_definition(false, object_session)
-          klass.associations_keys
-        end.flatten).index(method_key)
-        @associations[method_key] = arguments[0]
-        @loaded_associations[method_key] = arguments[0]
-      elsif (self.class.fields.keys + self.class.many2one_associations.collect do |k, field|
-          klass = self.class.const_get(field['relation'])
-          klass.reload_fields_definition(false, object_session)
-          klass.fields.keys
-        end.flatten).index(method_key)
-        @attributes[method_key] = arguments[0]
-      end
-    end
-
     private
 
-    # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
-    def to_ary; nil; end # :nodoc:
+      def method_missing_value_assign(method_key, arguments)
+        if (self.class.associations_keys + self.class.many2one_associations.collect do |k, field|
+            klass = self.class.const_get(field['relation'])
+            klass.reload_fields_definition(false, object_session)
+            klass.associations_keys
+          end.flatten).index(method_key)
+          @associations[method_key] = arguments[0]
+          @loaded_associations[method_key] = arguments[0]
+        elsif (self.class.fields.keys + self.class.many2one_associations.collect do |k, field|
+            klass = self.class.const_get(field['relation'])
+            klass.reload_fields_definition(false, object_session)
+            klass.fields.keys
+          end.flatten).index(method_key)
+          @attributes[method_key] = arguments[0]
+        end
+      end
 
-    def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
+      # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
+      def to_ary; nil; end # :nodoc:
 
-    def reload_fields(context)
-      records = self.class.find(self.id, context: context, fields: @attributes.keys + @associations.keys)
-      reload_from_record!(records)
-    end
+      def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
 
-    def object_db; object_session[:database] || self.class.connection.config[:database]; end
-    def object_uid; object_session[:user_id] || self.class.connection.config[:user_id]; end
-    def object_pass; object_session[:password] || self.class.connection.config[:password]; end
+      def reload_fields(context)
+        records = self.class.find(self.id, context: context, fields: @attributes.keys + @associations.keys)
+        reload_from_record!(records)
+      end
 
   end
 end
