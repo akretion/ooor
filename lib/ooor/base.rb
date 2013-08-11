@@ -190,28 +190,26 @@ module Ooor
       def find_single(scope, options)
         context = options[:context] || {}
         reload_fields_definition(false, context)
-        all_fields = @fields.merge(@many2one_associations).merge(@one2many_associations).merge(@many2many_associations).merge(@polymorphic_m2o_associations)
-        fields = options[:fields] || options[:only] || all_fields.keys.select do |k|
-          all_fields[k]["type"] != "binary" && (options[:include_functions] || !all_fields[k]["function"])
-        end
-#        prefix_options, query_options = split_options(options[:params])
+        fields = options[:fields] || options[:only] || find_fields(options)
         is_collection = true
         scope = [scope] and is_collection = false if !scope.is_a? Array
         scope.map! { |item| item_to_id(item, context) }.reject! {|item| !item}
         records = rpc_execute('read', scope, fields, context.dup)
         records.sort_by! {|r| scope.index(r["id"])}
         active_resources = []
-        records.each do |record|
-          r = {}
-          record.each_pair do |k,v|
-            r[k.to_sym] = v
-          end
-          active_resources << new(r, [], context, true)
+        records.each { |record| active_resources << new(record, [], context, true)}
+        if is_collection
+          active_resources
+        else
+          active_resources[0]
         end
-        unless is_collection
-          return active_resources[0]
+      end
+
+      def find_fields(options)
+        all_fields = @fields.merge(@many2one_associations).merge(@one2many_associations).merge(@many2many_associations).merge(@polymorphic_m2o_associations)
+        all_fields.keys.select do |k|
+          all_fields[k]["type"] != "binary" && (options[:include_functions] || !all_fields[k]["function"])
         end
-        return active_resources
       end
 
       def item_to_id(item, context)
