@@ -47,10 +47,8 @@ module Ooor
       end
 
       def object_service(service, obj, method, *args)
-        db, uid, pass, args = credentials_from_args(*args)
         reload_fields_definition(false, args)
-        logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
-        cast_answer_to_ruby!(connection.object.send(service, db, uid, pass, obj, method, *cast_request_to_openerp(args)))
+        cast_answer_to_ruby!(connection.object.object_service(service, obj, method, *cast_request_to_openerp(args)))
       end
 
       def method_missing(method_symbol, *args)
@@ -67,40 +65,6 @@ module Ooor
       def limit(value); relation.limit(value); end
       def order(value); relation.order(value); end
       def offset(value); relation.offset(value); end
-
-
-      private
-
-      def credentials_from_context(*args)
-        if args[-1][:context_index]
-          i = args[-1][:context_index]
-          args.delete_at -1
-        else
-          i = -1
-        end
-        c = HashWithIndifferentAccess.new(args[i])
-        user_id = c.delete(:ooor_user_id) || connection.config[:user_id]
-        password = c.delete(:ooor_password) || connection.config[:password]
-        database = c.delete(:ooor_database) || connection.config[:database]
-        args[i] = connection.connection_session.merge(c)
-        return database, user_id, password, args
-      end
-
-      def credentials_from_args(*args)
-        if args[-1].is_a? Hash #context
-          database, user_id, password, args = credentials_from_context(*args) 
-        else
-          user_id = connection.config[:user_id]
-          password = connection.config[:password]
-          database = connection.config[:database]
-        end
-        if user_id.is_a?(String) && user_id.to_i == 0
-          user_id = Ooor.cache.fetch("login-id-#{user_id}") do
-            connection.common.login(database, user_id, password)
-          end
-        end
-        return database, user_id.to_i, password, args
-      end
 
     end
 
