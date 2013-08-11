@@ -9,12 +9,13 @@ require 'ooor/reflection_ooor'
 require 'ooor/connection_handler'
 require 'ooor/mini_active_resource'
 require 'ooor/associations'
+require 'ooor/report'
 
 module Ooor
   class Base < Ooor::MiniActiveResource
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
-    include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection, Associations
+    include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection, Associations, Report
 
 
     # ********************** class methods ************************************
@@ -68,44 +69,6 @@ module Ooor
       def method_missing(method_symbol, *args)
         raise RuntimeError.new("Invalid RPC method:  #{method_symbol}") if [:type!, :allowed!].index(method_symbol)
         self.rpc_execute(method_symbol.to_s, *args)
-      end
-      
-      #Added methods to obtain report data for a model
-      def report(report_name, ids, report_type='pdf', context={}) #TODO move to ReportService
-        database, user_id, password, context = credentials_from_args(context)
-        params = {model: @openerp_model, id: ids[0], report_type: report_type}
-        connection.report(database, user_uid, password, password, report_name, ids, params, context)
-      end
-      
-      def report_get(report_id, context={})
-        database, user_id, password, context = credentials_from_args(context)
-        connection.report_get(database, user_uid, password, password, report_id)
-      end
-      
-      def get_report_data(report_name, ids, report_type='pdf', context={})
-        report_id = self.report(report_name, ids, report_type, context)
-        if report_id
-          state = false
-          attempt = 0
-          while not state
-            report = self.report_get(report_id, context)
-            state = report["state"]
-            attempt = 1
-            if not state 
-              sleep(0.1)
-              attempt += 1
-            else
-              return [report["result"],report["format"]]
-            end
-            if attempt > 100
-              logger.debug "OOOR RPC: 'Printing Aborted!'"
-              break
-            end
-          end     
-        else
-          logger.debug "OOOR RPC: 'report not found'"
-        end
-        return nil
       end
 
       def find(*arguments)
