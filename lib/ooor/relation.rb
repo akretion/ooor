@@ -1,5 +1,5 @@
 #    OOOR: OpenObject On Ruby
-#    Copyright (C) 2009-2013 Akretion LTDA (<http://www.akretion.com>).
+#    Copyright (C) 2009-TODAY Akretion LTDA (<http://www.akretion.com>).
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
@@ -98,7 +98,7 @@ module Ooor
     end
 
     def where_values
-      if @option && @options[:domain]
+      if @options && @options[:domain]
         @options[:domain]
       else
         @where_values
@@ -112,22 +112,35 @@ module Ooor
     end
 
     def to_a
-      return @records if loaded?
-      if @order_values.empty?
-        search_order = false
+      if loaded?
+        @records
       else
-        search_order = @order_values.join(", ")
+        if @order_values.empty?
+          search_order = false
+        else
+          search_order = @order_values.join(", ")
+        end
+
+        if @options && @options[:name_search]
+	  name_search = @klass.name_search(@options[:name_search], where_values, 'ilike', @options[:context], @limit_value)
+          @records = name_search.map do |tuple|
+            r = @klass.new({name: tuple[1]}, [])
+            r.id = tuple[0]
+            r #TODO load othe fields optionnally
+          end
+        else
+          if @per_value && @page_value
+            offset = @per_value * @page_value
+            limit = @per_value
+          else
+            offset = @offset_value
+            limit = @limit_value || false
+          end
+          ids = @klass.rpc_execute('search', where_values, offset, limit, search_order, @options[:context] || {}, @count_field)
+          @loaded = true
+          @records = @klass.find(ids, @options)
+        end
       end
-      if @per_value && @page_value
-        offset = @per_value * @page_value
-        limit = @per_value
-      else
-        offset = @offset_value
-        limit = @limit_value || false
-      end
-      ids = @klass.rpc_execute('search', where_values, offset, limit, search_order, @options[:context] || {}, @count_field)
-      @loaded = true
-      @records = @klass.find(ids, @options)
     end
   
     def eager_loading?
