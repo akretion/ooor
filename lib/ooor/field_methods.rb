@@ -65,5 +65,15 @@ module Ooor
         end
 
     end
+
+    def lazzy_load_field(field_name, *arguments)
+      if attributes["id"]
+        load(rpc_execute('read', [id], [field_name], *arguments || object_session)[0] || {})
+        method_missing(field_name, *arguments)
+      else
+        nil
+      end
+    end
+
   end
 end

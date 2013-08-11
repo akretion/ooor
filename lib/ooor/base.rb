@@ -240,7 +240,11 @@ module Ooor
       method_key = method_name.sub('=', '')
       self.class.reload_fields_definition(false, object_session)
       if attributes.has_key?(method_key)
-        return super
+        if method_name.end_with?('=')
+          attributes[method_key] = arguments[0]
+        else
+          attributes[method_key]
+        end
       elsif @loaded_associations.has_key?(method_name)
         @loaded_associations[method_name]
       elsif @associations.has_key?(method_name)
@@ -248,28 +252,13 @@ module Ooor
         @loaded_associations[method_name] = result and return result if result
       elsif method_name.end_with?('=')
         return method_missing_value_assign(method_key, arguments)
-      elsif self.class.fields.has_key?(method_key) || self.class.associations_keys.index(method_name) #unloaded field/association
-        if attributes["id"]
-          load(rpc_execute('read', [id], [method_key], *arguments || object_session)[0] || {})
-          return method_missing(method_key, *arguments)
-        else
-          return nil
-        end
+      elsif self.class.fields.has_key?(method_name) || self.class.associations_keys.index(method_name) #unloaded field/association
+        return lazzy_load_field(method_name, *arguments)
       # check if that is not a Rails style association with an _id[s][=] suffix:
-      elsif method_name.match(/_id[=]?$/) && self.class.associations_keys.index(rel=method_name.gsub(/_id[=]?$/, ""))
-        if @associations[rel]
-          return @associations[rel][0]
-        else
-          obj = method_missing(rel.to_sym, *arguments)
-          return obj.is_a?(Base) ? obj.id : obj
-        end
-      elsif method_name.match(/_ids[=]?$/) && self.class.associations_keys.index(rel=method_name.gsub(/_ids[=]?$/, ""))
-        if @associations[rel]
-          return @associations[rel]
-        else
-          return method_missing(rel.to_sym, *arguments)
-        end
-
+      elsif method_name.match(/_id$/) && self.class.associations_keys.index(rel=method_name.gsub(/_id$/, ""))
+        return many2one_id_method(rel, *arguments)
+      elsif method_name.match(/_ids$/) && self.class.associations_keys.index(rel=method_name.gsub(/_ids$/, ""))
+        return x_to_many_ids_method(rel, *arguments)
       elsif id
         rpc_execute(method_key, [id], *arguments) #we assume that's an action
       else
