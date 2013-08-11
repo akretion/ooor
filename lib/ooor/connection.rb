@@ -92,7 +92,7 @@ module Ooor
         @logger.debug "registering #{model_class_name}"
         klass = Class.new(Base)
         klass.name = model_class_name
-        klass.site = options[:url] || base_url
+#        klass.site = options[:url] || base_url
         klass.openerp_model = options[:model]
         klass.openerp_id = options[:id]
         klass.description = options[:name]

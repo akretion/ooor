@@ -3,14 +3,14 @@
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
-require 'active_resource'
 require 'active_support/core_ext/hash/indifferent_access'
 require 'ooor/reflection'
 require 'ooor/reflection_ooor'
 require 'ooor/connection_handler'
+require 'ooor/mini_active_resource'
 
 module Ooor
-  class Base < ActiveResource::Base
+  class Base < Ooor::MiniActiveResource
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
     include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection
