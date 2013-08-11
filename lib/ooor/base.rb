@@ -8,12 +8,13 @@ require 'ooor/reflection'
 require 'ooor/reflection_ooor'
 require 'ooor/connection_handler'
 require 'ooor/mini_active_resource'
+require 'ooor/associations'
 
 module Ooor
   class Base < Ooor::MiniActiveResource
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
     #include ActiveModel::Validations
-    include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection
+    include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection, Associations
 
 
     # ********************** class methods ************************************
@@ -472,46 +473,6 @@ module Ooor
 
     # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
     def to_ary; nil; end # :nodoc:
-
-    # fakes associations like much like ActiveRecord according to the cached OpenERP data model
-    def relationnal_result(method_name, *arguments)
-      self.class.reload_fields_definition(false, object_session)
-      if self.class.many2one_associations.has_key?(method_name)
-        if @associations[method_name]
-          rel = self.class.many2one_associations[method_name]['relation']
-          id = @associations[method_name].is_a?(Integer) ? @associations[method_name] : @associations[method_name][0]
-          load_association(rel, id, nil, *arguments)
-        else
-          false
-        end
-      elsif self.class.one2many_associations.has_key?(method_name)
-        rel = self.class.one2many_associations[method_name]['relation']
-        load_association(rel, @associations[method_name], [], *arguments)
-      elsif self.class.many2many_associations.has_key?(method_name)
-        rel = self.class.many2many_associations[method_name]['relation']
-        load_association(rel, @associations[method_name], [], *arguments)
-      elsif self.class.polymorphic_m2o_associations.has_key?(method_name)
-        values = @associations[method_name].split(',')
-        load_association(values[0], values[1].to_i, nil, *arguments)
-      else
-        false
-      end
-    end
-
-    def load_association(model_key, ids, substitute=nil, *arguments)
-      options = arguments.extract_options!
-      related_class = self.class.const_get(model_key)
-      r = related_class.send(:find, ids, fields: options[:fields] || options[:only] || [], context: options[:context] || object_session) || substitute
-      #TODO the following is a hack to minimally mimic the CollectionProxy of Rails 3.1+; this should probably be re-implemented
-      def r.association=(association)
-        @association = association
-      end
-      r.association = related_class
-      def r.build(attrs={})
-        @association.new(attrs)
-      end
-      r
-    end
 
     def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
 
