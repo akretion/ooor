@@ -271,23 +271,6 @@ module Ooor
 
     private
 
-      def method_missing_value_assign(method_key, arguments)
-        if (self.class.associations_keys + self.class.many2one_associations.collect do |k, field|
-            klass = self.class.const_get(field['relation'])
-            klass.reload_fields_definition(false, object_session)
-            klass.associations_keys
-          end.flatten).index(method_key)
-          @associations[method_key] = arguments[0]
-          @loaded_associations[method_key] = arguments[0]
-        elsif (self.class.fields.keys + self.class.many2one_associations.collect do |k, field|
-            klass = self.class.const_get(field['relation'])
-            klass.reload_fields_definition(false, object_session)
-            klass.fields.keys
-          end.flatten).index(method_key)
-          @attributes[method_key] = arguments[0]
-        end
-      end
-
       # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
       def to_ary; nil; end # :nodoc:
 

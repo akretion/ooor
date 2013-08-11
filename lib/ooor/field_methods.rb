@@ -66,14 +66,41 @@ module Ooor
 
     end
 
-    def lazzy_load_field(field_name, *arguments)
-      if attributes["id"]
-        load(rpc_execute('read', [id], [field_name], *arguments || object_session)[0] || {})
-        method_missing(field_name, *arguments)
-      else
-        nil
+    private
+
+      def method_missing_value_assign(method_key, arguments)
+        if is_association_assignment(method_key)
+          @associations[method_key] = arguments[0]
+          @loaded_associations[method_key] = arguments[0]
+        elsif is_attribute_assignment(method_key)
+          @attributes[method_key] = arguments[0]
+        end
       end
-    end
+
+      def is_association_assignment(method_key)
+        (self.class.associations_keys + self.class.many2one_associations.collect do |k, field|
+          klass = self.class.const_get(field['relation'])
+          klass.reload_fields_definition(false, object_session)
+          klass.associations_keys
+        end.flatten).index(method_key)
+      end
+
+      def is_attribute_assignment(method_key)
+        (self.class.fields.keys + self.class.many2one_associations.collect do |k, field|
+          klass = self.class.const_get(field['relation'])
+          klass.reload_fields_definition(false, object_session)
+          klass.fields.keys
+        end.flatten).index(method_key)
+      end
+
+      def lazzy_load_field(field_name, *arguments)
+        if attributes["id"]
+          load(rpc_execute('read', [id], [field_name], *arguments || object_session)[0] || {})
+          method_missing(field_name, *arguments)
+        else
+          nil
+        end
+      end
 
   end
 end
