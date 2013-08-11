@@ -80,18 +80,6 @@ module Ooor
 
       private
 
-      def item_to_id(item, context)
-        if item.is_a?(String) && item.to_i == 0#triggers ir_model_data absolute reference lookup
-          tab = item.split(".")
-          domain = [['name', '=', tab[-1]]]
-          domain << ['module', '=', tab[-2]] if tab[-2]
-          ir_model_data = const_get('ir.model.data').find(:first, domain: domain, context: context)
-          ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]], 0, false, false, context)[0]
-        else
-          item
-        end
-      end
-
       def credentials_from_context(*args)
         if args[-1][:context_index]
           i = args[-1][:context_index]

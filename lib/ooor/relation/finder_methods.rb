@@ -46,6 +46,18 @@ module Ooor
           end
         end
 
+        def item_to_id(item, context)
+          if item.is_a?(String) && item.to_i == 0#triggers ir_model_data absolute reference lookup
+            tab = item.split(".")
+            domain = [['name', '=', tab[-1]]]
+            domain << ['module', '=', tab[-2]] if tab[-2]
+            ir_model_data = const_get('ir.model.data').find(:first, domain: domain, context: context)
+            ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]], 0, false, false, context)[0]
+          else
+            item
+          end
+        end
+
         def find_fields(options)
           all_fields = @fields.merge(@many2one_associations).merge(@one2many_associations).merge(@many2many_associations).merge(@polymorphic_m2o_associations)
           all_fields.keys.select do |k|
