@@ -15,9 +15,17 @@ module Ooor
   autoload :Relation
   autoload :TypeCasting
   autoload :Naming
+  autoload :Associations
+  autoload :Report
+  autoload :MiniActiveResource
+  autoload :ConnectionHandler
   autoload :UnknownAttributeOrAssociationError, 'ooor/errors'
   autoload :OpenERPServerError, 'ooor/errors'
   autoload :HashWithIndifferentAccess, 'active_support/core_ext/hash/indifferent_access'
+
+  autoload_under 'relation' do
+    autoload :FinderMethods
+  end
 
   module OoorBehavior
     extend ActiveSupport::Concern

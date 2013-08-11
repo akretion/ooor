@@ -1,7 +1,10 @@
+require 'active_support/concern'
+
 module Ooor
   module Report
-    class << self
+    extend ActiveSupport::Concern
 
+    module ClassMethods
       #Added methods to obtain report data for a model
       def report(report_name, ids, report_type='pdf', context={}) #TODO move to ReportService
         database, user_id, password, context = credentials_from_args(context)
