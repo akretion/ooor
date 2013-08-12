@@ -108,7 +108,11 @@ module Ooor
       @object_session = HashWithIndifferentAccess.new(context)
       @persisted = persisted
       self.class.reload_fields_definition(false, @object_session)
-      load_init_attributes(attributes, default_get_list) 
+      if default_get_list == []
+        load(attributes)
+      else
+        load_with_defaults(attributes, default_get_list)
+      end
     end
 
     def save(context={}, reload=true)
@@ -221,14 +225,10 @@ module Ooor
 
     private
 
-      def load_init_attributes(attributes, default_get_list)
-        if default_get_list == []
-          load(attributes)
-        else
-          defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
-          attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
-          load(attributes)
-        end
+      def load_with_defaults(attributes, default_get_list)
+        defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
+        attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
+        load(attributes)
       end
 
       # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
