@@ -47,7 +47,7 @@ module Ooor
       end
 
       def object_service(service, obj, method, *args)
-        reload_fields_definition(false, args)
+        reload_fields_definition(false, connection.connection_session)
         cast_answer_to_ruby!(connection.object.object_service(service, obj, method, *cast_request_to_openerp(args)))
       end
 
