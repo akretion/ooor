@@ -38,6 +38,11 @@ module Ooor
     def new?
       !@persisted
     end
+    alias :new_record? :new?
+
+    def persisted?
+      @persisted
+    end
 
     def id
       attributes["id"]
