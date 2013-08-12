@@ -106,15 +106,9 @@ module Ooor
       @ir_model_data_id = attributes.delete(:ir_model_data_id)
       @object_session = {}
       @object_session = HashWithIndifferentAccess.new(context)
-      @persisted = persisted #TODO match 3.1 ActiveResource API
+      @persisted = persisted
       self.class.reload_fields_definition(false, @object_session)
-      if default_get_list == []
-        load(attributes)
-      else
-        defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
-        attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
-        load(attributes)
-      end
+      load_init_attributes(attributes, default_get_list) 
     end
 
     def save(context={}, reload=true)
@@ -226,6 +220,16 @@ module Ooor
     end
 
     private
+
+      def load_init_attributes(attributes, default_get_list)
+        if default_get_list == []
+          load(attributes)
+        else
+          defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
+          attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
+          load(attributes)
+        end
+      end
 
       def extract_validation_error(error)
         error.faultCode.split("\n").each do |line|
