@@ -115,7 +115,7 @@ module Ooor
       new? ? create(context, reload) : update(context, reload)
       rescue OpenERPServerError => e
         if e.faultCode && e.faultCode.index('ValidateError') #TODO raise other kind of error?
-          extract_validation_error(e)
+          e.extract_validation_error(errors)
           return false
         else
           raise e
@@ -229,18 +229,6 @@ module Ooor
           attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
           load(attributes)
         end
-      end
-
-      def extract_validation_error(error)
-        error.faultCode.split("\n").each do |line|
-          extract_error_line(line) if line.index(': ')
-        end
-      end
-
-      def extract_error_line(line)
-        fields = line.split(": ")[0].split(' ').last.split(',')
-        msg = line.split(": ")[1]
-        fields.each { |field| errors.add(field.strip.to_sym, msg) }
       end
 
       # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/

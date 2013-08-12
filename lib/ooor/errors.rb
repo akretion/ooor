@@ -57,6 +57,19 @@ module Ooor
       end
       super(message)
     end
+
+    def extract_validation_error(errors)
+      @faultCode.split("\n").each do |line|
+        extract_error_line(errors, line) if line.index(': ')
+      end
+    end
+
+    def extract_error_line(errors, line)
+      fields = line.split(": ")[0].split(' ').last.split(',')
+      msg = line.split(": ")[1]
+      fields.each { |field| errors.add(field.strip.to_sym, msg) }
+    end
+
   end
 
 end
