@@ -1,4 +1,3 @@
-require 'active_support/concern'
 require "rails/railtie"
 
 module Ooor
