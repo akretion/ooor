@@ -64,6 +64,10 @@ module Ooor
           end
         end
 
+        def all_fields
+          @fields.merge(@polymorphic_m2o_associations).merge(@many2many_associations).merge(@one2many_associations).merge(@many2one_associations)
+        end
+
     end
 
     def method_missing(method_symbol, *arguments)
