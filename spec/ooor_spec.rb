@@ -302,6 +302,12 @@ describe Ooor do
         p.taxes_id_ids.should be_kind_of(Array)
       end
 
+      it "should support Rails nested attributes" do
+        so = SaleOrder.find :first
+        so.respond_to?(:order_line_attributes).should be_true
+        so.respond_to?(:order_line_attributes=).should be_true
+      end
+
       it "should be able to call build upon a o2m association" do
         so = SaleOrder.find :first
         so.order_line.build().should be_kind_of(SaleOrderLine)
