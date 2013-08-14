@@ -31,7 +31,7 @@ module Ooor
         def find_single(scope, options)
           context = options[:context] || {}
           reload_fields_definition(false, context)
-          fields = options[:fields] || options[:only] || find_fields(options)
+          fields = options[:fields] || options[:only] || fast_fields(options)
           is_collection = true
           scope = [scope] and is_collection = false if !scope.is_a? Array
           scope.map! { |item| item_to_id(item, context) }.reject! {|item| !item}
@@ -55,13 +55,6 @@ module Ooor
             ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]], 0, false, false, context)[0]
           else
             item
-          end
-        end
-
-        def find_fields(options)
-          all_fields = @fields.merge(@many2one_associations).merge(@one2many_associations).merge(@many2many_associations).merge(@polymorphic_m2o_associations)
-          all_fields.keys.select do |k|
-            all_fields[k]["type"] != "binary" && (options[:include_functions] || !all_fields[k]["function"])
           end
         end
 
