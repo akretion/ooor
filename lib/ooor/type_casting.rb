@@ -43,7 +43,7 @@ module Ooor
       end
 
       def value_to_openerp(v)
-        if v == nil
+        if v == nil || v == ""
           return false
         elsif !v.is_a?(Integer) && !v.is_a?(Float) && v.is_a?(Numeric) && v.respond_to?(:to_f)
           return v.to_f
@@ -143,6 +143,9 @@ module Ooor
         elsif v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String)) #reject non assigned many2one or empty list
          next
         else
+          if k.end_with?("_ids") && v.is_a?(String)
+            v = v.split(",").map{|i| i.to_i}
+          end
           associations2[k] = v
         end
       end
