@@ -22,6 +22,17 @@ module Ooor
         end
       end
 
+      def all_fields
+        @fields.merge(@polymorphic_m2o_associations).merge(@many2many_associations).merge(@one2many_associations).merge(@many2one_associations)
+      end
+
+      def fast_fields(options)
+        fields = all_fields
+        fields.keys.select do |k|
+          fields[k]["type"] != "binary" && (options[:include_functions] || !fields[k]["function"])
+        end
+      end
+
       private
 
         def define_field_method(meth)
@@ -63,18 +74,6 @@ module Ooor
             @fields[k] = field if field['name'] != 'id'
           end
         end
-
-        def all_fields
-          @fields.merge(@polymorphic_m2o_associations).merge(@many2many_associations).merge(@one2many_associations).merge(@many2one_associations)
-        end
-
-        def fast_fields(options)
-          fields = all_fields
-          fields.keys.select do |k|
-            fields[k]["type"] != "binary" && (options[:include_functions] || !fields[k]["function"])
-          end
-        end
-
     end
 
     def method_missing(method_symbol, *arguments)
