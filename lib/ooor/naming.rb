@@ -10,7 +10,11 @@ module Ooor
           namespace = self.parents.detect do |n|
             n.respond_to?(:use_relative_model_naming?) && n.use_relative_model_naming?
           end
-          ActiveModel::Name.new(self, namespace, description)
+          r = ActiveModel::Name.new(self, namespace, description)
+          def r.param_key
+            @klass.openerp_model.gsub('.', '_')
+          end
+          r
         end
       end
 
@@ -23,6 +27,11 @@ module Ooor
         else
           connection.define_openerp_model(model: model_key, scope_prefix: self.scope_prefix)
         end
+      end
+
+      #required by form validators; TODO implement better?
+      def human_attribute_name(field_name, options={})
+        ""
       end
     end
 
