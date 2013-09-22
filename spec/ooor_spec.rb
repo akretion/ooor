@@ -402,6 +402,26 @@ describe Ooor do
     end
   end
 
+  describe "Ative-Record like Reflection" do
+    before(:all) do
+      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :models => ['product.product'], :reload => true)
+    end
+
+    it "should test correct class attributes" do
+      object = Ooor::Reflection::AssociationReflection.new(:test, :people, {}, nil)
+      object.name.should == :people
+      object.macro.should == :test
+      object.options.should == {}
+    end
+
+    it "should test correct class name matching wit class name" do
+      object = Ooor::Reflection::AssociationReflection.new(:test, 'product_product', {class_name: 'product.product'}, nil)
+      object.connection = @ooor
+      object.klass.should == ProductProduct
+    end
+
+  end
+
   describe "Multi-instance and class name scoping" do
     before(:all) do
       @ooor1 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE1', :models => ['res.partner', 'product.product'], :reload => true)
