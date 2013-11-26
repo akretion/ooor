@@ -11,13 +11,22 @@ module Ooor
         case scope
           when :all   then find_every(options)
           when :first then find_every(options.merge(limit: 1)).first
-          when :last  then find_every(options).last #FIXME terribly inefficient
+          when :last  then find_last(options)
           when :one   then find_one(options)
           else             find_single(scope, options)
         end
       end
 
       private
+        def find_last(options)
+          options[:order] ||= "id DESC"
+          options[:limit] = 1
+          domain = options[:domain] || []
+          context = options[:context] || {}
+
+          ids = rpc_execute('search', to_openerp_domain(domain), options[:offset] || 0, options[:limit],  options[:order], context.dup)
+          find_single(ids.first, options)
+        end
 
         def find_every(options)
           domain = options[:domain] || []
