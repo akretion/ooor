@@ -10,16 +10,16 @@ module Ooor
         options = arguments.slice!(0) || {}
         case scope
           when :all   then find_every(options)
-          when :first then find_every(options.merge(limit: 1)).first
-          when :last  then find_last(options)
+          when :first then find_first_or_last(options)
+          when :last  then find_first_or_last(options, "DESC")
           when :one   then find_one(options)
           else             find_single(scope, options)
         end
       end
 
       private
-        def find_last(options)
-          options[:order] ||= "id DESC"
+        def find_first_or_last(options, ordering = "ASC")
+          options[:order] ||= "id #{ordering}"
           options[:limit] = 1
           domain = options[:domain] || []
           context = options[:context] || {}

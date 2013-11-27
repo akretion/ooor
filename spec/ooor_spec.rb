@@ -36,7 +36,6 @@ describe Ooor do
     @ooor.db.list.index(@database).should_not be_nil
   end
 
-  
   describe "Configure existing database" do
     before(:all) do
       @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database)
@@ -66,7 +65,6 @@ describe Ooor do
     end
   end
 
-
   describe "Do operations on configured database" do
     before(:all) do
       @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database,
@@ -74,14 +72,20 @@ describe Ooor do
     end
 
     describe "Finders operations" do
-
       it "should be able to find data by id" do
-        p = ProductProduct.find(1)
-        p.should_not be_nil
-        p = ProductProduct.find(:first)
-        p.should_not be_nil
-        l = ProductProduct.find([1,2])
-        l.size.should == 2
+        product1 = ProductProduct.find(1)
+        expect(product1).not_to be_nil
+        expect(ProductProduct.find(:first).attributes).to eq product1.attributes
+      end
+
+      it "fetches data given an array of ids" do
+        products = ProductProduct.find([1,2])
+        products.size.should == 2
+      end
+
+      it "fetches last data created last" do
+        last_product_id = ProductProduct.search([], 0, 1, "create_date DESC").first
+        expect(ProductProduct.find(:last).id).to eq last_product_id
       end
 
       it "should load required models on the fly" do
@@ -146,7 +150,6 @@ describe Ooor do
       it "should be able to call any Class method" do
         ResPartner.name_search('ax', [], 'ilike', {}).should_not be_nil
       end
-
     end
 
     describe "Relations reading" do
@@ -339,7 +342,7 @@ describe Ooor do
 
     describe "wizard management" do
       it "should be possible to pay an invoice in one step" do        
-        inv = AccountInvoice.find(:last).copy() #creates a draft invoice        
+        inv = AccountInvoice.find(:first).copy() # creates a draft invoice
         inv.state.should == "draft"
         inv.wkf_action('invoice_open')
         inv.state.should == "open"
