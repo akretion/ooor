@@ -3,13 +3,11 @@
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
-require 'active_support/dependencies/autoload'
 require 'active_support/core_ext/hash/indifferent_access'
 require 'logger'
 require 'ooor/services'
 
 module Ooor
-  autoload :Base
   autoload :XmlRpcClient
   autoload :UnAuthorizedError, 'ooor/errors'
 
