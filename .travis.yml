@@ -27,6 +27,9 @@ script:
 rvm:
   - 1.9.3
   - 2.0.0
+  - jruby-19mode
+  - 2.1.0-preview2
+  - rbx-2.2.1
 notifications:
   email:
     - raphael.valyi@akretion.com
