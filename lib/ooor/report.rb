@@ -7,14 +7,14 @@ module Ooor
     module ClassMethods
       #Added methods to obtain report data for a model
       def report(report_name, ids, report_type='pdf', context={}) #TODO move to ReportService
-        database, user_id, password, context = credentials_from_args(context)
+        database, user_id, password, context = connection.object.credentials_from_args(context)
         params = {model: @openerp_model, id: ids[0], report_type: report_type}
-        connection.report(database, user_uid, password, password, report_name, ids, params, context)
+        connection.report.report(database, user_id, password, report_name, ids, params)
       end
 
       def report_get(report_id, context={})
-        database, user_id, password, context = credentials_from_args(context)
-        connection.report_get(database, user_uid, password, password, report_id)
+        database, user_id, password, context = connection.object.credentials_from_args(context)
+        connection.report.report_get(database, user_id, password, report_id)
       end
 
       def get_report_data(report_name, ids, report_type='pdf', context={})
