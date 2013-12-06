@@ -340,6 +340,13 @@ describe Ooor do
       end
     end
 
+    describe "report support" do
+      it "should print reports" do
+        base_id = IrModuleModule.search(name:'base')[0]
+        IrModuleModule.get_report_data("ir.module.reference", [base_id], 'pdf', {}).should be_kind_of(Array)
+      end
+    end
+
     describe "wizard management" do
       it "should be possible to pay an invoice in one step" do        
         inv = AccountInvoice.find(:first).copy() # creates a draft invoice
