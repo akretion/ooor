@@ -17,7 +17,7 @@ module Ooor
 
     def build_where(opts, other = [])#TODO OpenERP domain is more than just the intersection of restrictions
       case opts
-      when Array
+      when Array || '|' || '&'
         [opts]
       when Hash
         opts.keys.map {|key|["#{key}", "=", opts[key]]}
@@ -26,7 +26,11 @@ module Ooor
     
     def where(opts, *rest)
       relation = clone
-      relation.where_values += build_where(opts, rest) unless opts.blank?
+      if opts.is_a?(Array) && opts.any? {|e| e.is_a? Array}
+        relation.where_values = opts
+      else
+        relation.where_values += build_where(opts, rest) unless opts.blank?
+      end
       relation
     end
 
