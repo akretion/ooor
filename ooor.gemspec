@@ -17,6 +17,7 @@ Gem::Specification.new do |s|
   s.test_files = Dir["spec/**/*"]
 
   s.add_dependency(%q<activemodel>, [">= 2.3.5"])
+  s.add_dependency(%q<faraday>)
   s.bindir       = "bin"
   s.executables  = %w( ooor )
 end

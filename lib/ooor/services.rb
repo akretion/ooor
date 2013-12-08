@@ -23,7 +23,20 @@ module Ooor
 
 
   class CommonService < Service
-    define_service(:common, %w[ir_get ir_set ir_del about login logout timezone_get get_available_updates get_migration_scripts get_server_environment login_message check_connectivity about get_stats list_http_services version authenticate get_available_updates set_loglevel get_os_time get_sqlcount])
+    def login(db, username, password)
+      conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
+      response = conn.post do |req|
+        req.url '/web/session/authenticate' 
+        req.headers['Content-Type'] = 'application/json'
+        req.body = {method: 'call', params: { db: db, login: username, password: password}}.to_json
+      end
+      @connection.cookie = response.headers["set-cookie"]
+      json_response = JSON.parse(response.body)
+      @connection.session_id = json_response['result']['session_id']
+      json_response['result']['uid']
+    end
+
+    define_service(:common, %w[ir_get ir_set ir_del about logout timezone_get get_available_updates get_migration_scripts get_server_environment login_message check_connectivity about get_stats list_http_services version authenticate get_available_updates set_loglevel get_os_time get_sqlcount])
   end
 
 
@@ -49,7 +62,31 @@ module Ooor
     def object_service(service, obj, method, *args)
       db, uid, pass, args = credentials_from_args(*args)
       @connection.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
-      send(service, db, uid, pass, obj, method, *args)
+      conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
+      if args.last.is_a?(Hash)
+        context = args.pop
+      else
+        context = {}
+      end
+      r = JSON.parse(conn.post do |req|
+        req.headers['Cookie'] = @connection.cookie
+        if service == :exec_workflow
+          req.url '/web/dataset/exec_workflow'
+          params = {"jsonrpc"=>"2.0","method"=>"call","params"=>{"model"=>obj, "id"=>args[0], "signal"=>method, "session_id" => @connection.session_id}, "id"=>"r42"}
+        else
+          req.url '/web/dataset/call_kw'
+          params = {"jsonrpc"=>"2.0","method"=>"call","params"=>{"model"=>obj, "method"=> method, "kwargs"=>{}, "args"=>args, "context"=>context, "session_id" => @connection.session_id}, "id"=>"r42"}
+        end
+        req.headers['Content-Type'] = 'application/json'
+        req.body = params.to_json
+      end.body)
+      if r["error"] #TODO wrap stack trace properly for debug
+        m = "#{{'faultCode'=>r["error"]['data']['fault_code'], 'faultString'=>r["error"]['message']}}"
+        raise OpenERPServerError.new(m, method, *args)
+      else
+        r["result"]
+      end
+      #send(service, db, uid, pass, obj, method, *args)
     end
 
     def credentials_from_context(*args)
