@@ -76,6 +76,7 @@ module Ooor
         else
           req.url '/web/dataset/call_kw'
           params = {"jsonrpc"=>"2.0","method"=>"call","params"=>{"model"=>obj, "method"=> method, "kwargs"=>{}, "args"=>args, "context"=>context, "session_id" => @connection.session_id}, "id"=>"r42"}
+          params["params"]["kwargs"] = {"context"=>context} if args[0].is_a?(Array) && args.size == 1 && args[0].any? {|e| !e.is_a?(Integer)}
         end
         req.headers['Content-Type'] = 'application/json'
         req.body = params.to_json
