@@ -9,7 +9,7 @@ module Ooor
         scope   = arguments.slice!(0)
         options = arguments.slice!(0) || {}
         case scope
-          when :all   then find_every(options)
+          when :all   then find_single(nil, options)
           when :first then find_first_or_last(options)
           when :last  then find_first_or_last(options, "DESC")
           when :one   then find_one(options)
@@ -29,6 +29,7 @@ module Ooor
         end
 
         def find_every(options)
+          raise "NO MORE MAN!"
           domain = options[:domain] || []
           context = options[:context] || {}
           #prefix_options, domain = split_options(options[:params]) unless domain
@@ -41,11 +42,28 @@ module Ooor
           context = options[:context] || {}
           reload_fields_definition(false, context)
           fields = options[:fields] || options[:only] || fast_fields(options)
-          is_collection = true
-          scope = [scope] and is_collection = false if !scope.is_a? Array
-          scope.map! { |item| item_to_id(item, context) }.reject! {|item| !item}
-          records = rpc_execute('read', scope, fields, context.dup)
-          records.sort_by! {|r| scope.index(r["id"])}
+          
+          if scope
+            if scope.is_a? Array
+              is_collection = true
+            else
+              scope = [scope]
+              is_collection = false
+            end
+            scope.map! { |item| item_to_id(item, context) }.reject! {|item| !item}
+            records = rpc_execute('read', scope, fields, context.dup)
+            records.sort_by! {|r| scope.index(r["id"])} #TODO web client sorts already
+          else
+            is_collection = true
+            records = object_service(:search_read, @openerp_model, 'search_read', { #TODO unless force xml_rpc
+                fields: fields,
+                offset: options[:offset] || 0,
+                limit: options[:limit] || false,
+                domain: options[:domain] || [],
+                sort: options[:order] || false,
+                context: context
+              })["records"]
+          end
           active_resources = []
           records.each { |record| active_resources << new(record, [], context, true)}
           if is_collection

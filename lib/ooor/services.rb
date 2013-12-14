@@ -72,20 +72,23 @@ module Ooor
         send(service, db, uid, pass, obj, method, *args)
       else
         conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
-        if args.last.is_a?(Hash)
-          context = args.pop
-        else
-          context = {}
-        end
         r = JSON.parse(conn.post do |req|
             req.headers['Cookie'] = @connection.cookie
             if service == :exec_workflow
               req.url '/web/dataset/exec_workflow'
               params = {"jsonrpc"=>"2.0","method"=>"call","params"=>{"model"=>obj, "id"=>args[0], "signal"=>method, "session_id" => @connection.session_id}, "id"=>"r42"}
-            else
+            elsif service == :execute
               req.url '/web/dataset/call_kw'
+              if args.last.is_a?(Hash)
+                context = args.pop
+              else
+                context = {}
+              end
               params = {"jsonrpc"=>"2.0","method"=>"call","params"=>{"model"=>obj, "method"=> method, "kwargs"=>{}, "args"=>args, "context"=>context, "session_id" => @connection.session_id}, "id"=>"r42"}
               params["params"]["kwargs"] = {"context"=>context} if args[0].is_a?(Array) && args.size == 1 && args[0].any? {|e| !e.is_a?(Integer)}
+            else
+              req.url "/web/dataset/#{service}"
+              params = {"jsonrpc"=>"2.0","method"=>"call","params"=>args[0].merge({"model"=>obj, "session_id" => @connection.session_id}), "id"=>"r42"}
             end
             req.headers['Content-Type'] = 'application/json'
             req.body = params.to_json
