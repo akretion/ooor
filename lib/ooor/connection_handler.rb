@@ -13,10 +13,6 @@ module Ooor
     end
 
     def retrieve_connection(config) #TODO cheap impl of connection pool
-      config[:user_id] ||= config.delete(:ooor_user_id)
-      config[:username] ||= config.delete(:ooor_username)
-      config[:password] ||= config.delete(:ooor_password)
-      config[:database] ||= config.delete(:ooor_database)
       connections.each do |c| #TODO limit pool size, create a queue etc...
         if connection_spec(c.config) == connection_spec(config)
           c.config.merge(config)
