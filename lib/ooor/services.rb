@@ -9,7 +9,6 @@ module Ooor
       methods.each do |meth|
         self.instance_eval do
           define_method meth do |*args|
-            args[-1] = @connection.connection_session.merge(args[-1]) if args[-1].is_a? Hash
             @connection.get_rpc_client("#{@connection.base_url}/#{service}").call(meth, *args)
           end
         end
@@ -47,40 +46,26 @@ module Ooor
     define_service(:object, %w[execute exec_workflow])
 
     def object_service(service, obj, method, *args)
-      db, uid, pass, args = credentials_from_args(*args)
+      args = inject_session_context(*args)
+      uid = @connection.config[:user_id]
+      pass = @connection.config[:password]
+      db = @connection.config[:database]
       @connection.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
       send(service, db, uid, pass, obj, method, *args)
     end
 
-    def credentials_from_context(*args)
-      if args[-1][:context_index]
-        i = args[-1][:context_index]
-        args.delete_at -1
-      else
-        i = -1
-      end
-      c = HashWithIndifferentAccess.new(args[i])
-      user_id = c.delete(:ooor_user_id) || @connection.config[:user_id]
-      password = c.delete(:ooor_password) || @connection.config[:password]
-      database = c.delete(:ooor_database) || @connection.config[:database]
-      args[i] = @connection.connection_session.merge(c)
-      return database, user_id, password, args
-    end
-
-    def credentials_from_args(*args)
+    def inject_session_context(*args)
       if args[-1].is_a? Hash #context
-        database, user_id, password, args = credentials_from_context(*args)
-      else
-        user_id = @connection.config[:user_id]
-        password = @connection.config[:password]
-        database = @connection.config[:database]
-      end
-      if user_id.is_a?(String) && user_id.to_i == 0
-        user_id = Ooor.cache.fetch("login-id-#{user_id}") do
-          @connection.common.login(database, user_id, password)
+        if args[-1][:context_index] #in some legacy methods, context isn't the last arg
+          i = args[-1][:context_index]
+          args.delete_at -1
+        else
+          i = -1
         end
+        c = HashWithIndifferentAccess.new(args[i])
+        args[i] = @connection.connection_session.merge(c)
       end
-      return database, user_id.to_i, password, args
+      args
     end
   end
 

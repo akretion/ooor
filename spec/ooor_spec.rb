@@ -68,7 +68,7 @@ describe Ooor do
   describe "Do operations on configured database" do
     before(:all) do
       @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database,
-        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu'])
+        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu', 'ir.module.module'])
     end
 
     describe "Finders operations" do
@@ -399,11 +399,9 @@ describe Ooor do
 
     it "should support context when instanciating collections" do
       @ooor.const_get('product.product')
-      products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US', :ooor_user_id=>1, :ooor_password => 'admin'})
+      products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US'})
       p = products[0]
       p.object_session[:lang].should == 'en_US'
-      p.object_session[:ooor_user_id].should == 1
-      p.object_session[:ooor_password].should == "admin"
       p.save
     end
 
