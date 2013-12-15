@@ -4,7 +4,7 @@ require 'ooor/connection'
 module Ooor
   class ConnectionHandler
     def connection_spec(config)
-      HashWithIndifferentAccess.new(config.slice(:url, :user_id, :password, :database, :scope_prefix))
+      HashWithIndifferentAccess.new(config.slice(:url, :username, :password, :database, :scope_prefix))
     end
 
     # meant to be overriden for Omniauth, Devise...
@@ -21,7 +21,7 @@ module Ooor
       end #TODO may be use something like ActiveRecord::Base.connection_id ||= Thread.current.object_id
       config = Ooor.default_config.merge(config) if Ooor.default_config.is_a? Hash
       Connection.new(config).tap do |c|
-        if config[:database] && config[:username] && !config[:user_id]
+        if config[:database] && config[:username]
           c.config[:user_id] = Ooor.cache.fetch("login-id-#{config[:username]}") do
             c.common.login(config[:database], config[:username], config[:password])
           end
