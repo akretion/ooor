@@ -26,7 +26,7 @@ module Ooor
         def find_first_or_last(options, ordering = "ASC")
           options[:order] ||= "id #{ordering}"
           options[:limit] = 1
-          domain = options[:domain] || []
+          domain = options[:domain] || options[:conditions] || []
           context = options[:context] || {}
           ids = rpc_execute('search', to_openerp_domain(domain), options[:offset] || 0,
             options[:limit],  options[:order], context.dup)
@@ -40,30 +40,9 @@ module Ooor
           fields = options[:fields] || options[:only] || fast_fields(options)
           
           if scope
-            if scope.is_a? Array
-              is_collection = true
-            else
-              scope = [scope]
-              is_collection = false
-            end
-            scope.map! { |item| item_to_id(item, context) }.reject! {|item| !item}
-            records = rpc_execute('read', scope, fields, context.dup)
-            records.sort_by! {|r| scope.index(r["id"])} if @connection.config[:force_xml_rpc]
+            is_collection, records = read_scope(context, fields, scope)
           else
-            is_collection = true
-            if @connection.config[:force_xml_rpc]
-              ids = rpc_execute('search', to_openerp_domain(domain), options[:offset] || 0, options[:limit] || false,  options[:order] || false, context.dup)
-              records = rpc_execute('read', ids, fields, context.dup)
-            else
-              records = object_service(:search_read, @openerp_model, 'search_read', { #TODO unless force xml_rpc
-                  fields: fields,
-                  offset: options[:offset] || 0,
-                  limit: options[:limit] || false,
-                  domain: to_openerp_domain(options[:domain] || []),
-                  sort: options[:order] || false,
-                  context: context
-                })["records"]
-            end
+            is_collection, records = read_domain(context, fields, options)
           end
           active_resources = []
           records.each { |record| active_resources << new(record, [], context, true)}
@@ -72,6 +51,37 @@ module Ooor
           else
             active_resources[0]
           end
+        end
+        
+        def read_scope(context, fields, scope)
+          if scope.is_a? Array
+            is_collection = true
+          else
+            scope = [scope]
+            is_collection = false
+          end
+          scope.map! { |item| item_to_id(item, context) }.reject! {|item| !item}
+          records = rpc_execute('read', scope, fields, context.dup)
+          records.sort_by! {|r| scope.index(r["id"])} if @connection.config[:force_xml_rpc]
+          return is_collection, records
+        end
+        
+        def read_domain(context, fields, options)
+          if @connection.config[:force_xml_rpc]
+            domain = to_openerp_domain(options[:domain] || options[:conditions] || [])
+            ids = rpc_execute('search', domain, options[:offset] || 0, options[:limit] || false,  options[:order] || false, context.dup)
+            records = rpc_execute('read', ids, fields, context.dup)
+          else
+            records = object_service(:search_read, @openerp_model, 'search_read', { #TODO unless force xml_rpc
+                fields: fields,
+                offset: options[:offset] || 0,
+                limit: options[:limit] || false,
+                domain: to_openerp_domain(options[:domain] || options[:conditions] || []),
+                sort: options[:order] || false,
+                context: context
+              })["records"]
+          end
+          return true, records
         end
 
         def item_to_id(item, context)
