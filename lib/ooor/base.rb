@@ -173,7 +173,8 @@ module Ooor
         self.class.logger.info result["warning"]["message"]
       end
       attrs = @attributes.merge(field_name => field_value)
-      load(attrs.merge(result["value"]))
+      load_attrs = attrs.merge(result["value"])
+      load(load_attrs)
     end
 
     #wrapper for OpenERP exec_workflow Business Process Management engine
