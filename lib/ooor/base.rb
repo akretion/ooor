@@ -165,21 +165,10 @@ module Ooor
 
     #Generic OpenERP on_change method
     def on_change(on_change_method, field_name, field_value, *args)
-      if self.id
-        ids = [id]
-      else
-        ids = []
-      end
       # NOTE: OpenERP doesn't accept context systematically in on_change events unfortunately
-      model = self.class.openerp_model
-      result = self.class.object_service(:execute, model, on_change_method, ids, *args)
-      if result["warning"]
-        self.class.logger.info result["warning"]["title"]
-        self.class.logger.info result["warning"]["message"]
-      end
-      attrs = @attributes.merge(field_name => field_value)
-      attrs.merge!(result["value"])
-      load(attrs)
+      ids = self.id ? [id] : []
+      result = self.class.object_service(:execute, self.class.openerp_model, on_change_method, ids, *args)
+      load_on_change_result(result, field_name, field_value)
     end
 
     #wrapper for OpenERP exec_workflow Business Process Management engine
@@ -201,6 +190,16 @@ module Ooor
         defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
         attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
         load(attributes)
+      end
+      
+      def load_on_change_result(result, field_name, field_value)
+        if result["warning"]
+          self.class.logger.info result["warning"]["title"]
+          self.class.logger.info result["warning"]["message"]
+        end
+        attrs = @attributes.merge(field_name => field_value)
+        attrs.merge!(result["value"])
+        load(attrs)
       end
 
       # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
