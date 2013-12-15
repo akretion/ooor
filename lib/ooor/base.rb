@@ -171,14 +171,15 @@ module Ooor
         ids = []
       end
       # NOTE: OpenERP doesn't accept context systematically in on_change events unfortunately
-      result = self.class.object_service(:execute, self.class.openerp_model, on_change_method, ids, *args)
+      model = self.class.openerp_model
+      result = self.class.object_service(:execute, model, on_change_method, ids, *args)
       if result["warning"]
         self.class.logger.info result["warning"]["title"]
         self.class.logger.info result["warning"]["message"]
       end
       attrs = @attributes.merge(field_name => field_value)
-      load_attrs = attrs.merge(result["value"])
-      load(load_attrs)
+      attrs.merge!(result["value"])
+      load(attrs)
     end
 
     #wrapper for OpenERP exec_workflow Business Process Management engine
