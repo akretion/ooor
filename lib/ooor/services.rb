@@ -9,7 +9,8 @@ module Ooor
       methods.each do |meth|
         self.instance_eval do
           define_method meth do |*args|
-            @connection.get_rpc_client("#{@connection.base_url}/#{service}").call(meth, *args)
+            endpoint = @connection.get_rpc_client("#{@connection.base_url}/#{service.to_s.gsub('ooor_alias_', '')}")
+            endpoint.call(meth.gsub('ooor_alias_', ''), *args)
           end
         end
       end
@@ -22,9 +23,11 @@ module Ooor
 
 
   class CommonService < Service
+    define_service(:common, %w[ir_get ir_set ir_del about ooor_alias_login logout timezone_get get_available_updates get_migration_scripts get_server_environment login_message check_connectivity about get_stats list_http_services version authenticate get_available_updates set_loglevel get_os_time get_sqlcount])
+
     def login(db, username, password)
       if @connection.config[:force_xml_rpc]
-        send(:common, "login", db, username, password)
+        send("ooor_alias_login", db, username, password)
       else
         conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
         response = conn.post do |req|
@@ -38,8 +41,6 @@ module Ooor
         json_response['result']['uid']
       end
     end
-
-    define_service(:common, %w[ir_get ir_set ir_del about logout timezone_get get_available_updates get_migration_scripts get_server_environment login_message check_connectivity about get_stats list_http_services version authenticate get_available_updates set_loglevel get_os_time get_sqlcount])
   end
 
 
@@ -62,15 +63,10 @@ module Ooor
   class ObjectService < Service
     define_service(:object, %w[execute exec_workflow])
     
-    def object_service(service, obj, method, *args)
-      args = inject_session_context(*args)
-      uid = @connection.config[:user_id]
-      db = @connection.config[:database]
-      pass = @connection.config[:password]
-      @connection.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
-      if @connection.config[:force_xml_rpc]
-        send(service, db, uid, pass, obj, method, *args)
-      else
+    def web_layer_service(service, obj, method, *args)
+        uid = @connection.config[:user_id]
+        db = @connection.config[:database]
+        @connection.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
         conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
         r = JSON.parse(conn.post do |req|
             req.headers['Cookie'] = @connection.cookie
@@ -99,6 +95,18 @@ module Ooor
         else
           r["result"]
         end
+    end
+    
+    def object_service(service, obj, method, *args)
+      args = inject_session_context(*args)
+      if @connection.config[:force_xml_rpc]
+        uid = @connection.config[:user_id]
+        db = @connection.config[:database]
+        pass = @connection.config[:password]
+        @connection.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
+        send(service, db, uid, pass, obj, method, *args)
+      else
+        web_layer_service(service, obj, method, *args)
       end
     end
 
