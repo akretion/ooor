@@ -118,11 +118,15 @@ module Ooor
         if args[-1][:context_index] #in some legacy methods, context isn't the last arg
           i = args[-1][:context_index]
           args.delete_at -1
+          c = HashWithIndifferentAccess.new(args[i])
+          args[i] = @connection.connection_session.merge(c)
+        elsif args[-1][:context]
+          c = HashWithIndifferentAccess.new(args[-1][:context])
+          args[-1][:context] = @connection.connection_session.merge(c)
         else
-          i = -1
+          c = HashWithIndifferentAccess.new(args[-1])
+          args[-1] = @connection.connection_session.merge(c)
         end
-        c = HashWithIndifferentAccess.new(args[i])
-        args[i] = @connection.connection_session.merge(c)
       end
       args
     end
