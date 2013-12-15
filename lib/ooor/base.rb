@@ -19,9 +19,9 @@ module Ooor
 
       cattr_accessor :logger, :connection_handler
       attr_accessor  :openerp_id, :info, :access_ids, :name, :description,
-                     :openerp_model, :field_ids, :state, :fields, #class attributes associated to the OpenERP ir.model
-                     :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
-                     :scope_prefix, :connection, :associations, :columns, :columns_hash
+        :openerp_model, :field_ids, :state, :fields, #class attributes associated to the OpenERP ir.model
+        :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
+        :scope_prefix, :connection, :associations, :columns, :columns_hash
 
       # ******************** remote communication *****************************
 
@@ -117,13 +117,13 @@ module Ooor
 
     def save(context={}, reload=true)
       new? ? create(context, reload) : update(context, reload)
-      rescue OpenERPServerError => e
-        if e.faultCode && e.faultCode.index('ValidateError') #TODO raise other kind of error?
-          e.extract_validation_error(errors)
-          return false
-        else
-          raise e
-        end
+    rescue OpenERPServerError => e
+      if e.faultCode && e.faultCode.index('ValidateError') #TODO raise other kind of error?
+        e.extract_validation_error(errors)
+        return false
+      else
+        raise e
+      end
     end
 
     #compatible with the Rails way but also supports OpenERP context
@@ -131,9 +131,9 @@ module Ooor
       self.id = rpc_execute('create', to_openerp_hash, context)
       if @ir_model_data_id
         IrModelData.create(model: self.class.openerp_model,
-                           module: @ir_model_data_id[0],
-                           name: @ir_model_data_id[1],
-                           res_id: self.id)
+          'module' => @ir_model_data_id[0],
+          'name' => @ir_model_data_id[1],
+          'res_id' => self.id)
       end
       reload_from_record!(self.class.find(self.id, context: context)) if reload
       @persisted = true
@@ -186,31 +186,31 @@ module Ooor
 
     private
 
-      def load_with_defaults(attributes, default_get_list)
-        defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
-        attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
-        load(attributes)
-      end
+    def load_with_defaults(attributes, default_get_list)
+      defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
+      attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
+      load(attributes)
+    end
       
-      def load_on_change_result(result, field_name, field_value)
-        if result["warning"]
-          self.class.logger.info result["warning"]["title"]
-          self.class.logger.info result["warning"]["message"]
-        end
-        attrs = @attributes.merge(field_name => field_value)
-        attrs.merge!(result["value"])
-        load(attrs)
+    def load_on_change_result(result, field_name, field_value)
+      if result["warning"]
+        self.class.logger.info result["warning"]["title"]
+        self.class.logger.info result["warning"]["message"]
       end
+      attrs = @attributes.merge(field_name => field_value)
+      attrs.merge!(result["value"])
+      load(attrs)
+    end
 
-      # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
-      def to_ary; nil; end # :nodoc:
+    # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
+    def to_ary; nil; end # :nodoc:
 
-      def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
+    def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
 
-      def reload_fields(context)
-        records = self.class.find(self.id, context: context, fields: @attributes.keys + @associations.keys)
-        reload_from_record!(records)
-      end
+    def reload_fields(context)
+      records = self.class.find(self.id, context: context, fields: @attributes.keys + @associations.keys)
+      reload_from_record!(records)
+    end
 
   end
 end
