@@ -6,6 +6,8 @@
 module Ooor
   module TypeCasting
     extend ActiveSupport::Concern
+    
+    OPERATORS = ["=", "!=", "<=", "<", ">", ">=", "=?", "=like", "=ilike", "like", "not like", "ilike", "not ilike", "in", "not in", "child_of"]
   
     module ClassMethods
       

@@ -82,6 +82,16 @@ describe Ooor do
         products = ProductProduct.find([1,2])
         products.size.should == 2
       end
+      
+      it "should accept hash domain in find" do
+        products = ProductProduct.find(active: true)
+        products.should be_kind_of(Array)
+      end
+      
+      it "should accept array domain in find" do
+        products = ProductProduct.find(['active', '=', true])
+        products.should be_kind_of(Array)
+      end
 
       it "fetches last data created last" do
         last_product_id = ProductProduct.search([], 0, 1, "create_date DESC").first
