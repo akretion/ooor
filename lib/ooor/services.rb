@@ -64,46 +64,32 @@ module Ooor
     define_service(:object, %w[execute exec_workflow])
     
     def web_layer_service(service, obj, method, *args)
-        uid = @connection.config[:user_id]
-        db = @connection.config[:database]
-        @connection.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
-        conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
-        r = JSON.parse(conn.post do |req|
-            req.headers['Cookie'] = @connection.cookie
-            if service == :exec_workflow
-              req.url '/web/dataset/exec_workflow'
-              params = {"jsonrpc"=>"2.0","method"=>"call","params"=>{"model"=>obj, "id"=>args[0], "signal"=>method, "session_id" => @connection.session_id}, "id"=>"r42"}
-            elsif service == :execute
-              req.url '/web/dataset/call_kw'
-              if args.last.is_a?(Hash)
-                context = args.pop
-              else
-                context = {}
-              end
-              params = {"jsonrpc"=>"2.0","method"=>"call","params"=>{"model"=>obj, "method"=> method, "kwargs"=>{}, "args"=>args, "context"=>context, "session_id" => @connection.session_id}, "id"=>"r42"}
-              params["params"]["kwargs"] = {"context"=>context} if args[0].is_a?(Array) && args.size == 1 && args[0].any? {|e| !e.is_a?(Integer)}
-            else
-              req.url "/web/dataset/#{service}"
-              params = {"jsonrpc"=>"2.0","method"=>"call","params"=>args[0].merge({"model"=>obj, "session_id" => @connection.session_id}), "id"=>"r42"}
-            end
-            req.headers['Content-Type'] = 'application/json'
-            req.body = params.to_json
-          end.body)
-        if r["error"] #TODO wrap stack trace properly for debug
-          m = "#{{'faultCode'=>r["error"]['data']['fault_code'], 'faultString'=>r["error"]['message']}}"
-          raise OpenERPServerError.new(m, method, *args)
+      if service == :exec_workflow
+        url = '/web/dataset/exec_workflow'
+        params = {"model"=>obj, "id"=>args[0], "signal"=>method}
+      elsif service == :execute
+        url = '/web/dataset/call_kw'
+        if args.last.is_a?(Hash)
+          context = args.pop
         else
-          r["result"]
+          context = {}
         end
+        params = {"model"=>obj, "method"=> method, "kwargs"=>{}, "args"=>args, "context"=>context}
+        params["kwargs"] = {"context"=>context} if args[0].is_a?(Array) && args.size == 1 && args[0].any? {|e| !e.is_a?(Integer)}
+      else
+        url = "/web/dataset/#{service}"
+        params = args[0].merge({"model"=>obj})
+      end
+      json_rpc_request(url, params, method, *args)
     end
     
     def object_service(service, obj, method, *args)
       args = inject_session_context(*args)
+      uid = @connection.config[:user_id]
+      db = @connection.config[:database]
+      @connection.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
       if @connection.config[:force_xml_rpc]
-        uid = @connection.config[:user_id]
-        db = @connection.config[:database]
         pass = @connection.config[:password]
-        @connection.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
         send(service, db, uid, pass, obj, method, *args)
       else
         web_layer_service(service, obj, method, *args)
@@ -123,6 +109,24 @@ module Ooor
       end
       args
     end
+    
+    def json_rpc_request(url, params, method, *args)
+      params.merge!({"session_id" => @connection.session_id})
+      conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
+      response = JSON.parse(conn.post do |req|
+          req.headers['Cookie'] = @connection.cookie
+          req.url url
+          req.headers['Content-Type'] = 'application/json'
+          req.body = {"jsonrpc"=>"2.0","method"=>"call", "params" => params, "id"=>"r42"}.to_json
+        end.body)
+      if response["error"] #TODO wrap stack trace properly for debug
+        m = "#{{'faultCode'=>response["error"]['data']['fault_code'], 'faultString'=>response["error"]['message']}}"
+        raise OpenERPServerError.new(m, method, *args)
+      else
+        response["result"]
+      end
+    end
+    
   end
 
 
