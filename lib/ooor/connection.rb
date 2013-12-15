@@ -22,7 +22,6 @@ module Ooor
 
     def get_jsonrpc2_client(url)
       Ooor.cache.fetch("jsonrpc2-client-#{url}") do
-p "get_jsonrpc2_client", url
         Faraday.new(:url => url)
       end
     end
