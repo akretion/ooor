@@ -165,7 +165,11 @@ module Ooor
 
     #Generic OpenERP on_change method
     def on_change(on_change_method, field_name, field_value, *args)
-      ids = self.id ? [id] : []
+      if self.id
+        ids = [id]
+      else
+        ids = []
+      end
       # NOTE: OpenERP doesn't accept context systematically in on_change events unfortunately
       result = self.class.object_service(:execute, self.class.openerp_model, on_change_method, ids, *args)
       if result["warning"]
