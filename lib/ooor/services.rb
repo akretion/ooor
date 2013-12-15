@@ -5,6 +5,10 @@
 
 module Ooor
   class Service
+    def initialize(connection)
+      @connection = connection
+    end
+    
     def self.define_service(service, methods)
       methods.each do |meth|
         self.instance_eval do
@@ -15,9 +19,22 @@ module Ooor
         end
       end
     end
-
-    def initialize(connection)
-      @connection = connection
+    
+    def json_rpc_request(url, params, method, *args)
+      params.merge!({"session_id" => @connection.session_id})
+      conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
+      response = JSON.parse(conn.post do |req|
+          req.headers['Cookie'] = @connection.cookie
+          req.url url
+          req.headers['Content-Type'] = 'application/json'
+          req.body = {"jsonrpc"=>"2.0","method"=>"call", "params" => params, "id"=>"r42"}.to_json
+        end.body)
+      if response["error"] #TODO wrap stack trace properly for debug
+        m = "#{{'faultCode'=>response["error"]['data']['fault_code'], 'faultString'=>response["error"]['message']}}"
+        raise OpenERPServerError.new(m, method, *args)
+      else
+        response["result"]
+      end
     end
   end
 
@@ -63,6 +80,19 @@ module Ooor
   class ObjectService < Service
     define_service(:object, %w[execute exec_workflow])
     
+    def object_service(service, obj, method, *args)
+      args = inject_session_context(*args)
+      uid = @connection.config[:user_id]
+      db = @connection.config[:database]
+      @connection.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
+      if @connection.config[:force_xml_rpc]
+        pass = @connection.config[:password]
+        send(service, db, uid, pass, obj, method, *args)
+      else
+        web_layer_service(service, obj, method, *args)
+      end
+    end
+    
     def web_layer_service(service, obj, method, *args)
       if service == :exec_workflow
         url = '/web/dataset/exec_workflow'
@@ -82,19 +112,6 @@ module Ooor
       end
       json_rpc_request(url, params, method, *args)
     end
-    
-    def object_service(service, obj, method, *args)
-      args = inject_session_context(*args)
-      uid = @connection.config[:user_id]
-      db = @connection.config[:database]
-      @connection.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
-      if @connection.config[:force_xml_rpc]
-        pass = @connection.config[:password]
-        send(service, db, uid, pass, obj, method, *args)
-      else
-        web_layer_service(service, obj, method, *args)
-      end
-    end
 
     def inject_session_context(*args)
       if args[-1].is_a? Hash #context
@@ -108,23 +125,6 @@ module Ooor
         args[i] = @connection.connection_session.merge(c)
       end
       args
-    end
-    
-    def json_rpc_request(url, params, method, *args)
-      params.merge!({"session_id" => @connection.session_id})
-      conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
-      response = JSON.parse(conn.post do |req|
-          req.headers['Cookie'] = @connection.cookie
-          req.url url
-          req.headers['Content-Type'] = 'application/json'
-          req.body = {"jsonrpc"=>"2.0","method"=>"call", "params" => params, "id"=>"r42"}.to_json
-        end.body)
-      if response["error"] #TODO wrap stack trace properly for debug
-        m = "#{{'faultCode'=>response["error"]['data']['fault_code'], 'faultString'=>response["error"]['message']}}"
-        raise OpenERPServerError.new(m, method, *args)
-      else
-        response["result"]
-      end
     end
     
   end
