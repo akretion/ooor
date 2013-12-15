@@ -6,10 +6,17 @@ module Ooor
 
     module ClassMethods
       def find(*arguments)
-        if arguments.size == 1 && arguments[0].is_a?(Hash) ||
+        if arguments.size == 1 &&
+            arguments[0].is_a?(Hash) ||
             (arguments[0].is_a?(Array) && !([arguments[0][1]] & Ooor::TypeCasting::OPERATORS).empty?)
           find_single(nil, {domain: arguments[0]})
         else
+          find_dispatch(*arguments)
+        end
+      end
+
+      private
+        def find_dispatch(*arguments)
           scope   = arguments.slice!(0)
           options = arguments.slice!(0) || {}
           case scope
@@ -20,9 +27,7 @@ module Ooor
           else             find_single(scope, options)
           end
         end
-      end
-
-      private
+      
         def find_first_or_last(options, ordering = "ASC")
           options[:order] ||= "id #{ordering}"
           options[:limit] = 1
@@ -72,14 +77,16 @@ module Ooor
             ids = rpc_execute('search', domain, options[:offset] || 0, options[:limit] || false,  options[:order] || false, context.dup)
             records = rpc_execute('read', ids, fields, context.dup)
           else
-            records = object_service(:search_read, @openerp_model, 'search_read', { #TODO unless force xml_rpc
+            domain = to_openerp_domain(options[:domain] || options[:conditions] || [])
+            response = object_service(:search_read, @openerp_model, 'search_read', {
                 fields: fields,
                 offset: options[:offset] || 0,
                 limit: options[:limit] || false,
-                domain: to_openerp_domain(options[:domain] || options[:conditions] || []),
+                domain: domain,
                 sort: options[:order] || false,
                 context: context
-              })["records"]
+              })
+            records = response["records"]
           end
           return true, records
         end
