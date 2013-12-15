@@ -124,13 +124,13 @@ module Ooor
         else
           search_order = @order_values.join(", ")
         end
-
+        
         if @options && @options[:name_search]
-	  name_search = @klass.name_search(@options[:name_search], where_values, 'ilike', @options[:context], @limit_value)
+          name_search = @klass.name_search(@options[:name_search], where_values, 'ilike', @options[:context], @limit_value)
           @records = name_search.map do |tuple|
             r = @klass.new({name: tuple[1]}, [])
             r.id = tuple[0]
-            r #TODO load othe fields optionnally
+            r #TODO load the fields optionally
           end
         else
           if @per_value && @page_value
@@ -140,9 +140,14 @@ module Ooor
             offset = @offset_value
             limit = @limit_value || false
           end
-          ids = @klass.rpc_execute('search', where_values, offset, limit, search_order, @options[:context] || {}, @count_field)
           @loaded = true
-          @records = @klass.find(ids, @options)
+          opts = @options.merge({
+              domain: where_values,
+              offset: offset,
+              limit: limit,
+              order: search_order,
+            })
+          @records = @klass.find(:all, opts)
         end
       end
     end
