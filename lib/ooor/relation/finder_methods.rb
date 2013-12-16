@@ -39,7 +39,11 @@ module Ooor
           context = options[:context] || {}
           ids = rpc_execute('search', to_openerp_domain(domain), options[:offset] || 0,
             options[:limit],  options[:order], context.dup)
-          find_single(ids.first, options)
+          if ids.empty?
+            return nil
+          else
+            find_single(ids.first, options)
+          end
         end
 
         #actually finds many resources specified with scope = ids_array
