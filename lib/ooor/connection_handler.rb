@@ -31,10 +31,8 @@ module Ooor
     def create_new_connection(config)
       config = Ooor.default_config.merge(config) if Ooor.default_config.is_a? Hash
       Connection.new(config).tap do |c|
-        if config[:database] && config[:username] #&& !config[:user_id]
-          c.config[:user_id] = Ooor.cache.fetch("login-id-#{config[:username]}") do
-            c.common.login(config[:database], config[:username], config[:password])
-          end
+        if config[:database] && config[:username]
+          c.config[:user_id] = c.common.login(config[:database], config[:username], config[:password])
         end
       end
     end
