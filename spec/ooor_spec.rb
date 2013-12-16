@@ -82,7 +82,27 @@ describe Ooor do
         products = ProductProduct.find([1,2])
         products.size.should == 2
       end
+
+      it "should fetches data given an implicit array of ids" do
+        products = ProductProduct.find(1,2)
+        products.size.should == 2
+      end
       
+      it "should fetches data even if an id is passed as a string (web usage)" do
+        product = ProductProduct.find("1")
+        product.should be_kind_of(ProductProduct)
+      end
+
+      it "should fetches data even with array containing string" do
+        products = ProductProduct.find(["1", 2])
+        products.size.should == 2
+      end
+
+      it "should fetches data even with an implicit array containing string" do
+        products = ProductProduct.find("1", 2)
+        products.size.should == 2
+      end
+
       it "should accept hash domain in find" do
         products = ProductProduct.find(active: true)
         products.should be_kind_of(Array)
