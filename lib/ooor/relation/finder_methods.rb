@@ -19,6 +19,10 @@ module Ooor
         def find_dispatch(*arguments)
           scope   = arguments.slice!(0)
           options = arguments.slice!(0) || {}
+          if (!scope.is_a?(Array) && !options.is_a?(Hash))
+            scope = [scope] + [options] + arguments
+            options = {}
+          end
           case scope
           when :all   then find_single(nil, options)
           when :first then find_first_or_last(options)
@@ -92,12 +96,16 @@ module Ooor
         end
 
         def item_to_id(item, context)
-          if item.is_a?(String) && item.to_i == 0#triggers ir_model_data absolute reference lookup
-            tab = item.split(".")
-            domain = [['name', '=', tab[-1]]]
-            domain << ['module', '=', tab[-2]] if tab[-2]
-            ir_model_data = const_get('ir.model.data').find(:first, domain: domain, context: context)
-            ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]], 0, false, false, context)[0]
+          if item.is_a?(String)
+            if item.to_i == 0#triggers ir_model_data absolute reference lookup
+              tab = item.split(".")
+              domain = [['name', '=', tab[-1]]]
+              domain << ['module', '=', tab[-2]] if tab[-2]
+              ir_model_data = const_get('ir.model.data').find(:first, domain: domain, context: context)
+              ir_model_data && ir_model_data.res_id && search([['id', '=', ir_model_data.res_id]], 0, false, false, context)[0]
+            else
+              item.to_i
+            end
           else
             item
           end
