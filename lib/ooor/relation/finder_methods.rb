@@ -51,6 +51,7 @@ module Ooor
           context = options[:context] || {}
           reload_fields_definition(false, context)
           fields = options[:fields] || options[:only] || fast_fields(options)
+          fields += options[:include] if options[:include]
           
           if scope
             is_collection, records = read_scope(context, fields, scope)
