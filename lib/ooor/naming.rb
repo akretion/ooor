@@ -18,6 +18,10 @@ module Ooor
         end
       end
 
+      def param_key
+        self.alias.gsub('.', '-') # we don't use model_name because model_name isn't bijective
+      end
+
       #similar to Object#const_get but for OpenERP model key
       def const_get(model_key)
         scope = self.scope_prefix ? Object.const_get(self.scope_prefix) : Object
@@ -33,6 +37,28 @@ module Ooor
       def human_attribute_name(field_name, options={})
         ""
       end
+
+      def param_field
+        connection.config[:param_keys] && connection.config[:param_keys][openerp_model] || :id
+      end
+
+      def find_by_param(param)
+        param = param.to_i unless param.to_i == 0
+        find(:first, domain: {param_field => param})
+      end
+
+      def alias
+        if connection.config[:aliases] && alias_data = connection.config[:aliases][connection.connection_session['lang'] || :en_US]
+          alias_data.select{|key, value| value == openerp_model }.keys[0] || openerp_model
+        else
+          openerp_model
+        end
+      end
+    end
+
+    def to_param
+      field = self.class.param_field
+      send(field) && send(field).to_s
     end
 
   end
