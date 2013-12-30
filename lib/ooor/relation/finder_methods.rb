@@ -35,15 +35,7 @@ module Ooor
         def find_first_or_last(options, ordering = "ASC")
           options[:order] ||= "id #{ordering}"
           options[:limit] = 1
-          domain = options[:domain] || options[:conditions] || []
-          context = options[:context] || {}
-          ids = rpc_execute('search', to_openerp_domain(domain), options[:offset] || 0,
-            options[:limit],  options[:order], context.dup)
-          if ids.empty?
-            return nil
-          else
-            find_single(ids.first, options)
-          end
+          find_single(nil, options)[0]
         end
 
         #actually finds many resources specified with scope = ids_array
