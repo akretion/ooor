@@ -54,9 +54,15 @@ module Ooor
       load_models(@config[:models], options[:reload])
     end
 
-    def const_get(model_key);
-      if @config[:aliases] && alias_data = @config[:aliases][connection_session['lang'] || :en_US]
-        openerp_model = alias_data[model_key] || model_key
+    def const_get(model_key, lang=nil);
+      if @config[:aliases]
+        if lang && alias_data = @config[:aliases][lang]
+          openerp_model = alias_data[model_key] || model_key
+        elsif alias_data = @config[:aliases][connection_session['lang'] || :en_US]
+          openerp_model = alias_data[model_key] || model_key
+        else
+          openerp_model = model_key 
+        end
       else
         openerp_model = model_key
       end
