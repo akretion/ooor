@@ -105,7 +105,9 @@ module Ooor
           context = {}
         end
         params = {"model"=>obj, "method"=> method, "kwargs"=>{}, "args"=>args, "context"=>context}
-        params["kwargs"] = {"context"=>context} if args[0].is_a?(Array) && args.size == 1 && args[0].any? {|e| !e.is_a?(Integer)}
+        if ['search', 'read'].index(method) || args[0].is_a?(Array) && args.size == 1 && args[0].any? {|e| !e.is_a?(Integer)} #TODO make it more robust
+          params["kwargs"] = {"context"=>context}
+        end
       else
         url = "/web/dataset/#{service}"
         params = args[0].merge({"model"=>obj})
