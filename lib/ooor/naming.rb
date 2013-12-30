@@ -18,8 +18,8 @@ module Ooor
         end
       end
 
-      def param_key
-        self.alias.gsub('.', '-') # we don't use model_name because model_name isn't bijective
+      def param_key(context={})
+        self.alias(context).gsub('.', '-') # we don't use model_name because model_name isn't bijective
       end
 
       #similar to Object#const_get but for OpenERP model key
@@ -47,9 +47,14 @@ module Ooor
         find(:first, domain: {param_field => param})
       end
 
-      def alias
-        if connection.config[:aliases] && alias_data = connection.config[:aliases][connection.connection_session['lang'] || :en_US]
-          alias_data.select{|key, value| value == openerp_model }.keys[0] || openerp_model
+      def alias(context={})
+        if connection.config[:aliases]
+          lang = context['lang'] || connection.config[:aliases][connection.connection_session['lang'] || 'en_US']
+          if alias_data = connection.config[:aliases][lang]
+            alias_data.select{|key, value| value == openerp_model }.keys[0] || openerp_model
+          else
+            openerp_model
+          end
         else
           openerp_model
         end
