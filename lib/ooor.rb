@@ -18,6 +18,8 @@ module Ooor
   autoload :Associations
   autoload :FieldMethods
   autoload :Report
+#  autoload :Locale #TODO coming next
+  autoload :Block
   autoload :MiniActiveResource
   autoload :ConnectionHandler
   autoload :UnknownAttributeOrAssociationError, 'ooor/errors'
