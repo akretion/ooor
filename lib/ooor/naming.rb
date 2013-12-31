@@ -42,9 +42,9 @@ module Ooor
         connection.config[:param_keys] && connection.config[:param_keys][openerp_model] || :id
       end
 
-      def find_by_param(param)
+      def find_by_permalink(param, context={})
         param = param.to_i unless param.to_i == 0
-        find(:first, domain: {param_field => param})
+        find(:first, domain: {param_field => param}, context:context)
       end
 
       def alias(context={})
