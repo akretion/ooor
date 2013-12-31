@@ -69,6 +69,10 @@ module Ooor
       define_openerp_model(model: openerp_model, scope_prefix: @config[:scope_prefix])
     end
 
+    def[](model_key)
+      const_get(model_key)
+    end
+
     def connection_session
       @connection_session ||= {}.merge!(@config[:connection_session] || {})
     end
