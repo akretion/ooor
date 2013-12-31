@@ -21,7 +21,7 @@ module Ooor
     end
     
     def json_rpc_request(url, params, method, *args)
-      params.merge!({"session_id" => @connection.session_id})
+      params.merge!({"session_id" => @connection.session_id})  # FIXME #TODO required on OpenERP 7.0 (SessionExpiredException: Session expired else), forbiden in 8.0 
       conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
       response = JSON.parse(conn.post do |req|
           req.headers['Cookie'] = @connection.cookie
@@ -30,7 +30,7 @@ module Ooor
           req.body = {"jsonrpc"=>"2.0","method"=>"call", "params" => params, "id"=>"r42"}.to_json
         end.body)
       if response["error"] #TODO wrap stack trace properly for debug
-        m = "#{{'faultCode'=>response["error"]['data']['fault_code'], 'faultString'=>response["error"]['message']}}"
+        m = "#{{'faultCode'=>response["error"]['data']['debug'], 'faultString'=>response["error"]['message']}}"
         raise OpenERPServerError.new(m, method, *args)
       else
         response["result"]
