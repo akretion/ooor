@@ -118,7 +118,6 @@ module Ooor
     def save(context={}, reload=true)
       new? ? create(context, reload) : update(context, reload)
     rescue ValidationError => e
- p "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR", e
       e.extract_validation_error!(errors)
       return false
     end

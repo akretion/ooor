@@ -30,7 +30,8 @@ module Ooor
           req.body = {"jsonrpc"=>"2.0","method"=>"call", "params" => params, "id"=>"r42"}.to_json
         end.body)
       if response["error"]
-        raise OpenERPServerError.build(response["error"]['data']['fault_code'] || response["error"]['data']['debug'], response["error"]['message'], method, *args)
+        faultCode = response["error"]['data']['fault_code'] || response["error"]['data']['debug']
+        raise OpenERPServerError.build(faultCode, response["error"]['message'], method, *args)
       else
         response["result"]
       end
