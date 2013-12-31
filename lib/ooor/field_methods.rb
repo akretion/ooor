@@ -106,8 +106,9 @@ module Ooor
         super
       end
 
-    rescue RuntimeError => e
-      raise UnknownAttributeOrAssociationError.new(e, self.class)
+    rescue UnknownAttributeOrAssociationError => e
+      e.klass = self.class
+      raise e
     end
 
     private

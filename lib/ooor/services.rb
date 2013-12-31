@@ -29,9 +29,8 @@ module Ooor
           req.headers['Content-Type'] = 'application/json'
           req.body = {"jsonrpc"=>"2.0","method"=>"call", "params" => params, "id"=>"r42"}.to_json
         end.body)
-      if response["error"] #TODO wrap stack trace properly for debug
-        m = "#{{'faultCode'=>response["error"]['data']['debug'], 'faultString'=>response["error"]['message']}}"
-        raise OpenERPServerError.new(m, method, *args)
+      if response["error"]
+        raise OpenERPServerError.build(response["error"]['data']['fault_code'] || response["error"]['data']['debug'], response["error"]['message'], method, *args)
       else
         response["result"]
       end

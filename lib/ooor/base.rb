@@ -117,13 +117,10 @@ module Ooor
 
     def save(context={}, reload=true)
       new? ? create(context, reload) : update(context, reload)
-    rescue OpenERPServerError => e
-      if e.faultCode && e.faultCode.index('ValidateError') #TODO raise other kind of error?
-        e.extract_validation_error(errors)
-        return false
-      else
-        raise e
-      end
+    rescue ValidationError => e
+ p "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR", e
+      e.extract_validation_error!(errors)
+      return false
     end
 
     #compatible with the Rails way but also supports OpenERP context
