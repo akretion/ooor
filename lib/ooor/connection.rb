@@ -13,7 +13,7 @@ module Ooor
   autoload :UnAuthorizedError, 'ooor/errors'
 
   class Connection
-    attr_accessor :logger, :config, :models, :connection_session, :ir_model_class, :meta_session, :cookie, :session_id
+    attr_accessor :logger, :config, :models, :connection_session, :ir_model_class, :meta_session, :cookie, :session_id, :sid
 
     def common(); @common_service ||= CommonService.new(self); end
     def db(); @db_service ||= DbService.new(self); end
