@@ -16,7 +16,6 @@ module Ooor
           puts "Could not load Rack::I18nLocaleSwitcher, if your application is internationalized, make sure to include rack-i18n_locale_switcher in your Gemfile"
         end
       end
-#      app.middleware.use '::Ooor::Rack' #TODO put app.insert_after ActionDispatch::ParamsParser, '::Ooor::Rack' ?
       app.middleware.insert_after ActionDispatch::ParamsParser, '::Ooor::Rack'
     end
 
