@@ -21,7 +21,9 @@ module Ooor
     end
     
     def json_rpc_request(url, params, method, *args)
-      params.merge!({"session_id" => @connection.session_id})  # FIXME #TODO required on OpenERP 7.0 (SessionExpiredException: Session expired else), forbiden in 8.0 
+      if @connection.sid # required on v7 but forbidden in v8
+        params.merge!({"session_id" => @connection.session_id})
+      end
       conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
       response = JSON.parse(conn.post do |req|
           req.headers['Cookie'] = @connection.cookie
@@ -45,7 +47,7 @@ module Ooor
     def login(db, username, password)
       if @connection.config[:force_xml_rpc]
         send("ooor_alias_login", db, username, password)
-      else
+      else #TODO fallback to xml_rpc for 6.1 in case jsonrpc fails
         conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
         response = conn.post do |req|
           req.url '/web/session/authenticate' 
@@ -53,6 +55,10 @@ module Ooor
           req.body = {method: 'call', params: { db: db, login: username, password: password}}.to_json
         end
         @connection.cookie = response.headers["set-cookie"]
+        sid_part1 = @connection.cookie.split("sid=")[1]
+        if sid_part1
+          @connection.sid = @connection.cookie.split("sid=")[1].split(";")[0] # NOTE side is required on v7 but not on v8, this enables to sniff if we are on v7
+        end
         json_response = JSON.parse(response.body)
         @connection.session_id = json_response['result']['session_id']
         json_response['result']['uid']
