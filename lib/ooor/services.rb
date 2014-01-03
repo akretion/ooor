@@ -13,29 +13,10 @@ module Ooor
       methods.each do |meth|
         self.instance_eval do
           define_method meth do |*args|
-            endpoint = @connection.get_rpc_client("#{@connection.base_url}/#{service.to_s.gsub('ooor_alias_', '')}")
+            endpoint = @connection.get_client(:xml, "#{@connection.base_url}/#{service.to_s.gsub('ooor_alias_', '')}") #TODO make that transport agnostic
             endpoint.call(meth.gsub('ooor_alias_', ''), *args)
           end
         end
-      end
-    end
-    
-    def json_rpc_request(url, params, method, *args)
-      if @connection.sid # required on v7 but forbidden in v8
-        params.merge!({"session_id" => @connection.session_id})
-      end
-      conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
-      response = JSON.parse(conn.post do |req|
-          req.headers['Cookie'] = @connection.cookie
-          req.url url
-          req.headers['Content-Type'] = 'application/json'
-          req.body = {"jsonrpc"=>"2.0","method"=>"call", "params" => params, "id"=>"r42"}.to_json
-        end.body)
-      if response["error"]
-        faultCode = response["error"]['data']['fault_code'] || response["error"]['data']['debug']
-        raise OpenERPServerError.build(faultCode, response["error"]['message'], method, *args)
-      else
-        response["result"]
       end
     end
   end
@@ -47,8 +28,8 @@ module Ooor
     def login(db, username, password)
       if @connection.config[:force_xml_rpc]
         send("ooor_alias_login", db, username, password)
-      else #TODO fallback to xml_rpc for 6.1 in case jsonrpc fails
-        conn = @connection.get_jsonrpc2_client("#{@connection.base_jsonrpc2_url}")
+      else
+        conn = @connection.get_client(:json, "#{@connection.base_jsonrpc2_url}")
         response = conn.post do |req|
           req.url '/web/session/authenticate' 
           req.headers['Content-Type'] = 'application/json'
@@ -72,7 +53,7 @@ module Ooor
 
     def create(password=@connection.config[:db_password], db_name='ooor_test', demo=true, lang='en_US', user_password=@connection.config[:password] || 'admin')
       @connection.logger.info "creating database #{db_name} this may take a while..."
-      process_id = @connection.get_rpc_client(@connection.base_url + "/db").call("create", password, db_name, demo, lang, user_password)
+      process_id = @connection.get_client(:xml, @connection.base_url + "/db").call("create", password, db_name, demo, lang, user_password)
       sleep(2)
       while get_progress(password, process_id)[0] != 1
         @connection.logger.info "..."
@@ -91,34 +72,19 @@ module Ooor
       uid = @connection.config[:user_id]
       db = @connection.config[:database]
       @connection.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
+      begin
       if @connection.config[:force_xml_rpc]
         pass = @connection.config[:password]
         send(service, db, uid, pass, obj, method, *args)
       else
-        web_layer_service(service, obj, method, *args)
+        json_conn = @connection.get_client(:json, "#{@connection.base_jsonrpc2_url}")
+        session_info = {cookie: @connection.cookie, session_id: @connection.session_id, sid: @connection.sid}
+        json_conn.oe_service(session_info, service, obj, method, *args)
       end
-    end
-    
-    def web_layer_service(service, obj, method, *args)
-      if service == :exec_workflow
-        url = '/web/dataset/exec_workflow'
-        params = {"model"=>obj, "id"=>args[0], "signal"=>method}
-      elsif service == :execute
-        url = '/web/dataset/call_kw'
-        if args.last.is_a?(Hash)
-          context = args.pop
-        else
-          context = {}
-        end
-        params = {"model"=>obj, "method"=> method, "kwargs"=>{}, "args"=>args, "context"=>context}
-        if ['search', 'read'].index(method) || args[0].is_a?(Array) && args.size == 1 && args[0].any? {|e| !e.is_a?(Integer)} #TODO make it more robust
-          params["kwargs"] = {"context"=>context}
-        end
-      else
-        url = "/web/dataset/#{service}"
-        params = args[0].merge({"model"=>obj})
+      rescue InvalidSessionError
+        @connection.config[:force_xml_rpc] = true #TODO set v6 version too
+        retry
       end
-      json_rpc_request(url, params, method, *args)
     end
 
     def inject_session_context(*args)
@@ -143,7 +109,7 @@ module Ooor
 
 
   class ReportService < Service
-    define_service(:report, %w[report report_get render_report])
+    define_service(:report, %w[report report_get render_report]) #TODO make use json rpc transport too
   end
 
 end

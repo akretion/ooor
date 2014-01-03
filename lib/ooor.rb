@@ -19,6 +19,7 @@ module Ooor
   autoload :FieldMethods
   autoload :Report
   autoload :Locale
+  autoload :Transport
   autoload :Block
   autoload :MiniActiveResource
   autoload :ConnectionHandler
