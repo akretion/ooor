@@ -25,6 +25,8 @@ module Ooor
         return ValueError.new(method, faultCode, faultString, *args)
       elsif faultCode =~ /ValidateError/
         return ValidationError.new(method, faultCode, faultString, *args)
+      elsif faultCode =~ /AuthenticationError: Credentials not provided/
+        return InvalidSessionError.new(method, faultCode, faultString, *args)
       else
         return new(method, faultCode, faultString, *args)
       end
@@ -70,20 +72,20 @@ module Ooor
   end
 
 
-  class UnknownOpenERPServerError < OpenERPServerError
-  end
+  class UnknownOpenERPServerError < OpenERPServerError; end
 
 
-  class UnAuthorizedError < OpenERPServerError
-  end
+  class UnAuthorizedError < OpenERPServerError; end
   
   
-  class TypeError < OpenERPServerError
-  end
+  class TypeError < OpenERPServerError; end
   
   
-  class ValueError < OpenERPServerError
-  end
+  class ValueError < OpenERPServerError; end
+
+
+  class InvalidSessionError < OpenERPServerError; end
+
 
   class ValidationError < OpenERPServerError
     def extract_validation_error!(errors)

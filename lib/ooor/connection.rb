@@ -6,39 +6,18 @@
 require 'active_support/core_ext/hash/indifferent_access'
 require 'logger'
 require 'ooor/services'
-require 'faraday'
 
 module Ooor
-  autoload :XmlRpcClient
   autoload :UnAuthorizedError, 'ooor/errors'
 
   class Connection
-    attr_accessor :logger, :config, :models, :connection_session, :ir_model_class, :meta_session, :cookie, :session_id, :sid
+    include Transport
+    attr_accessor :logger, :config, :models, :connection_session, :ir_model_class, :cookie, :session_id, :sid
 
     def common(); @common_service ||= CommonService.new(self); end
     def db(); @db_service ||= DbService.new(self); end
     def object(); @object_service ||= ObjectService.new(self); end
     def report(); @report_service ||= ReportService.new(self); end
-
-    def get_jsonrpc2_client(url)
-      Ooor.cache.fetch("jsonrpc2-client-#{url}") do
-        Faraday.new(:url => url)
-      end
-    end
-
-    def get_rpc_client(url)
-      Ooor.cache.fetch("rpc-client-#{url}") do
-        Ooor::XmlRpcClient.new2(self, url, nil, @config[:rpc_timeout] || 900)
-      end
-    end
-
-    def base_url
-      @base_url ||= @config[:url] = "#{@config[:url].gsub(/\/$/,'').chomp('/xmlrpc')}/xmlrpc"
-    end
-
-    def base_jsonrpc2_url
-      @base_jsonrpc2_url ||= @config[:url].gsub(/\/$/,'').chomp('/xmlrpc')
-    end
 
     def initialize(config, env=false)
       @config = _config(config)
