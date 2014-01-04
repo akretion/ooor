@@ -11,7 +11,7 @@ module Ooor
         uid = @connection.config[:user_id]
         pass = @connection.config[:password]
         db = @connection.config[:database]
-        params = {model: @openerp_model, id: ids[0], report_type: report_type}
+        params = {model: @t.openerp_model, id: ids[0], report_type: report_type}
         connection.report.report(db, uid, pass, report_name, ids, params, context)
       end
 
@@ -23,7 +23,7 @@ module Ooor
       end
 
       def get_report_data(report_name, ids, report_type='pdf', context={})
-        report_id = self.report(report_name, ids, report_type, context)
+        report_id = report(report_name, ids, report_type, context)
         if report_id
           state = false
           attempt = 0

@@ -35,7 +35,6 @@ module Ooor
           req.headers['Content-Type'] = 'application/json'
           req.body = {method: 'call', params: { db: db, login: username, password: password}}.to_json
         end
-p "RRRRRRRRRR", response
         @session.session[:cookie] = response.headers["set-cookie"]
         sid_part1 = @session.session[:cookie].split("sid=")[1]
         if sid_part1

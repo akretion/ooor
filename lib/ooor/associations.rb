@@ -21,21 +21,21 @@ module Ooor
     # fakes associations like much like ActiveRecord according to the cached OpenERP data model
     def relationnal_result(method_name, *arguments)
       self.class.reload_fields_definition(false, object_session)
-      if self.class.many2one_associations.has_key?(method_name)
+      if self.class.t.many2one_associations.has_key?(method_name)
         if @associations[method_name]
-          rel = self.class.many2one_associations[method_name]['relation']
+          rel = self.class.t.many2one_associations[method_name]['relation']
           id = @associations[method_name].is_a?(Integer) ? @associations[method_name] : @associations[method_name][0]
           load_association(rel, id, nil, *arguments)
         else
           false
         end
-      elsif self.class.one2many_associations.has_key?(method_name)
-        rel = self.class.one2many_associations[method_name]['relation']
+      elsif self.class.t.one2many_associations.has_key?(method_name)
+        rel = self.class.t.one2many_associations[method_name]['relation']
         load_association(rel, @associations[method_name], [], *arguments)
-      elsif self.class.many2many_associations.has_key?(method_name)
-        rel = self.class.many2many_associations[method_name]['relation']
+      elsif self.class.t.many2many_associations.has_key?(method_name)
+        rel = self.class.t.many2many_associations[method_name]['relation']
         load_association(rel, @associations[method_name], [], *arguments)
-      elsif self.class.polymorphic_m2o_associations.has_key?(method_name)
+      elsif self.class.t.polymorphic_m2o_associations.has_key?(method_name)
         values = @associations[method_name].split(',')
         load_association(values[0], values[1].to_i, nil, *arguments)
       else

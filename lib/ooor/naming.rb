@@ -10,7 +10,7 @@ module Ooor
           namespace = self.parents.detect do |n|
             n.respond_to?(:use_relative_model_naming?) && n.use_relative_model_naming?
           end
-          r = ActiveModel::Name.new(self, namespace, description)
+          r = ActiveModel::Name.new(self, namespace, self.t.description)
           def r.param_key
             @klass.openerp_model.gsub('.', '_')
           end
@@ -24,12 +24,12 @@ module Ooor
 
       #similar to Object#const_get but for OpenERP model key
       def const_get(model_key)
-        scope = self.scope_prefix ? Object.const_get(self.scope_prefix) : Object
+        scope = self.t.scope_prefix ? Object.const_get(self.t.scope_prefix) : Object
         klass_name = connection.class_name_from_model_key(model_key)
         if scope.const_defined?(klass_name) && Ooor.session_handler.connection_spec(scope.const_get(klass_name).connection.config) == Ooor.session_handler.connection_spec(connection.config)
           scope.const_get(klass_name)
         else
-          connection.define_openerp_model(model: model_key, scope_prefix: self.scope_prefix)
+          connection.define_openerp_model(model: model_key, scope_prefix: self.t.scope_prefix)
         end
       end
 

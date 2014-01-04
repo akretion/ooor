@@ -15,8 +15,7 @@ module Ooor
     def retrieve_session(config, session={})
       spec = session_spec(config, session[:session_id])
       if config[:reload] || !s = sessions[spec]
-          config[:realod] = false
-          create_new_session(config, spec, session)
+        create_new_session(config, spec, session)
       else
         s.tap {|s| s.session.merge!(session)}
       end

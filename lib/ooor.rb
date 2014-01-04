@@ -23,7 +23,7 @@ module Ooor
   autoload :Block
   autoload :MiniActiveResource
   autoload :SessionHandler
-  autoload :ModelRegistry
+  autoload :ModelRegistryHandler
   autoload :UnknownAttributeOrAssociationError, 'ooor/errors'
   autoload :OpenERPServerError, 'ooor/errors'
   autoload :HashWithIndifferentAccess, 'active_support/core_ext/hash/indifferent_access'
@@ -63,7 +63,7 @@ module Ooor
       end
 
       def session_handler() @session_handler ||= SessionHandler.new; end
-      def model_registry() @model_registry ||= ModelRegistry.new; end
+      def model_registry_handler() @model_registry_handler ||= ModelRegistryHandler.new; end
 
     end
   end

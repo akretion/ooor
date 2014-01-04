@@ -1,5 +1,5 @@
 module Ooor
-  class ModelRegistry
+  class ModelRegistryHandler
 
     def model_registery_spec(config)
       HashWithIndifferentAccess.new(config.slice(:url, :database, :scope_prefix, :helper_paths))

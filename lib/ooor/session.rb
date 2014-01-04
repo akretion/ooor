@@ -51,18 +51,15 @@ module Ooor
       const_get(model_key)
     end
 
-    def models
-      Ooor.model_registry.models(config)
-    end
-
     def load_models(model_names=config[:models], reload=config[:reload])
       helper_paths.each do |dir|
         Dir[dir].each { |file| require file }
       end
-      @ir_model_class = define_openerp_model(model: 'ir.model', scope_prefix: config[:scope_prefix]) #TODO share that in the model pool
       domain = model_names ? [['model', 'in', model_names]] : []
-      model_ids =  @ir_model_class.search(domain) - [1]
-      @ir_model_class.read(model_ids, ['model', 'name']).each do |opts|
+      search_domain = domain - [1]
+      model_ids = object.object_service(:execute, "ir.model", :search, search_domain, 0, false, false, {}, false, {:context_index=>4})
+      models_records = object.object_service(:execute, "ir.model", :read, model_ids, ['model', 'name']) #TODO use search_read
+      models_records.each do |opts|
         options = HashWithIndifferentAccess.new(opts.merge(scope_prefix: config[:scope_prefix], reload: reload))
         define_openerp_model(options)
       end
@@ -76,18 +73,28 @@ module Ooor
         logger.debug "registering #{model_class_name}"
         klass = Class.new(Base)
         klass.name = model_class_name
-#        klass.site = options[:url] || base_url
-        klass.openerp_model = options[:model]
-        klass.openerp_id = options[:id]
-        klass.description = options[:name]
-        klass.state = options[:state]
-        klass.many2one_associations = {}
-        klass.one2many_associations = {}
-        klass.many2many_associations = {}
-        klass.polymorphic_m2o_associations = {}
-        klass.associations_keys = []
+
+        templates = Ooor.model_registry_handler.models(config)
+        if template = templates[options[:model]] #using a template avoids to reload the fields
+          klass.t = template
+        else
+          template = Ooor::ModelTemplate.new
+          templates[options[:model]] = template
+          klass.t = template
+
+          klass.t.openerp_model = options[:model]
+          klass.t.openerp_id = options[:id]
+          klass.t.description = options[:name]
+          klass.t.state = options[:state]
+          klass.t.many2one_associations = {}
+          klass.t.one2many_associations = {}
+          klass.t.many2many_associations = {}
+          klass.t.polymorphic_m2o_associations = {}
+          klass.t.associations_keys = []
+          klass.t.scope_prefix = scope_prefix
+        end
         klass.connection = self
-        klass.scope_prefix = scope_prefix
+
         if options[:reload] || !scope.const_defined?(model_class_name)
           scope.const_set(model_class_name, klass)
         end
@@ -99,9 +106,7 @@ module Ooor
       models[options[:model]]
     end
 
-
-
-#    def models; @models ||= {}; end
+    def models; @models ||= {}; end
 
   end
 

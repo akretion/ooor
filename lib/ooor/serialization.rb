@@ -26,9 +26,9 @@ module Ooor
     end
 
     def serialize_many2one(included_associations)
-      self.class.many2one_associations.keys.each do |k|
+      self.class.t.many2one_associations.keys.each do |k|
         if loaded_associations[k].is_a? Base
-          included_associations[k] = loaded_associations[k].as_json[loaded_associations[k].class.openerp_model.gsub('.', '_')]
+          included_associations[k] = loaded_associations[k].as_json[loaded_associations[k].class.t.openerp_model.gsub('.', '_')]
         elsif associations[k].is_a? Array
           included_associations[k] = {"id" => associations[k][0], "name" => associations[k][1]}
         end
@@ -36,9 +36,9 @@ module Ooor
     end
 
     def serialize_x_to_many(included_associations)
-      (self.class.one2many_associations.keys + self.class.many2many_associations.keys).each do |k|
+      (self.class.t.one2many_associations.keys + self.class.t.many2many_associations.keys).each do |k|
         if loaded_associations[k].is_a? Array
-          included_associations[k] = loaded_associations[k].map {|item| item.as_json[item.class.openerp_model.gsub('.', '_')]}
+          included_associations[k] = loaded_associations[k].map {|item| item.as_json[item.class.t.openerp_model.gsub('.', '_')]}
         else
           included_associations[k] = associations[k].map {|id| {"id" => id}} if associations[k]
         end
