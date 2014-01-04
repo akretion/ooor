@@ -10,11 +10,11 @@ module Ooor
           namespace = self.parents.detect do |n|
             n.respond_to?(:use_relative_model_naming?) && n.use_relative_model_naming?
           end
-          r = ActiveModel::Name.new(self, namespace, self.t.description)
-          def r.param_key
-            @klass.openerp_model.gsub('.', '_')
+          ActiveModel::Name.new(self, namespace, self.t.description).tap do |r|
+            def r.param_key
+              @klass.openerp_model.gsub('.', '_')
+            end
           end
-          r
         end
       end
 
