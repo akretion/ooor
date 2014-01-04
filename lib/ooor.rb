@@ -39,7 +39,7 @@ module Ooor
 
       def new(config={})
         Ooor.default_config = config
-        connection = Ooor::Base.connection_handler.retrieve_connection(config)
+        connection = Ooor::Base.connection_handler.retrieve_session(config)
         if config[:database] && config[:password]
           connection.global_login(config)
         end

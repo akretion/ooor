@@ -1,7 +1,19 @@
+require 'delegate'
 require 'active_support/core_ext/hash/indifferent_access'
 require 'ooor/connection'
 
 module Ooor
+
+  class Session < SimpleDelegator
+    attr_accessor :session
+
+    def initialize(connection, session)
+      super(connection)
+      @session = session
+    end
+  end
+
+
   class ConnectionHandler
     def connection_spec(config)
       HashWithIndifferentAccess.new(config.slice(:url, :username, :password, :database, :scope_prefix))
@@ -11,38 +23,33 @@ module Ooor
       connection_spec(config).merge(session_id: session_id)
     end
 
-    # meant to be overriden for Omniauth, Devise...
-    def user_connection(email=nil)
-      retrieve_session(Ooor.default_config)
-    end
-
     def retrieve_session(config, session={})
       spec = session_spec(config, session[:session_id])
-      if s = sessions[spec]
-        if config[:reload]
-          create_new_session(config, spec) #TODO session info
-        else
-          s.tap {|c| config.merge!(config)} #TODO adapt session info
-        end
+      if config[:reload] || !s = sessions[spec]
+          config[:realod] = false
+          create_new_session(config, spec, session)
       else
-        create_new_session(config, spec).tap {|c| @connections[spec] = c} #TODO session_info
+        s.tap do |s|
+          s.config.merge!(config)
+          s.session.merge!(session)
+        end
       end
     end
 
-    def create_new_session(config, spec)
-      conn = create_new_connection(config, connection_spec(spec)) #TODO decorator
+    def create_new_session(config, spec, session)
+      Ooor::Session.new(create_new_connection(config, connection_spec(spec)), session).tap do |s|
+        s.session = session
+        sessions[spec] = s
+      end
     end
 
-    def retrieve_connection(config, session={}) #TODO cheap impl of connection pool
+    def retrieve_connection(config, session={})
       spec = connection_spec(config, spec)
-      if c = connections[spec]
-        if config[:reload]
-          create_new_connection(config, spec)
-        else
-          c.tap {|c| config.merge!(config, spec)}
-        end
+      if config[:reload] || !c = connections[spec]
+        config[:realod] = false
+        create_new_connection(config, spec)
       else
-        create_new_connection(config)
+        c.tap {|c| c.config.merge!(config)}
       end
     end
 

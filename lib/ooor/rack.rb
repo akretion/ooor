@@ -56,7 +56,7 @@ module Ooor
         lang = connection.connection_session['lang'] || 'en_US'
       end
       ooor_context = {'lang' => lang} #TODO also deal with timezone
-      connection = Ooor::Base.connection_handler.retrieve_connection(Ooor.default_config)
+      connection = Ooor::Base.connection_handler.retrieve_session(Ooor.default_config)
       env['ooor'] = {'ooor_context' => ooor_context, 'public_ooor' => connection} #TODO ooor_model, see OOOREST
     end
 
