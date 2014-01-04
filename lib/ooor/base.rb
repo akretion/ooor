@@ -13,7 +13,7 @@ module Ooor
     attr_accessor  :openerp_id, :info, :access_ids, :description,
       :openerp_model, :field_ids, :state, :fields, #class attributes associated to the OpenERP ir.model
       :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
-      :scope_prefix, :associations, :columns, :columns_hash
+      :associations, :columns, :columns_hash
   end
 
 
@@ -26,7 +26,7 @@ module Ooor
     class << self
 
       cattr_accessor :logger
-      attr_accessor  :name, :connection, :t #template
+      attr_accessor  :name, :connection, :t, :scope_prefix #template
 #      delegate *(template_properties + (template_properties.map {|p| "#{p}=".to_sym})), to: :model_template #unfortunately that fails on assignations...
 
       # ******************** remote communication *****************************

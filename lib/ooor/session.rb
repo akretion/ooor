@@ -65,6 +65,26 @@ module Ooor
       end
     end
 
+    def set_model_template!(klass, options)
+      templates = Ooor.model_registry_handler.models(config)
+      if template = templates[options[:model]] #using a template avoids to reload the fields
+        klass.t = template
+      else
+        template = Ooor::ModelTemplate.new
+        template.openerp_model = options[:model]
+        template.openerp_id = options[:id]
+        template.description = options[:name]
+        template.state = options[:state]
+        template.many2one_associations = {}
+        template.one2many_associations = {}
+        template.many2many_associations = {}
+        template.polymorphic_m2o_associations = {}
+        template.associations_keys = []
+        klass.t = template
+        templates[options[:model]] = template
+        end
+    end
+
     def define_openerp_model(options)
       scope_prefix = options[:scope_prefix]
       scope = scope_prefix ? Object.const_get(scope_prefix) : Object
@@ -72,27 +92,9 @@ module Ooor
       if !models[options[:model]] || options[:reload] || !scope.const_defined?(model_class_name)
         logger.debug "registering #{model_class_name}"
         klass = Class.new(Base)
+        set_model_template!(klass, options)
         klass.name = model_class_name
-
-        templates = Ooor.model_registry_handler.models(config)
-        if template = templates[options[:model]] #using a template avoids to reload the fields
-          klass.t = template
-        else
-          template = Ooor::ModelTemplate.new
-          templates[options[:model]] = template
-          klass.t = template
-
-          klass.t.openerp_model = options[:model]
-          klass.t.openerp_id = options[:id]
-          klass.t.description = options[:name]
-          klass.t.state = options[:state]
-          klass.t.many2one_associations = {}
-          klass.t.one2many_associations = {}
-          klass.t.many2many_associations = {}
-          klass.t.polymorphic_m2o_associations = {}
-          klass.t.associations_keys = []
-          klass.t.scope_prefix = scope_prefix
-        end
+        klass.scope_prefix = scope_prefix
         klass.connection = self
 
         if options[:reload] || !scope.const_defined?(model_class_name)
