@@ -12,20 +12,17 @@ module Ooor
       retrieve_connection(Ooor.default_config)
     end
 
-    def retrieve_connection(config) #TODO cheap impl of connection pool
-      connections.each do |c| #TODO limit pool size, create a queue etc...
-        if connection_spec(c.config) == connection_spec(config)
-          if config[:reload]
-            c = create_new_connection(config)
-          else
-            c.config.merge(config)
-          end
-          return c
+    def retrieve_connection(config, session={}) #TODO cheap impl of connection pool
+      spec = connection_spec(config)
+      if c = connections[spec]
+        if config[:reload]
+          create_new_connection(config)
+        else
+          c.tap {|c| config.merge!(config)}
         end
-      end #TODO may be use something like ActiveRecord::Base.connection_id ||= Thread.current.object_id
-      c = create_new_connection(config)
-      @connections << c
-      c
+      else
+        create_new_connection(config).tap {|c| @connections[spec] = c}
+      end
     end
 
     def create_new_connection(config)
@@ -37,6 +34,6 @@ module Ooor
       end
     end
 
-    def connections; @connections ||= []; end
+    def connections; @connections ||= {}; end
   end
 end
