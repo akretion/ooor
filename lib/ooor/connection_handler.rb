@@ -7,7 +7,7 @@ module Ooor
   class Session < SimpleDelegator
     attr_accessor :session
 
-    def initialize(connection, session)
+    def initialize(connection, session={})
       super(connection)
       @session = session
     end
@@ -16,7 +16,7 @@ module Ooor
 
   class ConnectionHandler
     def connection_spec(config)
-      HashWithIndifferentAccess.new(config.slice(:url, :username, :password, :database, :scope_prefix))
+      HashWithIndifferentAccess.new(config.slice(:url, :username, :password, :database, :scope_prefix, :helper_paths))
     end
 
     def session_spec(config, session_id)
@@ -29,27 +29,16 @@ module Ooor
           config[:realod] = false
           create_new_session(config, spec, session)
       else
-        s.tap do |s|
-          s.config.merge!(config)
-          s.session.merge!(session)
-        end
+        s.tap {|s| s.session.merge!(session)}
       end
     end
 
     def create_new_session(config, spec, session)
-      Ooor::Session.new(create_new_connection(config, connection_spec(spec)), session).tap do |s|
-        s.session = session
-        sessions[spec] = s
-      end
-    end
-
-    def retrieve_connection(config, session={})
-      spec = connection_spec(config, spec)
-      if config[:reload] || !c = connections[spec]
-        config[:realod] = false
-        create_new_connection(config, spec)
+      c_spec = connection_spec(spec)
+      if connections[c_spec]
+        Ooor::Session.new(connections[c_spec], session)
       else
-        c.tap {|c| c.config.merge!(config)}
+        Ooor::Session.new(create_new_connection(config, c_spec), session)
       end
     end
 
