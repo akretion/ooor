@@ -17,7 +17,7 @@ module Ooor
     # ********************** class methods ************************************
     class << self
 
-      cattr_accessor :logger, :connection_handler
+      cattr_accessor :logger
       attr_accessor  :openerp_id, :info, :access_ids, :name, :description,
         :openerp_model, :field_ids, :state, :fields, #class attributes associated to the OpenERP ir.model
         :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
@@ -69,7 +69,6 @@ module Ooor
     end
 
     self.name = "Base"
-    self.connection_handler = ConnectionHandler.new
 
 
     # ********************** instance methods **********************************

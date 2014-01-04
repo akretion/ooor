@@ -5,7 +5,7 @@ module Ooor
   class Railtie < Rails::Railtie
     initializer "ooor.middleware" do |app|
       Ooor.default_config = load_config(false, Rails.env)
-      connection = Ooor::Base.connection_handler.retrieve_session(Ooor.default_config)
+      connection = Ooor.session_handler.retrieve_session(Ooor.default_config)
 
       if Ooor.default_config[:bootstrap]
         connection.global_login(config)

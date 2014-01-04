@@ -7,11 +7,11 @@ module Ooor
   module Block
 
     def with_session(config={})
-      yield Base.connection_handler.retrieve_session(config)
+      yield Ooor.session_handler.retrieve_session(config)
     end
 
     def with_public_session(config={})
-      yield Base.connection_handler.retrieve_session(Ooor.default_config.merge!(config))
+      yield Ooor.session_handler.retrieve_session(Ooor.default_config.merge!(config))
     end
 
   end
