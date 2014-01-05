@@ -39,24 +39,25 @@ module Ooor
       end
 
       def param_field
-        connection.config[:param_keys] && connection.config[:param_keys][openerp_model] || :id
+        connection.config[:param_keys] && connection.config[:param_keys][@t.openerp_model] || :id
       end
 
-      def find_by_permalink(param, context={})
+      def find_by_permalink(param, options={})
         param = param.to_i unless param.to_i == 0
-        find(:first, domain: {param_field => param}, context:context)
+        options.merge!(domain: {param_field => param})
+        find(:first, options)
       end
 
       def alias(context={})
         if connection.config[:aliases]
           lang = context['lang'] || connection.config[:aliases][connection.connection_session['lang'] || 'en_US']
           if alias_data = connection.config[:aliases][lang]
-            alias_data.select{|key, value| value == openerp_model }.keys[0] || openerp_model
+            alias_data.select{|key, value| value == @t.openerp_model }.keys[0] || @t.openerp_model
           else
-            openerp_model
+            @t.openerp_model
           end
         else
-          openerp_model
+          @t.openerp_model
         end
       end
     end
