@@ -26,7 +26,6 @@ module Ooor
 
     def self.share_session!(env, status, headers, body)
       response = ::Rack::Response.new body, status, headers
-p "CCCCCCCCCC", env['ooor']['public_ooor'].config
       if env['ooor']['public_ooor'].config[:session_sharing]
         if env['ooor']['public_ooor'].config[:username] == 'admin'
           if env['ooor']['public_ooor'].config[:force_session_sharing]
@@ -36,7 +35,6 @@ p "CCCCCCCCCC", env['ooor']['public_ooor'].config
           end
         end
         session_id = env['ooor']['public_ooor'].web_session[:session_id]
-p "SSSSSSS2", env['ooor']['public_ooor'].web_session
         expiry = Time.now+24*60*6
         if env['ooor']['public_ooor'].web_session[:sid] #v7
           response.set_cookie("sid", {:value => env['ooor']['public_ooor'].sid, :path => "/", :expires => expiry})
@@ -48,7 +46,6 @@ p "SSSSSSS2", env['ooor']['public_ooor'].web_session
           response.set_cookie("instance0|session_id", {:value => '"'+session_id.to_s+'"', :path => "/", :expires => expiry})
           response.set_cookie("last_used_database", {:value => env['ooor']['public_ooor'].config[:database], :path => "/", :expires => expiry})
         else #v8
-p "elseeeeeeeee", session_id
           response.set_cookie("session_id", {:value => session_id, :path => "/", :expires => expiry})
         end
       end
@@ -64,8 +61,8 @@ p "elseeeeeeeee", session_id
         lang = connection.connection_session['lang'] || 'en_US'
       end
       ooor_context = {'lang' => lang} #TODO also deal with timezone
-p "EEEEEEEEEEEEEEE", env
-      connection = Ooor.session_handler.retrieve_session(Ooor.default_config)
+      web_session = {session_id: env['rack.request.cookie_hash']['session_id']}
+      connection = Ooor.session_handler.retrieve_session(Ooor.default_config, web_session)
       env['ooor'] = {'ooor_context' => ooor_context, 'public_ooor' => connection} #TODO ooor_model, see OOOREST
     end
 
