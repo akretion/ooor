@@ -66,6 +66,15 @@ module Ooor
       def model_registry_handler() @model_registry_handler ||= ModelRegistryHandler.new; end
 
     end
+
+
+    def with_session(config={})
+      yield Ooor.session_handler.retrieve_session(config)
+    end
+
+    def with_public_session(config={})
+      yield Ooor.session_handler.retrieve_session(Ooor.default_config.merge!(config))
+    end
   end
 
   include OoorBehavior
