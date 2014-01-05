@@ -26,6 +26,7 @@ module Ooor
     define_service(:common, %w[ir_get ir_set ir_del about ooor_alias_login logout timezone_get get_available_updates get_migration_scripts get_server_environment login_message check_connectivity about get_stats list_http_services version authenticate get_available_updates set_loglevel get_os_time get_sqlcount])
 
     def login(db, username, password)
+puts caller
       if @session.config[:force_xml_rpc]
         send("ooor_alias_login", db, username, password)
       else
@@ -35,13 +36,13 @@ module Ooor
           req.headers['Content-Type'] = 'application/json'
           req.body = {method: 'call', params: { db: db, login: username, password: password}}.to_json
         end
-        @session.session[:cookie] = response.headers["set-cookie"]
-        sid_part1 = @session.session[:cookie].split("sid=")[1]
+        @session.web_session[:cookie] = response.headers["set-cookie"]
+        sid_part1 = @session.web_session[:cookie].split("sid=")[1]
         if sid_part1
-          @session.session[:sid] = @session.session[:cookie].split("sid=")[1].split(";")[0] # NOTE side is required on v7 but not on v8, this enables to sniff if we are on v7
+          @session.web_session[:sid] = @session.web_session[:cookie].split("sid=")[1].split(";")[0] # NOTE side is required on v7 but not on v8, this enables to sniff if we are on v7
         end
         json_response = JSON.parse(response.body)
-        @session.session[:session_id] = json_response['result']['session_id']
+        @session.web_session[:session_id] = json_response['result']['session_id']
         json_response['result']['uid']
       end
     end
@@ -78,7 +79,7 @@ module Ooor
         send(service, db, uid, pass, obj, method, *args)
       else
         json_conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
-        json_conn.oe_service(@session.session, service, obj, method, *args)
+        json_conn.oe_service(@session.web_session, service, obj, method, *args)
       end
       rescue InvalidSessionError
         @session.config[:force_xml_rpc] = true #TODO set v6 version too

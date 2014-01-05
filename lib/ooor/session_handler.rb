@@ -12,21 +12,21 @@ module Ooor
       connection_spec(config).merge(session_id: session_id)
     end
 
-    def retrieve_session(config, session={})
-      spec = session_spec(config, session[:session_id])
+    def retrieve_session(config, web_session={})
+      spec = session_spec(config, web_session[:session_id])
       if config[:reload] || !s = sessions[spec]
-        create_new_session(config, spec, session)
+        create_new_session(config, spec, web_session)
       else
-        s.tap {|s| s.session.merge!(session)}
+        s.tap {|s| s.session.merge!(web_session)}
       end
     end
 
-    def create_new_session(config, spec, session)
+    def create_new_session(config, spec, web_session)
       c_spec = connection_spec(spec)
       if connections[c_spec]
-        Ooor::Session.new(connections[c_spec], session)
+        Ooor::Session.new(connections[c_spec], web_session)
       else
-        Ooor::Session.new(create_new_connection(config, c_spec), session).tap do |s|
+        Ooor::Session.new(create_new_connection(config, c_spec), web_session).tap do |s|
           if config[:database] && config[:username]
             s.config[:user_id] = s.common.login(config[:database], config[:username], config[:password]) # NOTE do that lazily?
           end

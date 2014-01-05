@@ -4,17 +4,17 @@ module Ooor
   class Session < SimpleDelegator
     include Transport
 
-    attr_accessor :session, :connection
+    attr_accessor :web_session, :connection
 
     def common(); @common_service ||= CommonService.new(self); end
     def db(); @db_service ||= DbService.new(self); end
     def object(); @object_service ||= ObjectService.new(self); end
     def report(); @report_service ||= ReportService.new(self); end
 
-    def initialize(connection, session={})
+    def initialize(connection, web_session={})
       super(connection)
       @connection = connection
-      @session = session
+      @web_session = web_session
     end
 
     def [](key)
