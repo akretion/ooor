@@ -22,7 +22,8 @@ module Ooor
   autoload :Transport
   autoload :Block
   autoload :MiniActiveResource
-  autoload :ConnectionHandler
+  autoload :SessionHandler
+  autoload :ModelRegistryHandler
   autoload :UnknownAttributeOrAssociationError, 'ooor/errors'
   autoload :OpenERPServerError, 'ooor/errors'
   autoload :HashWithIndifferentAccess, 'active_support/core_ext/hash/indifferent_access'
@@ -39,7 +40,7 @@ module Ooor
 
       def new(config={})
         Ooor.default_config = config
-        connection = Ooor::Base.connection_handler.retrieve_connection(config)
+        connection = session_handler.retrieve_session(config)
         if config[:database] && config[:password]
           connection.global_login(config)
         end
@@ -60,6 +61,9 @@ module Ooor
       def extensions
         @extensions ||= {}
       end
+
+      def session_handler() @session_handler ||= SessionHandler.new; end
+      def model_registry_handler() @model_registry_handler ||= ModelRegistryHandler.new; end
 
     end
   end

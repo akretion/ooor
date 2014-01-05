@@ -4,24 +4,30 @@
 #    Licensed under the MIT license, see MIT-LICENSE file
 
 require 'active_support/core_ext/hash/indifferent_access'
+require 'active_support/core_ext/module/delegation.rb'
 require 'ooor/reflection'
 require 'ooor/reflection_ooor'
 
 module Ooor
+  class ModelTemplate #meta data shared accross sessions
+    attr_accessor  :openerp_id, :info, :access_ids, :description,
+      :openerp_model, :field_ids, :state, :fields, #class attributes associated to the OpenERP ir.model
+      :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
+      :associations, :columns, :columns_hash
+  end
+
+
   class Base < Ooor::MiniActiveResource
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
-    #include ActiveModel::Validations
     include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection, Associations, Report, FinderMethods, FieldMethods
 
 
     # ********************** class methods ************************************
     class << self
 
-      cattr_accessor :logger, :connection_handler
-      attr_accessor  :openerp_id, :info, :access_ids, :name, :description,
-        :openerp_model, :field_ids, :state, :fields, #class attributes associated to the OpenERP ir.model
-        :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
-        :scope_prefix, :connection, :associations, :columns, :columns_hash
+      cattr_accessor :logger
+      attr_accessor  :name, :connection, :t, :scope_prefix #template
+#      delegate *(template_properties + (template_properties.map {|p| "#{p}=".to_sym})), to: :model_template #unfortunately that fails on assignations...
 
       # ******************** remote communication *****************************
 
@@ -39,11 +45,11 @@ module Ooor
       end
 
       def rpc_execute(method, *args)
-        object_service(:execute, @openerp_model, method, *args)
+        object_service(:execute, @t.openerp_model, method, *args)
       end
 
       def rpc_exec_workflow(action, *args)
-        object_service(:exec_workflow, @openerp_model, action, *args)
+        object_service(:exec_workflow, @t.openerp_model, action, *args)
       end
 
       def object_service(service, obj, method, *args)
@@ -58,7 +64,7 @@ module Ooor
 
       # ******************** AREL Minimal implementation ***********************
 
-      def relation(context={}); @relation ||= Relation.new(self, context); end
+      def relation(context={}); @relation ||= Relation.new(self, context); end #TODO template
       def scoped(context={}); relation(context); end
       def where(opts, *rest); relation.where(opts, *rest); end
       def all(*args); relation.all(*args); end
@@ -69,8 +75,6 @@ module Ooor
     end
 
     self.name = "Base"
-    self.connection_handler = ConnectionHandler.new
-
 
     # ********************** instance methods **********************************
 
@@ -78,7 +82,7 @@ module Ooor
 
     def rpc_execute(method, *args)
       args += [self.class.connection.connection_session.merge(object_session)] unless args[-1].is_a? Hash
-      self.class.object_service(:execute, self.class.openerp_model, method, *args)
+      self.class.object_service(:execute, self.class.t.openerp_model, method, *args)
     end
 
     def load(attributes, remove_root=false, persisted=false)#an attribute might actually be a association too, will be determined here
@@ -90,7 +94,7 @@ module Ooor
       @loaded_associations = {}
       attributes.each do |key, value|
         skey = key.to_s
-        if self.class.associations_keys.index(skey) || value.is_a?(Array) #FIXME may miss m2o with inherits!
+        if self.class.t.associations_keys.index(skey) || value.is_a?(Array) #FIXME may miss m2o with inherits!
           @associations[skey] = value #the association because we want the method to load the association through method missing
         else
           @attributes[skey] = value || nil #don't bloat with false values
@@ -126,7 +130,7 @@ module Ooor
     def create(context={}, reload=true)
       self.id = rpc_execute('create', to_openerp_hash, context)
       if @ir_model_data_id
-        IrModelData.create(model: self.class.openerp_model,
+        IrModelData.create(model: self.class.t.openerp_model,
           'module' => @ir_model_data_id[0],
           'name' => @ir_model_data_id[1],
           'res_id' => self.id)
@@ -163,13 +167,13 @@ module Ooor
     def on_change(on_change_method, field_name, field_value, *args)
       # NOTE: OpenERP doesn't accept context systematically in on_change events unfortunately
       ids = self.id ? [id] : []
-      result = self.class.object_service(:execute, self.class.openerp_model, on_change_method, ids, *args)
+      result = self.class.object_service(:execute, self.class.t.openerp_model, on_change_method, ids, *args)
       load_on_change_result(result, field_name, field_value)
     end
 
     #wrapper for OpenERP exec_workflow Business Process Management engine
     def wkf_action(action, context={}, reload=true)
-      self.class.object_service(:exec_workflow, self.class.openerp_model, action, self.id, object_session)
+      self.class.object_service(:exec_workflow, self.class.t.openerp_model, action, self.id, object_session)
       reload_fields(context) if reload
     end
 
@@ -183,7 +187,7 @@ module Ooor
     private
 
     def load_with_defaults(attributes, default_get_list)
-      defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
+      defaults = rpc_execute("default_get", default_get_list || self.class.t.fields.keys + self.class.t.associations_keys, object_session.dup)
       attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
       load(attributes)
     end

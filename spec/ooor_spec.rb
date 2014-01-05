@@ -477,7 +477,32 @@ describe Ooor do
     end
   end
 
+  describe "Multi-sessions mode" do
+    include Ooor::Block
+    it "should allow with_session" do
+      with_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
+        session['res.users'].search().should be_kind_of(Array)
+        new_user = session['res.users'].create(name: 'User created by OOOR as admin', login: 'ooor1')
+        new_user.destroy
+      end
+
+      with_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session|
+        h = session['res.users'].read([1], ["password"])
+        h[0]['password'].should == "********"
+      end
+
+      with_public_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
+        session['res.users'].search().should be_kind_of(Array)
+      end
+    end
+  end
+
+
   describe "Multi-format serialization" do
+    before(:all) do
+      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database)
+    end
+
     it "should serialize in json" do
       ProductProduct.find(1).as_json
     end

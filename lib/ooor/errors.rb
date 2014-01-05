@@ -73,17 +73,9 @@ module Ooor
 
 
   class UnknownOpenERPServerError < OpenERPServerError; end
-
-
   class UnAuthorizedError < OpenERPServerError; end
-  
-  
   class TypeError < OpenERPServerError; end
-  
-  
   class ValueError < OpenERPServerError; end
-
-
   class InvalidSessionError < OpenERPServerError; end
 
 
@@ -112,7 +104,7 @@ module Ooor
 
     def available_fields(clazz)
       msg = "\n\n*** AVAILABLE FIELDS ON #{clazz.name} ARE: ***"
-      msg << "\n\n" << clazz.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
+      msg << "\n\n" << clazz.t.fields.sort {|a,b| a[1]['type']<=>b[1]['type']}.map {|i| "#{i[1]['type']} --- #{i[0]}"}.join("\n")
       %w[many2one one2many many2many polymorphic_m2o].each do |kind|
         msg << "\n\n"
         msg << (clazz.send "#{kind}_associations").map {|k, v| "#{kind} --- #{v['relation']} --- #{k}"}.join("\n")

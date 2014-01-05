@@ -7,23 +7,23 @@ module Ooor
     module ClassMethods
 
       def reload_fields_definition(force=false, context=connection.connection_session)
-        if force or not @fields
-          @fields = {}
+        if force || !@t.fields
+          @t.fields = {}
           @columns_hash = {}
           rpc_execute("fields_get", false, context).each { |k, field| reload_field_definition(k, field) }
-          @associations_keys = @many2one_associations.keys + @one2many_associations.keys + @many2many_associations.keys + @polymorphic_m2o_associations.keys
-          (@fields.keys + @associations_keys).each do |meth| #generates method handlers for auto-completion tools
+          @t.associations_keys = @t.many2one_associations.keys + @t.one2many_associations.keys + @t.many2many_associations.keys + @t.polymorphic_m2o_associations.keys
+          (@t.fields.keys + @t.associations_keys).each do |meth| #generates method handlers for auto-completion tools
             define_field_method(meth)
           end
-          @one2many_associations.keys.each do |meth|
+          @t.one2many_associations.keys.each do |meth|
             define_nested_attributes_method(meth)
           end
-          logger.debug "#{fields.size} fields loaded in model #{self.name}"
+          logger.debug "#{@t.fields.size} fields loaded in model #{self.name}"
         end
       end
 
       def all_fields
-        @fields.merge(@polymorphic_m2o_associations).merge(@many2many_associations).merge(@one2many_associations).merge(@many2one_associations)
+        @t.fields.merge(@t.polymorphic_m2o_associations).merge(@t.many2many_associations).merge(@t.one2many_associations).merge(@t.many2one_associations)
       end
 
       def fast_fields(options)
@@ -63,15 +63,15 @@ module Ooor
         def reload_field_definition(k, field)
           case field['type']
           when 'many2one'
-            @many2one_associations[k] = field
+            @t.many2one_associations[k] = field
           when 'one2many'
-            @one2many_associations[k] = field
+            @t.one2many_associations[k] = field
           when 'many2many'
-            @many2many_associations[k] = field
+            @t.many2many_associations[k] = field
           when 'reference'
-            @polymorphic_m2o_associations[k] = field
+            @t.polymorphic_m2o_associations[k] = field
           else
-            @fields[k] = field if field['name'] != 'id'
+            @t.fields[k] = field if field['name'] != 'id'
           end
         end
     end
@@ -93,12 +93,12 @@ module Ooor
         @loaded_associations[method_name] = result and return result if result
       elsif method_name.end_with?('=')
         return method_missing_value_assign(method_key, arguments)
-      elsif self.class.fields.has_key?(method_name) || self.class.associations_keys.index(method_name) #unloaded field/association
+      elsif self.class.t.fields.has_key?(method_name) || self.class.t.associations_keys.index(method_name) #unloaded field/association
         return lazzy_load_field(method_name, *arguments)
       # check if that is not a Rails style association with an _id[s][=] suffix:
-      elsif method_name.match(/_id$/) && self.class.associations_keys.index(rel=method_name.gsub(/_id$/, ""))
+      elsif method_name.match(/_id$/) && self.class.t.associations_keys.index(rel=method_name.gsub(/_id$/, ""))
         return many2one_id_method(rel, *arguments)
-      elsif method_name.match(/_ids$/) && self.class.associations_keys.index(rel=method_name.gsub(/_ids$/, ""))
+      elsif method_name.match(/_ids$/) && self.class.t.associations_keys.index(rel=method_name.gsub(/_ids$/, ""))
         return x_to_many_ids_method(rel, *arguments)
       elsif id
         rpc_execute(method_key, [id], *arguments) #we assume that's an action
@@ -123,18 +123,18 @@ module Ooor
       end
 
       def is_association_assignment(method_key)
-        (self.class.associations_keys + self.class.many2one_associations.collect do |k, field|
+        (self.class.t.associations_keys + self.class.t.many2one_associations.collect do |k, field|
           klass = self.class.const_get(field['relation'])
           klass.reload_fields_definition(false, object_session)
-          klass.associations_keys
+          klass.t.associations_keys
         end.flatten).index(method_key)
       end
 
       def is_attribute_assignment(method_key)
-        (self.class.fields.keys + self.class.many2one_associations.collect do |k, field|
+        (self.class.t.fields.keys + self.class.t.many2one_associations.collect do |k, field|
           klass = self.class.const_get(field['relation'])
           klass.reload_fields_definition(false, object_session)
-          klass.fields.keys
+          klass.t.fields.keys
         end.flatten).index(method_key)
       end
 
