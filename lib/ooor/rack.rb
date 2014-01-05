@@ -21,6 +21,12 @@ module Ooor
       self.class.set_ooor!(env)
       status, headers, body = @app.call(env)
       response = ::Rack::Response.new body, status, headers
+      self.class.share_session!(env, status, headers, body)
+    end
+
+    def self.share_session!(env, status, headers, body)
+      response = ::Rack::Response.new body, status, headers
+p "CCCCCCCCCC", env['ooor']['public_ooor'].config
       if env['ooor']['public_ooor'].config[:session_sharing]
         if env['ooor']['public_ooor'].config[:username] == 'admin'
           if env['ooor']['public_ooor'].config[:force_session_sharing]
@@ -29,9 +35,10 @@ module Ooor
             raise "Sharing OpenERP session for admin user is suicidal (use force_session_sharing in dev mode and be paranoiac about it)"
           end
         end
-        session_id = env['ooor']['public_ooor'].session_id
+        session_id = env['ooor']['public_ooor'].web_session[:session_id]
+p "SSSSSSS2", env['ooor']['public_ooor'].web_session
         expiry = Time.now+24*60*6
-        if env['ooor']['public_ooor'].sid #v7
+        if env['ooor']['public_ooor'].web_session[:sid] #v7
           response.set_cookie("sid", {:value => env['ooor']['public_ooor'].sid, :path => "/", :expires => expiry})
           unless Rack::Utils.responds_to?(:escape_with_hack)
             ::Rack::Utils.send :include, V7CookieHack
@@ -39,11 +46,12 @@ module Ooor
             ::Rack::Utils.send :alias_method, :escape, :escape_with_hack
           end
           response.set_cookie("instance0|session_id", {:value => '"'+session_id.to_s+'"', :path => "/", :expires => expiry})
+          response.set_cookie("last_used_database", {:value => env['ooor']['public_ooor'].config[:database], :path => "/", :expires => expiry})
         else #v8
-          response.set_cookie("session_id", {:value => env['ooor']['public_ooor'].session_id, :path => "/", :expires => expiry})
+p "elseeeeeeeee", session_id
+          response.set_cookie("session_id", {:value => session_id, :path => "/", :expires => expiry})
         end
       end
-      response.set_cookie("last_used_database", {:value => env['ooor']['public_ooor'].config[:database], :path => "/", :expires => expiry})
       response.finish
     end
 
@@ -56,7 +64,8 @@ module Ooor
         lang = connection.connection_session['lang'] || 'en_US'
       end
       ooor_context = {'lang' => lang} #TODO also deal with timezone
-      connection = Ooor::Base.connection_handler.retrieve_session(Ooor.default_config)
+p "EEEEEEEEEEEEEEE", env
+      connection = Ooor.session_handler.retrieve_session(Ooor.default_config)
       env['ooor'] = {'ooor_context' => ooor_context, 'public_ooor' => connection} #TODO ooor_model, see OOOREST
     end
 
