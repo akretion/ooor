@@ -422,7 +422,7 @@ describe Ooor do
 
   end
 
-  describe "Multi-session abilities" do
+  describe "Object context abilities" do
     before(:all) do
       @ooor = Ooor.new(:url => @url, :database => @database)
     end
@@ -434,9 +434,21 @@ describe Ooor do
       p.object_session[:lang].should == 'en_US'
       p.save
     end
+  end
 
-    it "should be able to pass session credentials even in methods where context isn't the last argument" do
-      #TODO
+  describe "Web SEO utilities" do
+    include Ooor
+    it "should support model aliases" do
+      with_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
+        session['products'].search().should be_kind_of(Array)
+      end
+    end
+
+    it "should find by permalink" do
+      with_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
+        lang = Ooor::Locale.to_erp_locale('en')
+        session['products'].find_by_permalink('Service', context: {'lang' => lang}, fields: ['name']).should be_kind_of(Ooor::Base)
+      end
     end
   end
 
@@ -478,7 +490,7 @@ describe Ooor do
   end
 
   describe "Multi-sessions mode" do
-    include Ooor::Block
+    include Ooor
     it "should allow with_session" do
       with_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
         session['res.users'].search().should be_kind_of(Array)
