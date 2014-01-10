@@ -25,7 +25,6 @@ module Ooor
     # ********************** class methods ************************************
     class << self
 
-      cattr_accessor :logger
       attr_accessor  :name, :connection, :t, :scope_prefix #template
 #      delegate *(template_properties + (template_properties.map {|p| "#{p}=".to_sym})), to: :model_template #unfortunately that fails on assignations...
 
@@ -71,6 +70,8 @@ module Ooor
       def limit(value); relation.limit(value); end
       def order(value); relation.order(value); end
       def offset(value); relation.offset(value); end
+      
+      def logger; Ooor.logger; end
 
     end
 

@@ -5,6 +5,7 @@
 
 require 'active_support/dependencies/autoload'
 require 'active_support/concern'
+require 'logger'
 
 
 module Ooor
@@ -64,6 +65,14 @@ module Ooor
 
       def session_handler() @session_handler ||= SessionHandler.new; end
       def model_registry_handler() @model_registry_handler ||= ModelRegistryHandler.new; end
+      
+      def logger
+        @logger ||= Logger.new($stdout)
+      end
+      
+      def logger=(logger)
+        @logger = logger
+      end
 
     end
   end

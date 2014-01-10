@@ -4,6 +4,8 @@ require "ooor/rack"
 module Ooor
   class Railtie < Rails::Railtie
     initializer "ooor.middleware" do |app|
+      Ooor.logger = Rails.logger unless $0 != 'irb'
+      Ooor.logger.level = @config[:log_level] if @config[:log_level]
       Ooor.default_config = load_config(false, Rails.env)
       connection = Ooor.session_handler.retrieve_session(Ooor.default_config)
 

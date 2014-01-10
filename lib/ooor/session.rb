@@ -109,6 +109,8 @@ module Ooor
     end
 
     def models; @models ||= {}; end
+    
+    def logger; Ooor.logger; end
 
   end
 

@@ -3,6 +3,8 @@
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
+require 'json'
+
 module Ooor
   class Service
     def initialize(session)
@@ -26,7 +28,6 @@ module Ooor
     define_service(:common, %w[ir_get ir_set ir_del about ooor_alias_login logout timezone_get get_available_updates get_migration_scripts get_server_environment login_message check_connectivity about get_stats list_http_services version authenticate get_available_updates set_loglevel get_os_time get_sqlcount])
 
     def login(db, username, password)
-puts caller
       if @session.config[:force_xml_rpc]
         send("ooor_alias_login", db, username, password)
       else

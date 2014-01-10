@@ -4,18 +4,16 @@
 #    Licensed under the MIT license, see MIT-LICENSE file
 
 require 'active_support/core_ext/hash/indifferent_access'
-require 'logger'
 
 module Ooor
   autoload :UnAuthorizedError, 'ooor/errors'
 
   class Connection
-    attr_accessor :logger, :config, :connection_session
+    attr_accessor :config, :connection_session
 
     def initialize(config, env=false)
       @config = _config(config)
-      @logger = _logger
-      Object.const_set(@config[:scope_prefix], Module.new) if @config[:scope_prefix] #TODO
+      Object.const_set(@config[:scope_prefix], Module.new) if @config[:scope_prefix]
     end
 
     def connection_session
@@ -31,13 +29,6 @@ module Ooor
     end
 
     private
-
-    def _logger
-      ((defined?(Rails) && $0 != 'irb' && Rails.logger || @config[:force_rails_logger]) ? Rails.logger : Logger.new($stdout)).tap do |l|
-        l.level = @config[:log_level] if @config[:log_level]
-        Base.logger = l
-      end
-    end
 
     def _config(config)
       c = config.is_a?(String) ? Ooor.load_config(config, env) : config
