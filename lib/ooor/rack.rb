@@ -52,7 +52,7 @@ module Ooor
       elsif http_lang = env["HTTP_ACCEPT_LANGUAGE"]
         lang = http_lang.split(',')[0].gsub('-', '_')
       else
-        lang = connection.connection_session['lang'] || 'en_US'
+        lang = connection.config['lang'] || 'en_US'
       end
       context = {'lang' => lang} #TODO also deal with timezone
       web_session = {session_id: env['rack.request.cookie_hash']['session_id']}

@@ -79,7 +79,7 @@ module Ooor
             records = rpc_execute('read', ids, fields, context.dup)
           else
             domain = to_openerp_domain(options[:domain] || options[:conditions] || [])
-            response = object_service(:search_read, @t.openerp_model, 'search_read', {
+            response = object_service(:search_read, openerp_model, 'search_read', {
                 fields: fields,
                 offset: options[:offset] || 0,
                 limit: options[:limit] || false,

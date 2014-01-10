@@ -10,7 +10,7 @@ module Ooor
           namespace = self.parents.detect do |n|
             n.respond_to?(:use_relative_model_naming?) && n.use_relative_model_naming?
           end
-          ActiveModel::Name.new(self, namespace, self.t.description).tap do |r|
+          ActiveModel::Name.new(self, namespace, self.description).tap do |r|
             def r.param_key
               @klass.openerp_model.gsub('.', '_')
             end
@@ -39,7 +39,7 @@ module Ooor
       end
 
       def param_field
-        connection.config[:param_keys] && connection.config[:param_keys][@t.openerp_model] || :id
+        connection.config[:param_keys] && connection.config[:param_keys][openerp_model] || :id
       end
 
       def find_by_permalink(param, options={})
@@ -50,14 +50,14 @@ module Ooor
 
       def alias(context={})
         if connection.config[:aliases]
-          lang = context['lang'] || connection.config[:aliases][connection.connection_session['lang'] || 'en_US']
+          lang = context['lang'] || connection.config[:aliases][connection.config['lang'] || 'en_US']
           if alias_data = connection.config[:aliases][lang]
-            alias_data.select{|key, value| value == @t.openerp_model }.keys[0] || @t.openerp_model
+            alias_data.select{|key, value| value == openerp_model }.keys[0] || openerp_model
           else
-            @t.openerp_model
+            openerp_model
           end
         else
-          @t.openerp_model
+          openerp_model
         end
       end
     end

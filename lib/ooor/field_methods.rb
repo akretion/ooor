@@ -6,7 +6,7 @@ module Ooor
 
     module ClassMethods
 
-      def reload_fields_definition(force=false, context=connection.connection_session)
+      def reload_fields_definition(force=false, context=connection.web_session)
         if force || !@t.fields
           @t.fields = {}
           @columns_hash = {}
@@ -23,7 +23,7 @@ module Ooor
       end
 
       def all_fields
-        @t.fields.merge(@t.polymorphic_m2o_associations).merge(@t.many2many_associations).merge(@t.one2many_associations).merge(@t.many2one_associations)
+        fields.merge(polymorphic_m2o_associations).merge(many2many_associations).merge(one2many_associations).merge(many2one_associations)
       end
 
       def fast_fields(options)

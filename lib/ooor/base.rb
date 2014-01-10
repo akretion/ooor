@@ -10,10 +10,11 @@ require 'ooor/reflection_ooor'
 
 module Ooor
   class ModelTemplate #meta data shared accross sessions
-    attr_accessor  :openerp_id, :info, :access_ids, :description,
-      :openerp_model, :field_ids, :state, :fields, #class attributes associated to the OpenERP ir.model
+    TEMPLATE_PROPERTIES = [:openerp_id, :info, :access_ids, :description,
+      :openerp_model, :field_ids, :state, :fields,
       :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
-      :associations, :columns, :columns_hash
+      :associations, :columns, :columns_hash]
+    attr_accessor *TEMPLATE_PROPERTIES
   end
 
 
@@ -26,7 +27,7 @@ module Ooor
     class << self
 
       attr_accessor  :name, :connection, :t, :scope_prefix #template
-#      delegate *(template_properties + (template_properties.map {|p| "#{p}=".to_sym})), to: :model_template #unfortunately that fails on assignations...
+      delegate *ModelTemplate::TEMPLATE_PROPERTIES, to: :t
 
       # ******************** remote communication *****************************
 
@@ -44,11 +45,11 @@ module Ooor
       end
 
       def rpc_execute(method, *args)
-        object_service(:execute, @t.openerp_model, method, *args)
+        object_service(:execute, openerp_model, method, *args)
       end
 
       def rpc_exec_workflow(action, *args)
-        object_service(:exec_workflow, @t.openerp_model, action, *args)
+        object_service(:exec_workflow, openerp_model, action, *args)
       end
 
       def object_service(service, obj, method, *args)
