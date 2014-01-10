@@ -1,7 +1,7 @@
 module Ooor
   class ModelRegistryHandler
 
-    def model_registery_spec(config)
+    def model_registery_spec(config) # TODO use a username wise registery? (access rights on fields_get?)
       HashWithIndifferentAccess.new(config.slice(:url, :database, :scope_prefix, :helper_paths))
     end
 

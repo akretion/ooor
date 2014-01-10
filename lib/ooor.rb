@@ -68,11 +68,11 @@ module Ooor
     end
 
 
-    def with_session(config={})
+    def with_ooor_session(config={})
       yield Ooor.session_handler.retrieve_session(config)
     end
 
-    def with_public_session(config={})
+    def with_public_ooor_session(config={})
       yield Ooor.session_handler.retrieve_session(Ooor.default_config.merge!(config))
     end
   end
