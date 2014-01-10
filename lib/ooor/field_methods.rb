@@ -7,18 +7,18 @@ module Ooor
     module ClassMethods
 
       def reload_fields_definition(force=false, context=connection.web_session)
-        if force || !@t.fields
+        if force || !fields
           @t.fields = {}
           @columns_hash = {}
           rpc_execute("fields_get", false, context).each { |k, field| reload_field_definition(k, field) }
-          @t.associations_keys = @t.many2one_associations.keys + @t.one2many_associations.keys + @t.many2many_associations.keys + @t.polymorphic_m2o_associations.keys
-          (@t.fields.keys + @t.associations_keys).each do |meth| #generates method handlers for auto-completion tools
+          @t.associations_keys = many2one_associations.keys + one2many_associations.keys + many2many_associations.keys + polymorphic_m2o_associations.keys
+          (fields.keys + associations_keys).each do |meth| #generates method handlers for auto-completion tools
             define_field_method(meth)
           end
-          @t.one2many_associations.keys.each do |meth|
+          one2many_associations.keys.each do |meth|
             define_nested_attributes_method(meth)
           end
-          logger.debug "#{@t.fields.size} fields loaded in model #{self.name}"
+          logger.debug "#{fields.size} fields loaded in model #{self.name}"
         end
       end
 
@@ -63,15 +63,15 @@ module Ooor
         def reload_field_definition(k, field)
           case field['type']
           when 'many2one'
-            @t.many2one_associations[k] = field
+            many2one_associations[k] = field
           when 'one2many'
-            @t.one2many_associations[k] = field
+            one2many_associations[k] = field
           when 'many2many'
-            @t.many2many_associations[k] = field
+            many2many_associations[k] = field
           when 'reference'
-            @t.polymorphic_m2o_associations[k] = field
+            polymorphic_m2o_associations[k] = field
           else
-            @t.fields[k] = field if field['name'] != 'id'
+            fields[k] = field if field['name'] != 'id'
           end
         end
     end
