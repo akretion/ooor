@@ -125,7 +125,7 @@ module Ooor
       blacklist = %w[id write_date create_date write_ui create_ui]
       r = {}
       attributes.reject {|k, v| blacklist.index(k)}.merge(associations).each do |k, v|
-        if k.end_with?("_id") && !self.class.t.associations_keys.index(k) && self.class.t.associations_keys.index(k.gsub(/_id$/, ""))
+        if k.end_with?("_id") && !self.class.associations_keys.index(k) && self.class.associations_keys.index(k.gsub(/_id$/, ""))
           r[k.gsub(/_id$/, "")] = v && v.to_i || v
         else
           r[k] = v
@@ -137,7 +137,7 @@ module Ooor
     def cast_relations_to_openerp(associations=@associations)
       associations2 = {}
       associations.each do |k, v|
-        if k.match(/_ids$/) && !self.class.t.associations_keys.index(k) && self.class.t.associations_keys.index(rel = k.gsub(/_ids$/, ""))
+        if k.match(/_ids$/) && !self.class.associations_keys.index(k) && self.class.associations_keys.index(rel = k.gsub(/_ids$/, ""))
           if v.is_a? Array
            v.reject! {|i| i == ''}.map! {|i| i.to_i}
           end
@@ -155,13 +155,13 @@ module Ooor
       associations2.each do |k, v| #see OpenERP awkward associations API
         #already casted, possibly before server error!
         next if (v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array)) \
-                || self.class.t.many2one_associations[k] \
+                || self.class.many2one_associations[k] \
                 || !v.is_a?(Array)
-        new_rel = self.cast_relation(k, v, self.class.t.one2many_associations, self.class.t.many2many_associations)
+        new_rel = self.cast_relation(k, v, self.class.one2many_associations, self.class.many2many_associations)
         if new_rel #matches a known o2m or m2m
           associations2[k] = new_rel
         else
-          self.class.t.many2one_associations.each do |k2, field| #try to cast the association to an inherited o2m or m2m:
+          self.class.many2one_associations.each do |k2, field| #try to cast the association to an inherited o2m or m2m:
             linked_class = self.class.const_get(field['relation'])
             new_rel = self.cast_relation(k, v, linked_class.one2many_associations, linked_class.many2many_associations)
             associations2[k] = new_rel and break if new_rel

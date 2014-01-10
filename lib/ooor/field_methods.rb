@@ -93,12 +93,12 @@ module Ooor
         @loaded_associations[method_name] = result and return result if result
       elsif method_name.end_with?('=')
         return method_missing_value_assign(method_key, arguments)
-      elsif self.class.t.fields.has_key?(method_name) || self.class.t.associations_keys.index(method_name) #unloaded field/association
+      elsif self.class.fields.has_key?(method_name) || self.class.associations_keys.index(method_name) #unloaded field/association
         return lazzy_load_field(method_name, *arguments)
       # check if that is not a Rails style association with an _id[s][=] suffix:
-      elsif method_name.match(/_id$/) && self.class.t.associations_keys.index(rel=method_name.gsub(/_id$/, ""))
+      elsif method_name.match(/_id$/) && self.class.associations_keys.index(rel=method_name.gsub(/_id$/, ""))
         return many2one_id_method(rel, *arguments)
-      elsif method_name.match(/_ids$/) && self.class.t.associations_keys.index(rel=method_name.gsub(/_ids$/, ""))
+      elsif method_name.match(/_ids$/) && self.class.associations_keys.index(rel=method_name.gsub(/_ids$/, ""))
         return x_to_many_ids_method(rel, *arguments)
       elsif id
         rpc_execute(method_key, [id], *arguments) #we assume that's an action
@@ -123,7 +123,7 @@ module Ooor
       end
 
       def is_association_assignment(method_key)
-        (self.class.t.associations_keys + self.class.t.many2one_associations.collect do |k, field|
+        (self.class.associations_keys + self.class.many2one_associations.collect do |k, field|
           klass = self.class.const_get(field['relation'])
           klass.reload_fields_definition(false, object_session)
           klass.t.associations_keys
@@ -131,7 +131,7 @@ module Ooor
       end
 
       def is_attribute_assignment(method_key)
-        (self.class.t.fields.keys + self.class.t.many2one_associations.collect do |k, field|
+        (self.class.fields.keys + self.class.many2one_associations.collect do |k, field|
           klass = self.class.const_get(field['relation'])
           klass.reload_fields_definition(false, object_session)
           klass.t.fields.keys

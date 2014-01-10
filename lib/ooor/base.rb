@@ -84,7 +84,7 @@ module Ooor
 
     def rpc_execute(method, *args)
       args += [self.class.connection.connection_session.merge(object_session)] unless args[-1].is_a? Hash
-      self.class.object_service(:execute, self.class.t.openerp_model, method, *args)
+      self.class.object_service(:execute, self.class.openerp_model, method, *args)
     end
 
     def load(attributes, remove_root=false, persisted=false)#an attribute might actually be a association too, will be determined here
@@ -96,7 +96,7 @@ module Ooor
       @loaded_associations = {}
       attributes.each do |key, value|
         skey = key.to_s
-        if self.class.t.associations_keys.index(skey) || value.is_a?(Array) #FIXME may miss m2o with inherits!
+        if self.class.associations_keys.index(skey) || value.is_a?(Array) #FIXME may miss m2o with inherits!
           @associations[skey] = value #the association because we want the method to load the association through method missing
         else
           @attributes[skey] = value || nil #don't bloat with false values
@@ -132,7 +132,7 @@ module Ooor
     def create(context={}, reload=true)
       self.id = rpc_execute('create', to_openerp_hash, context)
       if @ir_model_data_id
-        IrModelData.create(model: self.class.t.openerp_model,
+        IrModelData.create(model: self.class.openerp_model,
           'module' => @ir_model_data_id[0],
           'name' => @ir_model_data_id[1],
           'res_id' => self.id)
@@ -169,13 +169,13 @@ module Ooor
     def on_change(on_change_method, field_name, field_value, *args)
       # NOTE: OpenERP doesn't accept context systematically in on_change events unfortunately
       ids = self.id ? [id] : []
-      result = self.class.object_service(:execute, self.class.t.openerp_model, on_change_method, ids, *args)
+      result = self.class.object_service(:execute, self.class.openerp_model, on_change_method, ids, *args)
       load_on_change_result(result, field_name, field_value)
     end
 
     #wrapper for OpenERP exec_workflow Business Process Management engine
     def wkf_action(action, context={}, reload=true)
-      self.class.object_service(:exec_workflow, self.class.t.openerp_model, action, self.id, object_session)
+      self.class.object_service(:exec_workflow, self.class.openerp_model, action, self.id, object_session)
       reload_fields(context) if reload
     end
 
@@ -189,7 +189,7 @@ module Ooor
     private
 
     def load_with_defaults(attributes, default_get_list)
-      defaults = rpc_execute("default_get", default_get_list || self.class.t.fields.keys + self.class.t.associations_keys, object_session.dup)
+      defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
       attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
       load(attributes)
     end
