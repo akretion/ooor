@@ -46,16 +46,18 @@ module Ooor
     def load_association(model_key, ids, substitute=nil, *arguments)
       options = arguments.extract_options!
       related_class = self.class.const_get(model_key)
-      r = related_class.send(:find, ids, fields: options[:fields] || options[:only] || nil, context: options[:context] || object_session) || substitute
-      #TODO the following is a hack to minimally mimic the CollectionProxy of Rails 3.1+; this should probably be re-implemented
-      def r.association=(association)
-        @association = association
+      fields = options[:fields] || options[:only] || nil
+      context = options[:context] || object_session
+      (related_class.send(:find, ids, fields: fields, context: context) || substitute).tap do |r|
+        #TODO the following is a hack to minimally mimic the CollectionProxy of Rails 3.1+; this should probably be re-implemented
+        def r.association=(association)
+          @association = association
+        end
+        r.association = related_class
+        def r.build(attrs={})
+          @association.new(attrs)
+        end
       end
-      r.association = related_class
-      def r.build(attrs={})
-        @association.new(attrs)
-      end
-      r
     end
 
   end
