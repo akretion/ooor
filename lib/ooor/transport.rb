@@ -15,7 +15,7 @@ module Ooor
       case type
       when :json
         @json_clients ||= {}
-        @json_clients[url] ||= JsonClient.new(url: url, timeout: config[:rpc_timeout] || 900)
+        @json_clients[url] ||= JsonClient.new(url: url)#, timeout: config[:rpc_timeout] || 900) #TODO timeout doesn't work depending on Faraday versions?
       when :xml
         @xml_clients ||= {}
         @xml_clients[url] ||= XmlRpcClient.new2(url, nil, config[:rpc_timeout] || 900)
