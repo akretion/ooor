@@ -439,13 +439,13 @@ describe Ooor do
   describe "Web SEO utilities" do
     include Ooor
     it "should support model aliases" do
-      with_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
+      with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
         session['products'].search().should be_kind_of(Array)
       end
     end
 
     it "should find by permalink" do
-      with_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
+      with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
         lang = Ooor::Locale.to_erp_locale('en')
         session['products'].find_by_permalink('Service', context: {'lang' => lang}, fields: ['name']).should be_kind_of(Ooor::Base)
       end
@@ -492,18 +492,18 @@ describe Ooor do
   describe "Multi-sessions mode" do
     include Ooor
     it "should allow with_session" do
-      with_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
+      with_ooor_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
         session['res.users'].search().should be_kind_of(Array)
         new_user = session['res.users'].create(name: 'User created by OOOR as admin', login: 'ooor1')
         new_user.destroy
       end
 
-      with_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session|
+      with_ooor_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session|
         h = session['res.users'].read([1], ["password"])
         h[0]['password'].should == "********"
       end
 
-      with_public_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
+      with_public_ooor_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
         session['res.users'].search().should be_kind_of(Array)
       end
     end
