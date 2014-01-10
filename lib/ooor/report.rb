@@ -11,7 +11,7 @@ module Ooor
         uid = @connection.config[:user_id]
         pass = @connection.config[:password]
         db = @connection.config[:database]
-        params = {model: @t.openerp_model, id: ids[0], report_type: report_type}
+        params = {model: openerp_model, id: ids[0], report_type: report_type}
         connection.report.report(db, uid, pass, report_name, ids, params, context)
       end
 
