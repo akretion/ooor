@@ -26,19 +26,19 @@ module Ooor
 
     def self.share_session!(env, status, headers, body)
       response = ::Rack::Response.new body, status, headers
-      public_ooor_session = env['ooor']['public_ooor_session']
-      if public_ooor_session.config[:session_sharing]
-        if public_ooor_session.config[:username] == 'admin'
-          if public_ooor_session.config[:force_session_sharing]
+      ooor_public_session = env['ooor']['ooor_public_session']
+      if ooor_public_session.config[:session_sharing]
+        if ooor_public_session.config[:username] == 'admin'
+          if ooor_public_session.config[:force_session_sharing]
             puts "Warning! force_session_sharing mode with admin user, this may be a serious security breach! Are you really in development mode?"
           else
             raise "Sharing OpenERP session for admin user is suicidal (use force_session_sharing in dev mode and be paranoiac about it)"
           end
         end
-        session_id = public_ooor_session.web_session[:session_id]
+        session_id = ooor_public_session.web_session[:session_id]
         expiry = Time.now+24*60*6
-        if public_ooor_session.web_session[:sid] #v7
-          self.share_session_v7!(public_ooor_session, response, session_id, expiry)
+        if ooor_public_session.web_session[:sid] #v7
+          self.share_session_v7!(ooor_public_session, response, session_id, expiry)
         else #v8
           response.set_cookie("session_id", {:value => session_id, :path => "/", :expires => expiry})
         end
@@ -55,22 +55,27 @@ module Ooor
         lang = connection.config['lang'] || 'en_US'
       end
       context = {'lang' => lang} #TODO also deal with timezone
-      web_session = {session_id: env['rack.request.cookie_hash']['session_id']}
-      public_ooor_session = Ooor.session_handler.retrieve_session(Ooor.default_config, web_session)
-      env['ooor'] = {'context' => context, 'public_ooor_session' => public_ooor_session} #TODO ooor_model, see OOOREST
+      ooor_public_session = self.get_session(env)
+      env['ooor'] = {'context' => context, 'ooor_public_session' => ooor_public_session} #TODO ooor_model, see OOOREST
+    end
+
+    def self.get_session(env)
+      cookies_hash = env['rack.request.cookie_hash'] || ::Rack::Request.new(env).cookies
+      web_session = {session_id: cookies_hash['session_id']}
+      Ooor.session_handler.retrieve_session(Ooor.default_config, web_session)
     end
 
     protected
 
     def self.share_session_v7!(env, response, session_id, expiry)
-      response.set_cookie("sid", {:value => public_ooor_session.web_session[:sid], :path => "/", :expires => expiry})
+      response.set_cookie("sid", {:value => ooor_public_session.web_session[:sid], :path => "/", :expires => expiry})
       unless Rack::Utils.responds_to?(:escape_with_hack)
         ::Rack::Utils.send :include, V7CookieHack
         ::Rack::Utils.send :alias_method, :escape_without_hack, :escape
         ::Rack::Utils.send :alias_method, :escape, :escape_with_hack
       end
       response.set_cookie("instance0|session_id", {:value => '"'+session_id.to_s+'"', :path => "/", :expires => expiry})
-      response.set_cookie("last_used_database", {:value => public_ooor_session.config[:database], :path => "/", :expires => expiry})
+      response.set_cookie("last_used_database", {:value => ooor_public_session.config[:database], :path => "/", :expires => expiry})
     end
 
   end

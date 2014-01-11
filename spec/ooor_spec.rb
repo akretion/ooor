@@ -503,7 +503,7 @@ describe Ooor do
         h[0]['password'].should == "********"
       end
 
-      with_public_ooor_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
+      with_ooor_public_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
         session['res.users'].search().should be_kind_of(Array)
       end
     end
