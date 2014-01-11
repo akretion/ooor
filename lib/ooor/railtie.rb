@@ -5,8 +5,8 @@ module Ooor
   class Railtie < Rails::Railtie
     initializer "ooor.middleware" do |app|
       Ooor.logger = Rails.logger unless $0 != 'irb'
-      Ooor.logger.level = @config[:log_level] if @config[:log_level]
       Ooor.default_config = load_config(false, Rails.env)
+      Ooor.logger.level = @config[:log_level] if @config[:log_level]
       connection = Ooor.session_handler.retrieve_session(Ooor.default_config)
 
       if Ooor.default_config[:bootstrap]
@@ -26,7 +26,7 @@ module Ooor
       config_file ||= defined?(Rails.root) && "#{Rails.root}/config/ooor.yml" || 'ooor.yml'
       @config = HashWithIndifferentAccess.new(YAML.load_file(config_file)[env || 'development'])
     rescue SystemCallError
-      puts """failed to load OOOR yaml configuration file.
+      Ooor.logger.error """failed to load OOOR yaml configuration file.
          make sure your app has a #{config_file} file correctly set up
          if not, just copy/paste the default ooor.yml file from the OOOR Gem
          to #{Rails.root}/config/ooor.yml and customize it properly\n\n"""
