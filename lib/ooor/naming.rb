@@ -43,12 +43,14 @@ module Ooor
       end
 
       def find_by_permalink(param, options={})
+        # NOTE in v8, see if we can use PageConverter here https://github.com/akretion/openerp-addons/blob/trunk-website-al/website/models/ir_http.py#L138
         param = param.to_i unless param.to_i == 0
         options.merge!(domain: {param_field => param})
         find(:first, options)
       end
 
       def alias(context={})
+        # NOTE in v8, see if we can use ModelConvert here https://github.com/akretion/openerp-addons/blob/trunk-website-al/website/models/ir_http.py#L126
         if connection.config[:aliases]
           lang = context['lang'] || connection.config[:aliases][connection.config['lang'] || 'en_US']
           if alias_data = connection.config[:aliases][lang]
