@@ -1,16 +1,4 @@
 module Ooor
-
-  module V7CookieHack
-    # NOTE this is a hack because OpenERP v7 uses a cookie name like instance0|session_id where the '|' would be escaped otherwise
-    def escape_with_hack(s)
-      if s =~ /instance[0-9]+\|session_id/
-        s
-      else
-        escape_without_hack(s)
-      end
-    end
-  end
-
   class Rack
 
     def initialize(app=nil)
@@ -30,17 +18,25 @@ module Ooor
       if ooor_public_session.config[:session_sharing]
         if ooor_public_session.config[:username] == 'admin'
           if ooor_public_session.config[:force_session_sharing]
-            puts "Warning! force_session_sharing mode with admin user, this may be a serious security breach! Are you really in development mode?"
+            Ooor.logger.debug "Warning! force_session_sharing mode with admin user, this may be a serious security breach! Are you really in development mode?"
           else
             raise "Sharing OpenERP session for admin user is suicidal (use force_session_sharing in dev mode and be paranoiac about it)"
           end
         end
-        session_id = ooor_public_session.web_session[:session_id]
-        expiry = Time.now+24*60*6
+        cookie = ooor_public_session.web_session[:cookie]
+        header = response.headers
+        case header["Set-Cookie"]
+        when nil, ''
+          header["Set-Cookie"] = cookie
+        when String
+          header["Set-Cookie"] = [header["Set-Cookie"], cookie].join("\n")
+        when Array
+          header["Set-Cookie"] = (header["Set-Cookie"] + [cookie]).join("\n")
+        end
+
         if ooor_public_session.web_session[:sid] #v7
-          self.share_session_v7!(ooor_public_session, response, session_id, expiry)
-        else #v8
-          response.set_cookie("session_id", {:value => session_id, :path => "/", :expires => expiry})
+          session_id = ooor_public_session.web_session[:session_id]
+header["Set-Cookie"] = [header["Set-Cookie"], "instance0|session_id=%22#{session_id}%22; Path=/", "last_used_database=#{ooor_public_session.config[:database]}; Path=/"].join("\n")
         end
       end
       response.finish
@@ -64,19 +60,5 @@ module Ooor
       web_session = {session_id: cookies_hash['session_id']}
       Ooor.session_handler.retrieve_session(Ooor.default_config, web_session)
     end
-
-    protected
-
-    def self.share_session_v7!(env, response, session_id, expiry)
-      response.set_cookie("sid", {:value => ooor_public_session.web_session[:sid], :path => "/", :expires => expiry})
-      unless Rack::Utils.responds_to?(:escape_with_hack)
-        ::Rack::Utils.send :include, V7CookieHack
-        ::Rack::Utils.send :alias_method, :escape_without_hack, :escape
-        ::Rack::Utils.send :alias_method, :escape, :escape_with_hack
-      end
-      response.set_cookie("instance0|session_id", {:value => '"'+session_id.to_s+'"', :path => "/", :expires => expiry})
-      response.set_cookie("last_used_database", {:value => ooor_public_session.config[:database], :path => "/", :expires => expiry})
-    end
-
   end
 end
