@@ -84,7 +84,6 @@ module Ooor
       uid = @session.config[:user_id]
       db = @session.config[:database]
       @session.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
-      begin
       if @session.config[:force_xml_rpc]
         pass = @session.config[:password]
         send(service, db, uid, pass, obj, method, *args)
@@ -98,7 +97,10 @@ module Ooor
       rescue InvalidSessionError
         @session.config[:force_xml_rpc] = true #TODO set v6 version too
         retry
-      end
+      rescue SessionExpiredError
+        @session.logger.debug "session for uid: #{uid} has expired, trying to login again"
+        @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password])
+        retry
     end
 
     def inject_session_context(*args)
