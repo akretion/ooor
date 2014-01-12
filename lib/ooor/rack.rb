@@ -36,7 +36,11 @@ module Ooor
 
         if ooor_public_session.web_session[:sid] #v7
           session_id = ooor_public_session.web_session[:session_id]
-header["Set-Cookie"] = [header["Set-Cookie"], "instance0|session_id=%22#{session_id}%22; Path=/", "last_used_database=#{ooor_public_session.config[:database]}; Path=/"].join("\n")
+          header["Set-Cookie"] = [header["Set-Cookie"], 
+                                  "instance0|session_id=%22#{session_id}%22; Path=/",
+                                  "last_used_database=#{ooor_public_session.config[:database]}; Path=/",
+                                  "session_id=#{session_id}; Path=/",
+                                 ].join("\n")
         end
       end
       response.finish
