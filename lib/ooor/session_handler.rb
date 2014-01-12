@@ -17,7 +17,7 @@ module Ooor
       if config[:reload] || !s = sessions[spec]
         create_new_session(config, spec, web_session)
       else
-        s.tap {|s| s.session.merge!(web_session)}
+        s.tap {|s| s.web_session.merge!(web_session)}
       end
     end
 
@@ -27,17 +27,24 @@ module Ooor
         Ooor::Session.new(connections[c_spec], web_session)
       else
         Ooor::Session.new(create_new_connection(config, c_spec), web_session).tap do |s|
-          if config[:database] && config[:username]
-            s.config[:user_id] = s.common.login(config[:database], config[:username], config[:password]) # NOTE do that lazily?
-          end
-          connections[spec] = s.connection
+          connections[c_spec] = s.connection
         end
       end
+    end
+
+    def register_session(session)
+      spec = session_spec(session.config, session.web_session[:session_id])
+      sessions[spec] = session
     end
 
     def create_new_connection(config, spec)
       config = Ooor.default_config.merge(config) if Ooor.default_config.is_a? Hash
       Connection.new(config)
+    end
+
+    def reset!
+      @sessions = {}
+      @connections = {}
     end
 
     def sessions; @sessions ||= {}; end
