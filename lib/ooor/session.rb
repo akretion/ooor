@@ -27,8 +27,6 @@ module Ooor
 
     def global_login(options)
       config.merge!(options)
-      config[:user_id] = common.login(config[:database], config[:username], config[:password])
-      raise UnAuthorizedError.new unless config[:user_id]
       load_models(config[:models], options[:reload])
     end
 
@@ -85,7 +83,7 @@ module Ooor
         end
     end
 
-    def define_openerp_model(options)
+    def define_openerp_model(options) #TODO param to tell if we define constants or not
       scope_prefix = options[:scope_prefix]
       scope = scope_prefix ? Object.const_get(scope_prefix) : Object
       model_class_name = class_name_from_model_key(options[:model])
