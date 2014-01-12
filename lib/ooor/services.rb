@@ -6,6 +6,8 @@
 require 'json'
 
 module Ooor
+  autoload :InvalidSessionError, 'ooor/errors'
+
   class Service
     def initialize(session)
       @session = session
@@ -28,6 +30,8 @@ module Ooor
     define_service(:common, %w[ir_get ir_set ir_del about ooor_alias_login logout timezone_get get_available_updates get_migration_scripts get_server_environment login_message check_connectivity about get_stats list_http_services version authenticate get_available_updates set_loglevel get_os_time get_sqlcount])
 
     def login(db, username, password)
+      @session.logger.debug "OOOR login - db: #{db}, username: #{username}"
+
       if @session.config[:force_xml_rpc]
         send("ooor_alias_login", db, username, password)
       else
@@ -44,7 +48,10 @@ module Ooor
         end
         json_response = JSON.parse(response.body)
         @session.web_session[:session_id] = json_response['result']['session_id']
-        json_response['result']['uid']
+        user_id = json_response['result']['uid']
+        @session.config[:user_id] = user_id
+        Ooor.session_handler.register_session(@session)
+        user_id
       end
     end
   end
@@ -70,6 +77,9 @@ module Ooor
     define_service(:object, %w[execute exec_workflow])
     
     def object_service(service, obj, method, *args)
+      unless @session.config[:user_id]
+        @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password])
+      end
       args = inject_session_context(*args)
       uid = @session.config[:user_id]
       db = @session.config[:database]
@@ -79,6 +89,9 @@ module Ooor
         pass = @session.config[:password]
         send(service, db, uid, pass, obj, method, *args)
       else
+        unless @session.web_session[:session_id]
+          @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password])
+        end
         json_conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
         json_conn.oe_service(@session.web_session, service, obj, method, *args)
       end
