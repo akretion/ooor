@@ -12,9 +12,10 @@ Ooor is the base module for OpenERP on Ruby. It can be used as:
 * a **data migration tool** (inside Kettle with the TerminatOOOR JRuby plugin), it's specially handy as you can remotely connect to a running OpenERP instance without stopping it, without compromising its security.
 * the basis for unleashed **web development**, using **Rack**, **Sinatra** or **Rails**.
 
-OpenERP really shines when it's about quickly creating a CRUD backoffice for enterprise applications (ERP). It offers a nice extensible base of reusable enterprise objects and can enforce complex access rules over them.
+OpenERP really shines when it's about quickly creating a CRUD backoffice for enterprise applications (ERP). OpenERP offers a nice extensible set of reusable enterprise objects and can enforce complex access rules over them.
 OpenERP is a bit higher level than Rails (for instance it's component oriented while Rails is REST oriented) so if you adhere to the OpenERP conventions, 
 then you are done faster than coding a Rails app (seriously).
+
 But adhering means: you stick to OpenObject views, widgets, look and feel, components composition, ORM (kind of ActiveRecord), the Postgres database, the contaminating AGPL license...
 Well OpenERP just added a stronger web framework in version 8. It's certainly a revolution for dinosaur ERP's but honestly it doesn't come close to Rails for web development; if you know Rails, you know what I mean.
 
@@ -24,13 +25,12 @@ Instead sometimes you want freedom and scalablity for your web development and t
 Important projects depending on Ooor
 ------------------------------------
 
-* [TerminatOOOR](http://github.com/rvalyi/terminatooor), a Pentaho ETL Kettle plugin allowing to push/pull data into/from OpenERP with an incomparable flexibility and yet benefit all standard ETL features, including the AgileBI OLAP business intelligence plugin.
 * [Ooorest](http://github.com/akretion/ooorest), Ooor is the **Model** layer of **MVC**. Ooorest is the **Controller** layer, enforcing a clean Railish **REST API** and offering handy **helper** to use OpenERP in your Rails application.
 * [Aktooor](http://github.com/akretion/aktooor), Aktoor is the missing **View** layer of **MVC**. It's based on [SimpleForm](https://github.com/plataformatec/simple_form), that is a clean minimalist framework that extend Rails form framework over [Twitter Bootstrap](http://getbootstrap.com)
 * [Erpify](http://github.com/akretion/erpify), Erpify is OpenERP inside the Liquid non evaling language, that is the templating language of Shopify or LocomotiveCMS for instance.
 * [Locomotive-erpify](http://github.com/akretion/locomtive-erpify), Erpify for LocomotiveCMS, both the engine and the Wagon local editor
 * [Solarize](http://github.com/akretion/solarize), pulling data from OpenERP relational database may not scale to your need. No problem with Solarize: you can index your OpenERP data with the [Solerp](http://github.com/akretion/solerp) OpenERP module, then search it using SolR API and even load it from SolR instead of hitting OpenERP!
-
+* [TerminatOOOR](http://github.com/rvalyi/terminatooor), a Pentaho ETL Kettle plugin allowing to push/pull data into/from OpenERP with an incomparable flexibility and yet benefit all standard ETL features, including the AgileBI OLAP business intelligence plugin.
 
 How?
 ------------
