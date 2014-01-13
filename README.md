@@ -8,9 +8,9 @@ Why use Ooor?
 
 Ooor is the base module for OpenERP on Ruby. It can be used as:
 
-* an administration Swiss Army knife in interactive IRB sessions. it's specially handy as you can remotely connect to a running OpenERP instance without stopping it, without compromising its security. It also feature handy tab completion and object introspection.
-* a data migration tool (inside Kettle with the TerminatOOOR JRuby plugin), it's specially handy as you can remotely connect to a running OpenERP instance without stopping it, without compromising its security.
-* the basis for unleashed web development, using Rack, Sinatra or Rails.
+* an **administration Swiss Army knife** in interactive IRB sessions. it's specially handy as you can remotely connect to a running OpenERP instance without stopping it, without compromising its security. It also feature handy tab completion and object introspection.
+* a **data migration tool** (inside Kettle with the TerminatOOOR JRuby plugin), it's specially handy as you can remotely connect to a running OpenERP instance without stopping it, without compromising its security.
+* the basis for unleashed **web development**, using **Rack**, **Sinatra** or **Rails**.
 
 OpenERP really shines when it's about quickly creating a CRUD backoffice for enterprise applications (ERP). It offers a nice extensible base of reusable enterprise objects and can enforce complex access rules over them.
 OpenERP is a bit higher level than Rails (for instance it's component oriented while Rails is REST oriented) so if you adhere to the OpenERP conventions, 
