@@ -77,12 +77,12 @@ module Ooor
     end
 
 
-    def with_ooor_session(config={})
-      yield Ooor.session_handler.retrieve_session(config)
+    def with_ooor_session(config={}, id=nil)
+      yield Ooor.session_handler.retrieve_session(config, id)
     end
 
-    def with_ooor_public_session(config={})
-      yield Ooor.session_handler.retrieve_session(Ooor.default_config.merge!(config))
+    def with_ooor_public_session(config={}, id=nil)
+      yield Ooor.session_handler.retrieve_session(Ooor.default_config.merge!(config), id)
     end
   end
 

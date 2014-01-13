@@ -3,33 +3,38 @@ require 'ooor/session'
 require 'ooor/connection'
 
 module Ooor
+  autoload :SecureRandom, 'securerandom'
   class SessionHandler
     def connection_spec(config)
       HashWithIndifferentAccess.new(config.slice(:url, :username, :password, :database, :scope_prefix, :helper_paths)) #TODO should really password be part of it?
     end
 
-    def retrieve_session(config, web_session={})
-      spec = web_session[:session_id]
-      if config[:reload] || !s = sessions[spec]
-        create_new_session(config, spec, web_session)
+    def retrieve_session(config, id=nil, web_session={})
+      id ||= SecureRandom.hex(16) 
+      if config[:reload] || !s = sessions[id]
+        create_new_session(config, web_session, id)
       else
-        s.tap {|s| s.web_session.merge!(web_session)}
+        s.tap {|s| s.web_session.merge!(web_session)} #TODO merge config also?
       end
     end
 
-    def create_new_session(config, spec, web_session)
+    def create_new_session(config, web_session, id=nil)
       c_spec = connection_spec(config)
       if connections[c_spec]
-        Ooor::Session.new(connections[c_spec], web_session)
+        Ooor::Session.new(connections[c_spec], web_session, id)
       else
-        Ooor::Session.new(create_new_connection(config, c_spec), web_session).tap do |s|
+        Ooor::Session.new(create_new_connection(config, c_spec), web_session, id).tap do |s|
           connections[c_spec] = s.connection
         end
       end
     end
 
     def register_session(session)
-      spec = session.web_session[:session_id]
+      if session.config[:session_sharing]
+        spec = session.web_session[:session_id]
+      else
+        spec= session.id
+      end
       sessions[spec] = session
     end
 
