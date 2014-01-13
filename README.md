@@ -6,17 +6,15 @@
 Why use Ooor?
 -------------
 
-Ooor is the base Ruby client for OpenERP. It can be used as:
-
-* an **administration Swiss Army knife** in interactive IRB sessions. It let remotely connect to any running OpenERP instances without stopping it, without compromising its security. It has tab auto-completion and object introspection features.
-* a **data migration tool** (inside Kettle with the TerminatOOOR JRuby plugin). Your favorite ETL with OpenERP API super-powers!
-* the basis for unleashed **web development**, using **Rack**, **Sinatra** or **Rails**.
+* Ooor is an **administration Swiss Army knife** in interactive IRB sessions. It let remotely connect to any running OpenERP instances without stopping it, without compromising its security. It has tab auto-completion and object introspection features.
+* Ooor is a **data migration tool** (inside Kettle with the TerminatOOOR JRuby plugin). Your favorite ETL with OpenERP API super-powers!
+* Ooor is the basis for unleashed **web development**, using any **Rack** framework such as **Sinatra** or **Rails**.
 
 OpenERP is all the rage for ERP back-offices, but sometimes you want **freedom and scalablity** for your web front ends and this is exactly what Ooor offers you. It enables you to just **reuse OpenERP Model layer** (yay! no data duplication!) and let you build the other layers much the way you want, possibly standing on the shoulders of giants like Rails. Ooor even has an optionnal Rack filter that enables you to proxy some OpenERP applications of your choice (say the shopping cart for instance) and share the HTTP session with it. Ooor is also published under the **MIT licence** so it frees you from the OpenERP AGPL license contamination for your web developements.
 
 
-Related projects
-----------------
+Related projects - a full web stack!
+------------------------------------
 
 * [Ooorest](http://github.com/akretion/ooorest), Ooor is the **Model** layer of **MVC**. Ooorest is the **Controller** layer, enforcing a clean Railish **REST API** and offering handy **helper** to use OpenERP in your Rails application.
 * [Aktooor](http://github.com/akretion/aktooor), Aktoor is the missing **View** layer of **MVC**. It's based on [SimpleForm](https://github.com/plataformatec/simple_form), that is a clean minimalist framework that extend Rails form framework over [Twitter Bootstrap](http://getbootstrap.com)
