@@ -12,14 +12,7 @@ Ooor is the base module for OpenERP on Ruby. It can be used as:
 * a **data migration tool** (inside Kettle with the TerminatOOOR JRuby plugin), it's specially handy as you can remotely connect to a running OpenERP instance without stopping it, without compromising its security.
 * the basis for unleashed **web development**, using **Rack**, **Sinatra** or **Rails**.
 
-OpenERP really shines when it's about quickly creating a CRUD backoffice for enterprise applications (ERP). OpenERP offers a nice extensible set of reusable enterprise objects and can enforce complex access rules over them.
-OpenERP is a bit higher level than Rails (for instance it's component oriented while Rails is REST oriented) so if you adhere to the OpenERP conventions, 
-then you are done faster than coding a Rails app (seriously).
-
-But adhering means: you stick to OpenObject views, widgets, look and feel, components composition, ORM (kind of ActiveRecord), the Postgres database, the contaminating AGPL license...
-Well OpenERP just added a stronger web framework in version 8. It's certainly a revolution for dinosaur ERP's but honestly it doesn't come close to Rails for web development; if you know Rails, you know what I mean.
-
-Instead sometimes you want freedom and scalablity for your web development and this is exactly what Ooor offers you. It enables you to just reuse OpenERP Model layer  and let you bulild the other layers the way you want, possibly standing on the shoulders of a giant like Rails. Ooor even has an optionnal Rack filter that enables you to proxy some OpenERP applications of your choice (say the shopping cart for instance) and share the HTTP session with it.
+OpenERP is all the rage for ERP back-offices, but sometimes you want freedom and scalablity for your web front ends and this is exactly what Ooor offers you. It enables you to just reuse OpenERP Model layer (yay! no data duplication!) and let you build the other layers the way you want, possibly standing on the shoulders of giants like Rails. Ooor even has an optionnal Rack filter that enables you to proxy some OpenERP applications of your choice (say the shopping cart for instance) and share the HTTP session with it. Ooor is also released under the MIT licence so it frees you from the OpenERP AGPL license contamination for your web developements.
 
 
 Important projects depending on Ooor
