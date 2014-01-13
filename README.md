@@ -6,7 +6,7 @@
 Why use Ooor?
 -------------
 
-* Ooor is an **administration Swiss Army knife** in interactive IRB sessions. It let remotely connect to any running OpenERP instances without stopping it, without compromising its security. It has tab auto-completion and object introspection features.
+* Ooor is an **administration Swiss Army knife** in interactive IRB sessions. It lets you connect remotely to any running OpenERP instances without stopping it, without compromising its security. It has tab auto-completion and object introspection features.
 * Ooor is a **data migration tool** (inside Kettle with the TerminatOOOR JRuby plugin). Your favorite ETL with OpenERP API super-powers!
 * Ooor is the basis for unleashed **web development**, using any **Rack** framework such as **Sinatra** or **Rails**.
 
