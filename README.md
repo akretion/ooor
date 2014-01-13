@@ -3,79 +3,52 @@
 [![OOOR by Akretion](https://s3.amazonaws.com/akretion/assets/ooor_by_akretion.png)](http://akretion.com)
 
 
-Why?
-------------
+Why use Ooor?
+-------------
 
-OpenERP makes it really straightforward to create custom business applications with:
+Ooor is the base module for OpenERP on Ruby. It can be used as:
 
-* standard ERP business modules (more than 500 modules)
-* complex relationnal data model, with automated migration and backoffice interfaces
-* ACID transactions on PostgreSQL
-* role based
-* modular
-* integrated BPM (Business Process Management)
-* integrated reporting system, with integrated translations
-* both native GTK/QT clients and standard web access
+* an administration Swiss Army knife in interactive IRB sessions. it's specially handy as you can remotely connect to a running OpenERP instance without stopping it, without compromising its security. It also feature handy tab completion and object introspection.
+* a data migration tool (inside Kettle with the TerminatOOOR JRuby plugin), it's specially handy as you can remotely connect to a running OpenERP instance without stopping it, without compromising its security.
+* the basis for unleashed web development, using Rack, Sinatra or Rails.
 
-In a word OpenERP really shines when it's about quickly creating the backoffice of those enterprise applications.
+OpenERP really shines when it's about quickly creating a CRUD backoffice for enterprise applications (ERP). It offers a nice extensible base of reusable enterprise objects and can enforce complex access rules over them.
 OpenERP is a bit higher level than Rails (for instance it's component oriented while Rails is REST oriented) so if you adhere to the OpenERP conventions, 
 then you are done faster than coding a Rails app (seriously).
-Adhering means: you stick to OpenObject views, widgets, look and feel, components composition, ORM (kind of ActiveRecord), the Postgres database...
+But adhering means: you stick to OpenObject views, widgets, look and feel, components composition, ORM (kind of ActiveRecord), the Postgres database, the contaminating AGPL license...
+Well OpenERP just added a stronger web framework in version 8. It's certainly a revolution for dinosaur ERP's but honestly it doesn't come close to Rails for web development; if you know Rails, you know what I mean.
 
-But sometimes you can't afford that. Typicall examples are B2C end users applications like e-commerce shops.
-So what happens if you don't adhere to the OpenERP framework?
-Well that's where OOOR comes into action. It allows you to build a Rails application much like you want, where you totally control the end user presentation and interaction.
-But OOOR makes it straightforward to use a standard OpenERP models as your persistent models.
+Instead sometimes you want freedom and scalablity for your web development and this is exactly what Ooor offers you. It enables you to just reuse OpenERP Model layer  and let you bulild the other layers the way you want, possibly standing on the shoulders of a giant like Rails. Ooor even has an optionnal Rack filter that enables you to proxy some OpenERP applications of your choice (say the shopping cart for instance) and share the HTTP session with it.
 
-An other reason why you might want to use OOOR is because you would like to code essentially a Rails or say web application
-(because you know it better, because the framework is cleaner or because you will reuse something, possibly Java libraries though JRuby)
-but you still want to benefit from OpenERP features. Notice that despite its name OOOR doens't hold a dependency upon Rails anymore.
 
-Yet an other typicall use case would be to test your OpenERP application/module using Rails best of bread BDD Ruby frameworks such as RSpec or Cucumber.
-We use RSpec to test OOOR againt OpenERP [here](http://github.com/rvalyi/ooor/blob/master/spec/ooor_spec.rb) and thanks to the initiative of CampToCamp, the OpenERP community tests OpenERP business features extensively
-using Cucumber in [OEPScenario](http://launchpad.net/oerpscenario).
+Important projects depending on Ooor
+------------------------------------
 
-An other usage of OOOR, is it ability to bridge the OpenERP Python world and and the Java world thanks to its JRuby compatibility. This is especially useful in to do extensive "Data Integration" with OpenERP and benefit from the
-most powerful Java based ETL's. The main project here is [TerminatOOOR](http://github.com/rvalyi/terminatooor), a Pentaho ETL Kettle 4 plugin allowing to push/pull data into/from OpenERP with an incomparable flexibility and yet benefit
-all standard ETL features, including the AgileBI OLAP business intelligence plugin.
-
-Finally you might also want to use OOOR simply to expose your OpenERP through REST to other consumer applications using [the OOOREST project](http://github.com/rvalyi/ooorest).
-
+* [TerminatOOOR](http://github.com/rvalyi/terminatooor), a Pentaho ETL Kettle plugin allowing to push/pull data into/from OpenERP with an incomparable flexibility and yet benefit all standard ETL features, including the AgileBI OLAP business intelligence plugin.
+* [Ooorest](http://github.com/akretion/ooorest), Ooor is the **Model** layer of **MVC**. Ooorest is the **Controller** layer, enforcing a clean Railish **REST API** and offering handy **helper** to use OpenERP in your Rails application.
+* [Aktooor](http://github.com/akretion/aktooor), Aktoor is the missing **View** layer of **MVC**. It's based on [SimpleForm](https://github.com/plataformatec/simple_form), that is a clean minimalist framework that extend Rails form framework over [Twitter Bootstrap](http://getbootstrap.com)
+* [Erpify](http://github.com/akretion/erpify), Erpify is OpenERP inside the Liquid non evaling language, that is the templating language of Shopify or LocomotiveCMS for instance.
+* [Locomotive-erpify](http://github.com/akretion/locomtive-erpify), Erpify for LocomotiveCMS, both the engine and the Wagon local editor
+* [Solarize](http://github.com/akretion/solarize), pulling data from OpenERP relational database may not scale to your need. No problem with Solarize: you can index your OpenERP data with the [Solerp](http://github.com/akretion/solerp) OpenERP module, then search it using SolR API and even load it from SolR instead of hitting OpenERP!
 
 
 How?
 ------------
 
-OpenERP is a Python based open source ERP. Every action in OpenERP is actually invokable as a webservice (SOA orientation, close to being RESTful).
-OOOR just takes advantage of it.
+OpenERP is a Python based open source ERP. But every action in OpenERP is actually exposed as a webservice (SOA orientation, close to being RESTful).
+Ooor doesn't connect to the OpenERP database, instead it really uses the OpenERP data access JSON API so it fully enforces OpenERP security model and implemented business rules, making all of them accessible to Ruby.
 
-OOOR aims at being a very simple piece of code (< 500 lines of code; e.g no bug, [heavility tested](http://github.com/rvalyi/ooor/blob/master/spec/ooor_spec.rb), easy to evolve) adhering to Rails standards.
-So instead of re-inventing the wheel, OOOR basically just sits on the top of Rails [ActiveResource::Base](http://api.rubyonrails.org/classes/ActiveResource/Base.html), the standard way of remoting you ActiveRecord Rails models with REST.
+Ooor is less than 2000 lines of code. It has a test coverage of around 80%. It doesn't embed any business rule, it's just a client to OpenERP. The code of Ooor is modeled after Rails [ActiveModel](http://api.rubyonrails.org/classes/ActiveModel/Model.html), [ActiveResource](https://github.com/rails/activeresource) and [ActiveRecord](http://api.rubyonrails.org/classes/ActiveRecord/Base.html) layers.
 
-Remember, ActiveResource is actually simpler than [ActiveRecord](http://api.rubyonrails.org/classes/ActiveRecord/Base.html). It's aimed at remoting ANY object model, not necessarily ActiveRecord models.
-So ActiveResource is only a subset of ActiveRecord, sharing the common denominator API (integration is expected to become even more powerful in Rails 3).
-
-OOOR implements ActiveResource public API almost fully. It means that you can remotely work on any OpenERP model using [the standard ActiveResource API](http://api.rubyonrails.org/classes/ActiveResource/Base.html).
-
-But, OOOR goes actually a bit further: it does implements model associations (one2many, many2many, many2one, single table inheritance, polymorphic associations...).
-Indeed, when loading the OpenERP models, we load the relational meta-model using OpenERP standard datamodel introspection services.
-Then we cache that relational model and use it in OpenObjectResource.method_missing to load associations as requested.
-
-OOOR also extends ActiveResource a bit with special request parameters (like :domain or :context) that will just map smoothly to the OpenERP native API, see API.
+More specifically, an OpenERP Ooor proxy inherits from ActiveModel. Instead of depending on ActiveResource which is actually a bit different (not multi-tenant, little access right management), we copied a small subset of it in the mini_active_resource.rb file and OpenERP proxies include this module. Finally Ooor tries to emulate the ActiveRecord API wherever possible despite it delegate its requests to OpenERP using OpenERP domain [S expressions](http://en.wikipedia.org/wiki/S-expression) instead of SQL. The ActiveRecord API emulation is actually pretty good: think that Ooor looks more ActiveRecord than Mongoid; it has associations, surface ARel API, Reflection API, can be paginated via Kaminary, can be integrated with SimpleForm or Cocoon seamlessly...
 
 
 Installation
 ------------
 
-You can use OOOR in a standalone (J)Ruby application, or in a Rails application, it only depends on the activeresource gem.
-For both example we assume that you already started some OpenERP server on localhost, with XML/RPC on port 8069 (default),
-with a database called 'mybase', with username 'admin' and password 'admin'.
-
-In all case, you first need to install Ruby, then the rubygems package manager and finally the ooor gem with:
-
     $ gem install ooor
-(the ooor gem is hosted [on gemcutter.org here](http://gemcutter.org/gems/ooor), make sure you have it in your gem source lists, a way is to do >gem tumble)
 
+(Warning Ooor has been ureleased for several months, don't hesitate to run the git version instead)
 
 Trying it simply
 ------------
