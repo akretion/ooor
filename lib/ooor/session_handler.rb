@@ -8,12 +8,8 @@ module Ooor
       HashWithIndifferentAccess.new(config.slice(:url, :username, :password, :database, :scope_prefix, :helper_paths)) #TODO should really password be part of it?
     end
 
-    def session_spec(config, session_id)
-      connection_spec(config).merge(session_id: session_id)
-    end
-
     def retrieve_session(config, web_session={})
-      spec = session_spec(config, web_session[:session_id])
+      spec = web_session[:session_id]
       if config[:reload] || !s = sessions[spec]
         create_new_session(config, spec, web_session)
       else
@@ -22,7 +18,7 @@ module Ooor
     end
 
     def create_new_session(config, spec, web_session)
-      c_spec = connection_spec(spec)
+      c_spec = connection_spec(config)
       if connections[c_spec]
         Ooor::Session.new(connections[c_spec], web_session)
       else
@@ -33,7 +29,7 @@ module Ooor
     end
 
     def register_session(session)
-      spec = session_spec(session.config, session.web_session[:session_id])
+      spec = session.web_session[:session_id]
       sessions[spec] = session
     end
 

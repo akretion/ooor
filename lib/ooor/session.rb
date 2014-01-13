@@ -11,10 +11,10 @@ module Ooor
     def object(); @object_service ||= ObjectService.new(self); end
     def report(); @report_service ||= ReportService.new(self); end
 
-    def initialize(connection, web_session={})
+    def initialize(connection, web_session)
       super(connection)
       @connection = connection
-      @web_session = web_session
+      @web_session = web_session || {}
     end
 
     def [](key)
