@@ -6,36 +6,37 @@
 Why use Ooor?
 -------------
 
-Ooor is the base module for OpenERP on Ruby. It can be used as:
+Ooor is the base Ruby client for OpenERP. It can be used as:
 
-* an **administration Swiss Army knife** in interactive IRB sessions. it's specially handy as you can remotely connect to a running OpenERP instance without stopping it, without compromising its security. It also feature handy tab completion and object introspection.
-* a **data migration tool** (inside Kettle with the TerminatOOOR JRuby plugin), it's specially handy as you can remotely connect to a running OpenERP instance without stopping it, without compromising its security.
+* an **administration Swiss Army knife** in interactive IRB sessions. It let remotely connect to any running OpenERP instances without stopping it, without compromising its security. It has tab auto-completion and object introspection features.
+* a **data migration tool** (inside Kettle with the TerminatOOOR JRuby plugin). Your favorite ETL with OpenERP API super-powers!
 * the basis for unleashed **web development**, using **Rack**, **Sinatra** or **Rails**.
 
-OpenERP is all the rage for ERP back-offices, but sometimes you want **freedom and scalablity** for your web front ends and this is exactly what Ooor offers you. It enables you to just **reuse OpenERP Model layer** (yay! no data duplication!) and let you build the other layers the way you want, possibly standing on the shoulders of giants like Rails. Ooor even has an optionnal Rack filter that enables you to proxy some OpenERP applications of your choice (say the shopping cart for instance) and share the HTTP session with it. Ooor is also released under the **MIT licence** so it frees you from the OpenERP AGPL license contamination for your web developements.
+OpenERP is all the rage for ERP back-offices, but sometimes you want **freedom and scalablity** for your web front ends and this is exactly what Ooor offers you. It enables you to just **reuse OpenERP Model layer** (yay! no data duplication!) and let you build the other layers much the way you want, possibly standing on the shoulders of giants like Rails. Ooor even has an optionnal Rack filter that enables you to proxy some OpenERP applications of your choice (say the shopping cart for instance) and share the HTTP session with it. Ooor is also published under the **MIT licence** so it frees you from the OpenERP AGPL license contamination for your web developements.
 
 
-Important projects depending on Ooor
-------------------------------------
+Related projects
+----------------
 
 * [Ooorest](http://github.com/akretion/ooorest), Ooor is the **Model** layer of **MVC**. Ooorest is the **Controller** layer, enforcing a clean Railish **REST API** and offering handy **helper** to use OpenERP in your Rails application.
 * [Aktooor](http://github.com/akretion/aktooor), Aktoor is the missing **View** layer of **MVC**. It's based on [SimpleForm](https://github.com/plataformatec/simple_form), that is a clean minimalist framework that extend Rails form framework over [Twitter Bootstrap](http://getbootstrap.com)
 * [Erpify](http://github.com/akretion/erpify), Erpify is OpenERP inside the Liquid non evaling language, that is the templating language of Shopify or LocomotiveCMS for instance.
 * [Locomotive-erpify](http://github.com/akretion/locomtive-erpify), Erpify for LocomotiveCMS, both the engine and the Wagon local editor
-* [Solarize](http://github.com/akretion/solarize), pulling data from OpenERP relational database may not scale to your need. No problem with Solarize: you can index your OpenERP data with the [Solerp](http://github.com/akretion/solerp) OpenERP module, then search it using SolR API and even load it from SolR instead of hitting OpenERP!
+* [Solarize](http://github.com/akretion/solarize), pulling data from OpenERP relational database may not scale to your need. No problem with Solarize: you can index your OpenERP data with the [Solerp](http://github.com/akretion/solerp) OpenERP module, then search it using SolR API and even load it from SolR without even hitting OpenERP!
 * [TerminatOOOR](http://github.com/rvalyi/terminatooor), a Pentaho ETL Kettle plugin allowing to push/pull data into/from OpenERP with an incomparable flexibility and yet benefit all standard ETL features, including the AgileBI OLAP business intelligence plugin.
+
 
 How?
 ------------
 
 OpenERP is a Python based open source ERP. But every action in OpenERP is actually exposed as a webservice (SOA orientation, close to being RESTful).
-Ooor doesn't connect to the OpenERP database, instead it really uses the OpenERP data access **JSON API** so it fully enforces OpenERP security model and implemented business rules, making all of them accessible to Ruby.
+Ooor doesn't connect to the OpenERP database, instead it uses the OpenERP data access **JSON API** so it fully enforces OpenERP security model and business logic.
 
 Ooor is less than 2000 lines of code. It has a test coverage of around 80%. It doesn't embed any business rule, it's just a client to OpenERP. The code of Ooor is modeled after Rails [ActiveModel](http://api.rubyonrails.org/classes/ActiveModel/Model.html), [ActiveResource](https://github.com/rails/activeresource) and [ActiveRecord](http://api.rubyonrails.org/classes/ActiveRecord/Base.html) layers.
 
-More specifically, an OpenERP Ooor proxy inherits from ActiveModel. Instead of depending on ActiveResource which is actually a bit different (not multi-tenant, little access right management), we copied a small subset of it in the mini_active_resource.rb file and OpenERP proxies include this module. Finally Ooor tries to emulate the ActiveRecord API wherever possible despite it delegates its requests to OpenERP using OpenERP domain [S expressions](http://en.wikipedia.org/wiki/S-expression) instead of SQL. The ActiveRecord API emulation is actually pretty good: think that **Ooor looks more like ActiveRecord than Mongoid**; it has associations, surface ARel API, Reflection API, can be paginated via Kaminary, can be integrated with SimpleForm or Cocoon seamlessly...
+More specifically, an OpenERP Ooor proxy implements the ActiveModel API. Instead of depending on ActiveResource which is actually a bit different (not multi-tenant, little access right management), we copied a tiny subset of it in the mini_active_resource.rb file and OpenERP proxies include this module. Finally Ooor emulates the ActiveRecord API wherever possible delegating its requests to OpenERP using OpenERP domain [S expressions](http://en.wikipedia.org/wiki/S-expression) instead of SQL. The ActiveRecord API emulation is actually pretty good: think **Ooor looks more like ActiveRecord than Mongoid**; it has associations, surface ARel API, Reflection API, can be paginated via Kaminary, can be integrated with SimpleForm or Cocoon seamlessly...
 
-Ooor has **several session modes**: in the default IRB console usage it uses a global login scheme and generate constants for your OpenERP proxies, such as ProductProduct for the product.product OpenERP object much like Rails ActiveRecord. In web mode instead, you can have several sessions and do session['product.product'] to get a proxy to the Product object matching your current session credentials, chosen database and OpenERP url (yes Ooor is not only multi-database like OpenEP, it's in fact **multi-OpenERP**!)
+Ooor features **several session modes**: in the default IRB console usage it uses a global login scheme and generate constants for your OpenERP proxies, such as ProductProduct for the product.product OpenERP object much like Rails ActiveRecord. In web mode instead, you can have several sessions and do session['product.product'] to get a proxy to the Product object matching your current session credentials, chosen database and OpenERP url (yes Ooor is not only multi-database like OpenEP, it's in fact **multi-OpenERP**!)
 
 
 Installation
