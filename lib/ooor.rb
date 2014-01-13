@@ -37,15 +37,15 @@ module Ooor
     extend ActiveSupport::Concern
     module ClassMethods
 
-      attr_accessor :default_ooor, :default_config
+      attr_accessor :default_config, :default_session
 
       def new(config={})
         Ooor.default_config = config
-        connection = session_handler.retrieve_session(config)
+        session = session_handler.retrieve_session(config)
         if config[:database] && config[:password]
-          connection.global_login(config)
+          session.global_login(config)
         end
-        Ooor.default_ooor = connection
+        Ooor.default_session = session
       end
 
       def cache(store=nil)
@@ -81,8 +81,8 @@ module Ooor
       yield Ooor.session_handler.retrieve_session(config, id)
     end
 
-    def with_ooor_public_session(config={}, id=nil)
-      yield Ooor.session_handler.retrieve_session(Ooor.default_config.merge!(config), id)
+    def with_ooor_default_session(config={})
+      yield Ooor.default_session(Ooor.default_config.merge!(config))
     end
   end
 
