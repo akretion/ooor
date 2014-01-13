@@ -7,10 +7,10 @@ module Ooor
       Ooor.logger = Rails.logger unless $0 != 'irb'
       Ooor.default_config = load_config(false, Rails.env)
       Ooor.logger.level = @config[:log_level] if @config[:log_level]
-      connection = Ooor.session_handler.retrieve_session(Ooor.default_config)
+      Ooor.default_session = Ooor.session_handler.retrieve_session(Ooor.default_config)
 
       if Ooor.default_config[:bootstrap]
-        connection.global_login(config)
+        Ooor.default_session.global_login(config)
       end
       unless Ooor.default_config[:disable_locale_switcher]
         if defined?(Rack::I18nLocaleSwitcher)

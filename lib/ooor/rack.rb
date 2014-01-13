@@ -60,9 +60,7 @@ module Ooor
       end
       context = {'lang' => lang} #TODO also deal with timezone
       ooor_session = self.get_session(env)
-      
-      ooor_public_session= ooor_session # TODO
-      env['ooor'] = {'context' => context, 'ooor_session'=> ooor_session, 'ooor_public_session' => ooor_public_session} #TODO ooor_model, see OOOREST
+      env['ooor'] = {'context' => context, 'ooor_session'=> ooor_session}
     end
 
     def self.get_session(env) #TODO public_session too # TODO configurable like in OOOREST
