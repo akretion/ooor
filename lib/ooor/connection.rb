@@ -6,8 +6,6 @@
 require 'active_support/core_ext/hash/indifferent_access'
 
 module Ooor
-  autoload :UnAuthorizedError, 'ooor/errors'
-
   class Connection
     attr_accessor :config, :connection_session
 
