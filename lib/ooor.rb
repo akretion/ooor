@@ -40,7 +40,7 @@ module Ooor
       attr_accessor :default_config, :default_session
 
       def new(config={})
-        Ooor.default_config = config
+        Ooor.default_config = config.merge(generate_constants: true)
         session = session_handler.retrieve_session(config)
         if config[:database] && config[:password]
           session.global_login(config)
@@ -82,7 +82,11 @@ module Ooor
     end
 
     def with_ooor_default_session(config={})
-      yield Ooor.default_session(Ooor.default_config.merge!(config))
+      if config
+        Ooor.new(config)
+      else
+        Ooor.default_session
+      end
     end
   end
 
