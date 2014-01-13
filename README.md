@@ -12,7 +12,7 @@ Ooor is the base module for OpenERP on Ruby. It can be used as:
 * a **data migration tool** (inside Kettle with the TerminatOOOR JRuby plugin), it's specially handy as you can remotely connect to a running OpenERP instance without stopping it, without compromising its security.
 * the basis for unleashed **web development**, using **Rack**, **Sinatra** or **Rails**.
 
-OpenERP is all the rage for ERP back-offices, but sometimes you want freedom and scalablity for your web front ends and this is exactly what Ooor offers you. It enables you to just reuse OpenERP Model layer (yay! no data duplication!) and let you build the other layers the way you want, possibly standing on the shoulders of giants like Rails. Ooor even has an optionnal Rack filter that enables you to proxy some OpenERP applications of your choice (say the shopping cart for instance) and share the HTTP session with it. Ooor is also released under the MIT licence so it frees you from the OpenERP AGPL license contamination for your web developements.
+OpenERP is all the rage for ERP back-offices, but sometimes you want **freedom and scalablity** for your web front ends and this is exactly what Ooor offers you. It enables you to just **reuse OpenERP Model layer** (yay! no data duplication!) and let you build the other layers the way you want, possibly standing on the shoulders of giants like Rails. Ooor even has an optionnal Rack filter that enables you to proxy some OpenERP applications of your choice (say the shopping cart for instance) and share the HTTP session with it. Ooor is also released under the **MIT licence** so it frees you from the OpenERP AGPL license contamination for your web developements.
 
 
 Important projects depending on Ooor
