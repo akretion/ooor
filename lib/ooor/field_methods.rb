@@ -10,7 +10,10 @@ module Ooor
         if force || !fields
           @t.fields = {}
           @columns_hash = {}
-          rpc_execute("fields_get", false, context).each { |k, field| reload_field_definition(k, field) }
+          fields_get = Ooor.cache.fetch("fget-#{connection.config[:database]}-#{openerp_model}-#{context['lang']}") do
+            rpc_execute("fields_get", false, context)
+          end
+          fields_get.each { |k, field| reload_field_definition(k, field) }
           @t.associations_keys = many2one_associations.keys + one2many_associations.keys + many2many_associations.keys + polymorphic_m2o_associations.keys
           (fields.keys + associations_keys).each do |meth| #generates method handlers for auto-completion tools
             define_field_method(meth)

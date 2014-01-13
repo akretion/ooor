@@ -95,6 +95,9 @@ module Ooor
         klass.name = model_class_name
         klass.scope_prefix = scope_prefix
         klass.connection = self
+        if options[:reload] && models[options[:model]]
+          Ooor.cache.delete("fget-#{config[:database]}-#{klass.t.openerp_model}-#{context['lang']}")
+        end
 
         if options[:generate_constants] && (options[:reload] || !scope.const_defined?(model_class_name))
           scope.const_set(model_class_name, klass)
