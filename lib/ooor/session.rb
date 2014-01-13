@@ -43,7 +43,7 @@ module Ooor
       else
         openerp_model = model_key
       end
-      define_openerp_model(model: openerp_model, scope_prefix: config[:scope_prefix])
+      define_openerp_model(model: openerp_model, scope_prefix: config[:scope_prefix], generate_constants: config[:generate_constants])
     end
 
     def[](model_key) #TODO invert: define method here and use []
@@ -59,7 +59,7 @@ module Ooor
       model_ids = object.object_service(:execute, "ir.model", :search, search_domain, 0, false, false, {}, false, {:context_index=>4})
       models_records = object.object_service(:execute, "ir.model", :read, model_ids, ['model', 'name']) #TODO use search_read
       models_records.each do |opts|
-        options = HashWithIndifferentAccess.new(opts.merge(scope_prefix: config[:scope_prefix], reload: reload))
+        options = HashWithIndifferentAccess.new(opts.merge(scope_prefix: config[:scope_prefix], reload: reload, generate_constants: config[:generate_constants]))
         define_openerp_model(options)
       end
     end
@@ -85,10 +85,10 @@ module Ooor
     end
 
     def define_openerp_model(options) #TODO param to tell if we define constants or not
-      scope_prefix = options[:scope_prefix]
-      scope = scope_prefix ? Object.const_get(scope_prefix) : Object
-      model_class_name = class_name_from_model_key(options[:model])
-      if !models[options[:model]] || options[:reload] || !scope.const_defined?(model_class_name)
+      if !models[options[:model]] || options[:reload]# || !scope.const_defined?(model_class_name)
+        scope_prefix = options[:scope_prefix]
+        scope = scope_prefix ? Object.const_get(scope_prefix) : Object
+        model_class_name = class_name_from_model_key(options[:model])
         logger.debug "registering #{model_class_name}"
         klass = Class.new(Base)
         set_model_template!(klass, options)
@@ -96,7 +96,7 @@ module Ooor
         klass.scope_prefix = scope_prefix
         klass.connection = self
 
-        if options[:reload] || !scope.const_defined?(model_class_name)
+        if options[:generate_constants] && (options[:reload] || !scope.const_defined?(model_class_name))
           scope.const_set(model_class_name, klass)
         end
         (Ooor.extensions[options[:model]] || []).each do |block|
@@ -112,6 +112,4 @@ module Ooor
     def logger; Ooor.logger; end
 
   end
-
-
 end
