@@ -9,12 +9,13 @@ module Ooor
     module ClassMethods
       def set_columns_hash(view_fields={})
         reload_fields_definition()
-        @fields.each do |k, field|
-          unless @associations_keys.index(k)
-            @columns_hash[k] = field.merge({type: to_rails_type(view_fields[k] && view_fields[k]['type'] || field['type'])})
+        @t.columns_hash ||= {}
+        @t.fields.each do |k, field|
+          unless @t.associations_keys.index(k)
+            @t.columns_hash[k] = field.merge({type: to_rails_type(view_fields[k] && view_fields[k]['type'] || field['type'])})
           end
         end
-        @columns_hash
+        @t.columns_hash
       end
 
       def column_for_attribute(name)
