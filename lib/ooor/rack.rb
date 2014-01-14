@@ -7,7 +7,7 @@ module Ooor
       puts "\nWARNING: using DEFAULT_OOOR_SESSION_CONFIG_MAPPER, you should probably define your own instead!"
       puts "You can define an Ooor::Rack.ooor_session_config_mapper block that will be evaled"
       puts "in the context of the rack middleware call after user is authenticated using Warden."
-      puts "Use it to mapp a Warden authentication to the OpenERP authentication you want.\n"
+      puts "Use it to mapp a Warden authentication to the OpenERP authentication you want.\n\n"
       Ooor.default_config
     end
 
@@ -35,13 +35,23 @@ module Ooor
 
         def get_ooor_session(env)
           cookies_hash = env['rack.request.cookie_hash'] || ::Rack::Request.new(env).cookies
-          session = Ooor.session_handler.sessions[cookies_hash['session_id']]
-          session ||= Ooor.session_handler.sessions[cookies_hash['ooor_session_id']] # no session sharing mode
-          unless session #TODO create_new_session(env)
-            web_session = {session_id: cookies_hash['session_id']}
+          session = Ooor.session_handler.sessions[cookies_hash['ooor_session_id']]
+          session ||= Ooor.session_handler.sessions[cookies_hash['session_id']]
+          unless session # session could have been used by an other worker, try getting it
             config = instance_eval &Ooor::Rack.ooor_session_config_mapper
-            session = Ooor.session_handler.retrieve_session(config, nil, web_session)
-          end
+            spec = config[:session_sharing] ? cookies_hash['session_id'] : cookies_hash['ooor_session_id']
+            web_session = Ooor.session_handler.get_web_session(spec) # created by some other worker?
+            unless web_session
+              if config[:session_sharing]
+                web_session = {session_id: cookies_hash['session_id']}
+                spec = cookies_hash['session_id']
+              else
+                web_session = {}
+                spec = nil
+              end
+            end
+            session = Ooor.session_handler.retrieve_session(config, spec, web_session)
+          end       
           session
         end
         

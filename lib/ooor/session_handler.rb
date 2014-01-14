@@ -10,7 +10,7 @@ module Ooor
     end
 
     def retrieve_session(config, id=nil, web_session={})
-      id ||= SecureRandom.hex(16) 
+      id ||= SecureRandom.hex(16)
       if config[:reload] || !s = sessions[id]
         create_new_session(config, web_session, id)
       else
@@ -35,6 +35,7 @@ module Ooor
       else
         spec= session.id
       end
+      set_web_session(spec, session.web_session)
       sessions[spec] = session
     end
 
@@ -46,6 +47,14 @@ module Ooor
     def reset!
       @sessions = {}
       @connections = {}
+    end
+    
+    def get_web_session(key)
+      Ooor.cache.read(key)
+    end
+    
+    def set_web_session(key, web_session)
+      Ooor.cache.write(key, web_session)
     end
 
     def sessions; @sessions ||= {}; end

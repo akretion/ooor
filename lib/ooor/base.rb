@@ -9,7 +9,7 @@ require 'ooor/reflection'
 require 'ooor/reflection_ooor'
 
 module Ooor
-  class ModelTemplate #meta data shared accross sessions
+  class ModelTemplate #meta data shared across sessions
     TEMPLATE_PROPERTIES = [:openerp_id, :info, :access_ids, :description,
       :openerp_model, :field_ids, :state, :fields,
       :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,

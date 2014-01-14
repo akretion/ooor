@@ -65,10 +65,9 @@ module Ooor
     end
 
     def set_model_template!(klass, options)
-      templates = Ooor.model_registry_handler.models(config)
-      if template = templates[options[:model]] #using a template avoids to reload the fields
-        klass.t = template
-      else
+      #templates = Ooor.model_registry_handler.models(config)
+      template = Ooor.model_registry.get_template(config, options[:model])
+      unless template
         template = Ooor::ModelTemplate.new
         template.openerp_model = options[:model]
         template.openerp_id = options[:id]
@@ -79,9 +78,9 @@ module Ooor
         template.many2many_associations = {}
         template.polymorphic_m2o_associations = {}
         template.associations_keys = []
-        klass.t = template
-        templates[options[:model]] = template
-        end
+        Ooor.model_registry.set_template(config, template)
+      end
+      klass.t = template
     end
 
     def define_openerp_model(options) #TODO param to tell if we define constants or not
@@ -95,10 +94,6 @@ module Ooor
         klass.name = model_class_name
         klass.scope_prefix = scope_prefix
         klass.connection = self
-        if options[:reload] && models[options[:model]]
-          Ooor.cache.delete("fget-#{config[:database]}-#{klass.t.openerp_model}-#{context['lang']}")
-        end
-
         if options[:generate_constants] && (options[:reload] || !scope.const_defined?(model_class_name))
           scope.const_set(model_class_name, klass)
         end
