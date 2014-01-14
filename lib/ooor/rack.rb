@@ -4,10 +4,10 @@ module Ooor
   class Rack
 
     DEFAULT_OOOR_SESSION_CONFIG_MAPPER = Proc.new do
-      puts "\nWARNING: using DEFAULT_OOOR_SESSION_CONFIG_MAPPER, you should probably define your own instead!"
-      puts "You can define an Ooor::Rack.ooor_session_config_mapper block that will be evaled"
-      puts "in the context of the rack middleware call after user is authenticated using Warden."
-      puts "Use it to mapp a Warden authentication to the OpenERP authentication you want.\n\n"
+      Ooor.logger.debug "\n\nWARNING: using DEFAULT_OOOR_SESSION_CONFIG_MAPPER, you should probably define your own instead!
+      You can define an Ooor::Rack.ooor_session_config_mapper block that will be evaled
+      in the context of the rack middleware call after user is authenticated using Warden.
+      Use it to mapp a Warden authentication to the OpenERP authentication you want.\n"""
       Ooor.default_config
     end
 
