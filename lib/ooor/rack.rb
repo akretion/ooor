@@ -21,15 +21,15 @@ module Ooor
         end
 
         def set_ooor!(env)
+          ooor_session = self.get_ooor_session(env)
           if defined?(I18n) && I18n.locale
             lang = Ooor::Locale.to_erp_locale(I18n.locale)
           elsif http_lang = env["HTTP_ACCEPT_LANGUAGE"]
             lang = http_lang.split(',')[0].gsub('-', '_')
           else
-            lang = connection.config['lang'] || 'en_US'
+            lang = ooor_session.config['lang'] || 'en_US'
           end
           context = {'lang' => lang} #TODO also deal with timezone
-          ooor_session = self.get_ooor_session(env)
           env['ooor'] = {'context' => context, 'ooor_session'=> ooor_session}
         end
 
