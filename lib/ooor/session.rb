@@ -65,7 +65,6 @@ module Ooor
     end
 
     def set_model_template!(klass, options)
-      #templates = Ooor.model_registry_handler.models(config)
       template = Ooor.model_registry.get_template(config, options[:model])
       unless template
         template = Ooor::ModelTemplate.new
