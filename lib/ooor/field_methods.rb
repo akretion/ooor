@@ -20,6 +20,7 @@ module Ooor
             define_nested_attributes_method(meth)
           end
           logger.debug "#{fields.size} fields loaded in model #{self.name}"
+          Ooor.model_registry.set_template(connection.config, @t)
         end
       end
 

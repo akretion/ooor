@@ -78,7 +78,6 @@ module Ooor
         template.many2many_associations = {}
         template.polymorphic_m2o_associations = {}
         template.associations_keys = []
-        Ooor.model_registry.set_template(config, template)
       end
       klass.t = template
     end
