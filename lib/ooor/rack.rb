@@ -40,7 +40,7 @@ module Ooor
         unless session # session could have been used by an other worker, try getting it
           config = Ooor::Rack.ooor_session_config_mapper.call(env)
           spec = config[:session_sharing] ? cookies_hash['session_id'] : cookies_hash['ooor_session_id']
-          web_session = Ooor.session_handler.get_web_session(spec) # created by some other worker?
+          web_session = Ooor.session_handler.get_web_session(spec) if spec # created by some other worker?
           unless web_session
             if config[:session_sharing]
               web_session = {session_id: cookies_hash['session_id']}
