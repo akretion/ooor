@@ -38,7 +38,7 @@ module Ooor
     extend ActiveSupport::Concern
     module ClassMethods
 
-      attr_accessor :default_config, :default_session
+      attr_accessor :default_config, :default_session, :cache_store
 
       def new(config={})
         Ooor.default_config = config.merge(generate_constants: true)
@@ -50,7 +50,7 @@ module Ooor
       end
 
       def cache(store=nil)
-        @cache ||= ActiveSupport::Cache.lookup_store(store)
+        @cache_store ||= ActiveSupport::Cache.lookup_store(store)
       end
 
       def xtend(model_name, &block)
