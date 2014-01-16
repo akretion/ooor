@@ -42,16 +42,20 @@ module Ooor
           req.body = {method: 'call', params: { db: db, login: username, password: password}}.to_json
         end
         @session.web_session[:cookie] = response.headers["set-cookie"]
-        sid_part1 = @session.web_session[:cookie].split("sid=")[1]
-        if sid_part1
-          @session.web_session[:sid] = @session.web_session[:cookie].split("sid=")[1].split(";")[0] # NOTE side is required on v7 but not on v8, this enables to sniff if we are on v7
+        if response.status == 200
+          sid_part1 = @session.web_session[:cookie].split("sid=")[1]
+          if sid_part1
+            @session.web_session[:sid] = @session.web_session[:cookie].split("sid=")[1].split(";")[0] # NOTE side is required on v7 but not on v8, this enables to sniff if we are on v7
+          end
+          json_response = JSON.parse(response.body)
+          @session.web_session[:session_id] = json_response['result']['session_id']
+          user_id = json_response['result']['uid']
+          @session.config[:user_id] = user_id
+          Ooor.session_handler.register_session(@session)
+          user_id
+        else
+          raise Faraday::Error::ClientError.new(response.status, response)
         end
-        json_response = JSON.parse(response.body)
-        @session.web_session[:session_id] = json_response['result']['session_id']
-        user_id = json_response['result']['uid']
-        @session.config[:user_id] = user_id
-        Ooor.session_handler.register_session(@session)
-        user_id
       end
     end
   end
