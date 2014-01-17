@@ -34,6 +34,21 @@ module Ooor
           fields[k]["type"] != "binary" && (options[:include_functions] || !fields[k]["function"])
         end
       end
+      
+      # this is used by fields_for in ActionView FormHelper
+      def define_nested_attributes_method(meth)
+        p "define_nested_attributes_method", meth
+        unless self.respond_to?(meth)
+          self.instance_eval do
+            define_method "#{meth}_attributes=" do |*args|
+              self.send :method_missing, *[meth, *args]
+            end
+            define_method "#{meth}_attributes" do |*args|
+              self.send :method_missing, *[meth, *args]
+            end
+          end
+        end
+      end
 
       private
 
@@ -43,21 +58,6 @@ module Ooor
               define_method meth do |*args|
                 self.send :method_missing, *[meth, *args]
               end
-            end
-          end
-        end
-
-        def define_nested_attributes_method(meth)
-          unless self.respond_to?(meth)
-            self.instance_eval do
-              define_method "#{meth}_attributes=" do |*args|
-                self.send :method_missing, *[meth, *args]
-              end
-
-              define_method "#{meth}_attributes" do |*args|
-                self.send :method_missing, *[meth, *args]
-              end
-
             end
           end
         end

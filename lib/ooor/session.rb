@@ -70,7 +70,12 @@ module Ooor
 
     def set_model_template!(klass, options)
       template = Ooor.model_registry.get_template(config, options[:model])
-      unless template
+      if template
+        klass.t = template
+        klass.one2many_associations.keys.each do |meth|
+          klass.define_nested_attributes_method(meth)
+        end
+      else
         template = Ooor::ModelTemplate.new
         template.openerp_model = options[:model]
         template.openerp_id = options[:id]
@@ -81,8 +86,8 @@ module Ooor
         template.many2many_associations = {}
         template.polymorphic_m2o_associations = {}
         template.associations_keys = []
+        klass.t = template
       end
-      klass.t = template
     end
 
     def define_openerp_model(options) #TODO param to tell if we define constants or not
