@@ -84,7 +84,7 @@ module Ooor
       unless @session.config[:user_id]
         @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password])
       end
-      args = inject_session_context(*args)
+      args = inject_session_context(service, method, *args)
       uid = @session.config[:user_id]
       db = @session.config[:database]
       @session.logger.debug "OOOR object service: rpc_method: #{service}, db: #{db}, uid: #{uid}, pass: #, obj: #{obj}, method: #{method}, *args: #{args.inspect}"
@@ -107,19 +107,17 @@ module Ooor
         retry
     end
 
-    def inject_session_context(*args)
-      if args[-1].is_a? Hash #context
-        if args[-1][:context_index] #in some legacy methods, context isn't the last arg
-          i = args[-1][:context_index]
-          args.delete_at -1
-          c = HashWithIndifferentAccess.new(args[i])
-          args[i] = @session.connection_session.merge(c)
-        elsif args[-1][:context]
+    def inject_session_context(service, method, *args)
+      if service == :object && (i = Ooor.irregular_context_position(method)) && args.size >= i 
+        c = HashWithIndifferentAccess.new(args[i])
+        args[i] = @session.session_context(c)
+      elsif args[-1].is_a? Hash #context
+        if args[-1][:context]
           c = HashWithIndifferentAccess.new(args[-1][:context])
-          args[-1][:context] = @session.connection_session.merge(c)
+          args[-1][:context] = @session.session_context(c)
         else
           c = HashWithIndifferentAccess.new(args[-1])
-          args[-1] = @session.connection_session.merge(c)
+          args[-1] = @session.session_context(c)
         end
       end
       args

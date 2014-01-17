@@ -31,6 +31,10 @@ module Ooor
       load_models(config[:models], options[:reload])
     end
 
+    def session_context(context={})
+      connection_session.merge(web_session.slice('lang', 'tz')).merge(context) # not just lang and tz?
+    end
+
     def const_get(model_key, lang=nil);
       if config[:aliases]
         if lang && alias_data = config[:aliases][lang]
@@ -56,7 +60,7 @@ module Ooor
       end
       domain = model_names ? [['model', 'in', model_names]] : []
       search_domain = domain - [1]
-      model_ids = object.object_service(:execute, "ir.model", :search, search_domain, 0, false, false, {}, false, {:context_index=>4})
+      model_ids = object.object_service(:execute, "ir.model", :search, search_domain, 0, false, false, {}, false)
       models_records = object.object_service(:execute, "ir.model", :read, model_ids, ['model', 'name']) #TODO use search_read
       models_records.each do |opts|
         options = HashWithIndifferentAccess.new(opts.merge(scope_prefix: config[:scope_prefix], reload: reload, generate_constants: config[:generate_constants]))

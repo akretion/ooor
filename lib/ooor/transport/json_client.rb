@@ -11,15 +11,12 @@ module Ooor
             params = {"model"=>obj, "id"=>args[0], "signal"=>method}
           elsif service == :execute
             url = '/web/dataset/call_kw'
-            if args.last.is_a?(Hash)
-              context = args.pop
+            if (i = Ooor.irregular_context_position(method)) && args.size < i
+              kwargs = {"context"=> args[i]}
             else
-              context = {}
+              kwargs = {}
             end
-            params = {"model"=>obj, "method"=> method, "kwargs"=>{}, "args"=>args, "context"=>context}
-            if ['search', 'read'].index(method) || args[0].is_a?(Array) && args.size == 1 && args[0].any? {|e| !e.is_a?(Integer)} #TODO make it more robust
-              params["kwargs"] = {"context"=>context}
-            end
+            params = {"model"=>obj, "method"=> method, "kwargs"=> kwargs, "args"=>args}#, "context"=>context}
           else
             url = "/web/dataset/#{service}"
             params = args[0].merge({"model"=>obj})

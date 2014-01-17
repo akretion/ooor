@@ -37,8 +37,20 @@ module Ooor
   module OoorBehavior
     extend ActiveSupport::Concern
     module ClassMethods
-
+      
       attr_accessor :default_config, :default_session, :cache_store
+      
+      IRREGULAR_CONTEXT_POSITIONS = {
+        import_data: 5,
+        fields_view_get: 2,
+        search: 4,
+        name_search:  3,
+        read_group: 5,
+        fields_get: 1,
+        read: 2,
+        perm_read: 1,
+        check_recursion: 1
+      }
 
       def new(config={})
         Ooor.default_config = config.merge(generate_constants: true)
@@ -73,6 +85,10 @@ module Ooor
       
       def logger=(logger)
         @logger = logger
+      end
+
+      def irregular_context_position(method)
+        IRREGULAR_CONTEXT_POSITIONS.merge(default_config[:irregular_context_positions] || {})[method.to_sym]
       end
 
     end

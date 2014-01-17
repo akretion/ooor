@@ -7,7 +7,7 @@ module Ooor
     module ClassMethods
       #Added methods to obtain report data for a model
       def report(report_name, ids, report_type='pdf', context={}) #TODO move to ReportService
-        context = connection.object.inject_session_context(context)[0]
+        context = connection.object.inject_session_context(:report, false, context)[0]
         uid = @connection.config[:user_id]
         pass = @connection.config[:password]
         db = @connection.config[:database]

@@ -37,11 +37,11 @@ module Ooor
 
       #OpenERP search method
       def search(domain=[], offset=0, limit=false, order=false, context={}, count=false)
-        rpc_execute(:search, to_openerp_domain(domain), offset, limit, order, context, count, context_index: 4)
+        rpc_execute(:search, to_openerp_domain(domain), offset, limit, order, context, count)
       end
 
       def name_search(name='', domain=[], operator='ilike', context={}, limit=100)
-        rpc_execute(:name_search, name, to_openerp_domain(domain), operator, context, limit, context_index: 3)
+        rpc_execute(:name_search, name, to_openerp_domain(domain), operator, context, limit)
       end
 
       def rpc_execute(method, *args)
@@ -146,7 +146,7 @@ module Ooor
     end
 
     #compatible with the Rails way but also supports OpenERP context
-    def update(context={}, reload=true)
+    def update(context={}, reload=true) #TODO use http://apidock.com/rails/ActiveRecord/Dirty to minimize data to save back
       rpc_execute('write', [self.id], to_openerp_hash, context)
       reload_fields(context) if reload
       @persisted = true
