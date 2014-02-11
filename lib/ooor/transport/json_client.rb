@@ -45,11 +45,8 @@ module Ooor
 
       Faraday::Connection.send :include, OeAdapter
 
-      def self.new(url = nil, options = nil)
-        if defined?(Java) # see http://stackoverflow.com/questions/5711190/how-to-get-rid-of-opensslsslsslerror
-           options ||= {}
-           options[:ssl] = {:verify => false}
-        end
+      def self.new(url = nil, options = {})
+        options[:ssl] = {:verify => false}
         Faraday.new(url, options) # TODO use middlewares
       end
     end
