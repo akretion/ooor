@@ -25,6 +25,11 @@ module Ooor
         end
 
         def oe_request(session_info, url, params, method, *args)
+          if session_info[:req_id]
+             session_info[:req_id] += 1
+          else
+             session_info[:req_id] = 1
+          end
           if session_info[:sid] # required on v7 but forbidden in v8
             params.merge!({"session_id" => session_info[:session_id]})
           end
@@ -32,7 +37,7 @@ module Ooor
             req.headers['Cookie'] = session_info[:cookie]
             req.url url
             req.headers['Content-Type'] = 'application/json'
-            req.body = {"jsonrpc"=>"2.0","method"=>"call", "params" => params, "id"=>"r42"}.to_json
+            req.body = {"jsonrpc"=>"2.0","method"=>"call", "params" => params, "id"=>session_info[:req_id]}.to_json
           end.body)
           if response["error"]
             faultCode = response["error"]['data']['fault_code'] || response["error"]['data']['debug']
