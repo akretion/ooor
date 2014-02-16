@@ -37,7 +37,6 @@ module Ooor
       
       # this is used by fields_for in ActionView FormHelper
       def define_nested_attributes_method(meth)
-        p "define_nested_attributes_method", meth
         unless self.respond_to?(meth)
           self.instance_eval do
             define_method "#{meth}_attributes=" do |*args|
