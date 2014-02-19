@@ -97,7 +97,11 @@ module Ooor
       attributes.each do |key, value|
         skey = key.to_s
         if self.class.associations_keys.index(skey) || value.is_a?(Array) #FIXME may miss m2o with inherits!
-          @associations[skey] = value #the association because we want the method to load the association through method missing
+          if value.is_a?(Ooor::Base) || value.is_a?(Array) && value.all? {|i| i.is_a?(Ooor::Base)}
+            @loaded_associations[skey] = value #we want the method to load the association through method missing
+          else
+            @associations[skey] = value
+          end
         else
           @attributes[skey] = value || nil #don't bloat with false values
         end
