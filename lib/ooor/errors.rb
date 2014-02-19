@@ -17,7 +17,7 @@ module Ooor
     end
       
     def self.build(faultCode, faultString, method, *args)
-      if faultCode =~ /AttributeError: /
+      if faultCode =~ /AttributeError: / || faultCode =~ /object has no attribute/
         return UnknownAttributeOrAssociationError.new("method: #{method} - args: #{args.inspect}", faultCode, faultString)
       elsif faultCode =~ /TypeError: /
         return TypeError.new(method, faultCode, faultString, *args)
