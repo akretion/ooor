@@ -25,7 +25,15 @@ unless ARGV.empty?
   else
     port = "8069"
   end
-  url = "http://#{base_url}:#{port}/xmlrpc"
+
+  if ARGV[1] == "-s" || ARGV[2] == "-s" #secure mode
+    port = 443 unless port_given
+    protocol = "https"
+  else
+    protocol = "http"
+  end
+
+  url = "#{protocol}://#{base_url}:#{port}/xmlrpc"
   if ARGV[1] && ARGV[1] != "-s"
     password = ARGV[1]
   else
@@ -35,10 +43,6 @@ unless ARGV.empty?
     system "stty echo"
   end
   
-  if ARGV[1] == "-s" || ARGV[2] == "-s" #secure mode
-    url.gsub!("http", "https")
-    url.gsub!("8069", "8071") unless port_given
-  end
 else
   puts "USAGE: ooor admin.database@host\nor ooor admin.database@host:port\nor ooor admin.database for localhost\nyou can specify the password with ooor admin.database@host password\nyou can use the -s option for secure HTTPS mode"
   exit 0
