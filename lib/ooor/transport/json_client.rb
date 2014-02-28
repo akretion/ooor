@@ -50,7 +50,7 @@ module Ooor
 
       Faraday::Connection.send :include, OeAdapter
 
-      def self.new(url = nil, options = {})
+      def self.new(url, options = {})
         options[:ssl] = {:verify => false}
         Faraday.new(url, options) # TODO use middlewares
       end
