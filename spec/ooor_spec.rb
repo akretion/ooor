@@ -443,6 +443,13 @@ describe Ooor do
       end
     end
 
+    it "should have a to_param method" do
+      Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connectio reuse here
+      with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
+        session['product.product'].find(:first).to_param.should be_kind_of(String)
+      end
+    end
+
     it "should find by permalink" do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connectio reuse here
       with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
