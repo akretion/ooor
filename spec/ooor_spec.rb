@@ -42,7 +42,7 @@ describe Ooor do
     end
 
     it "should be able to load a profile" do
-      module_ids = IrModuleModule.search(['name','=', 'sale']) + IrModuleModule.search(['name','=', 'account_voucher']) + IrModuleModule.search(['name','=', 'sale_stock'])
+      module_ids = IrModuleModule.search(['name', '=', 'sale']) + IrModuleModule.search(['name', '=', 'account_voucher'])
       module_ids.each do |accounting_module_id|
         mod = IrModuleModule.find(accounting_module_id) 
         unless mod.state == "installed"
@@ -68,7 +68,7 @@ describe Ooor do
   describe "Do operations on configured database" do
     before(:all) do
       @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database,
-        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'stock.move', 'ir.ui.menu', 'ir.module.module'])
+        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'ir.cron', 'ir.ui.menu', 'ir.module.module'])
     end
 
     describe "Finders operations" do
@@ -173,8 +173,8 @@ describe Ooor do
       it "should cast dates properly from OpenERP to Ruby" do
         o = SaleOrder.find(1)
         o.date_order.should be_kind_of(Date)
-        m = StockMove.find(1)
-        m.date.should be_kind_of(DateTime)
+        c = IrCron.find(1)
+        c.nextcall.should be_kind_of(DateTime)
       end
 
       it "should be able to call any Class method" do
@@ -268,7 +268,7 @@ describe Ooor do
 
       it "should use default fields on creation" do
         p = ProductProduct.new
-        p.sale_delay.should be_kind_of(Integer)
+        p.categ_id.should be_kind_of(ProductCategory)
       end
 
       it "should skipped inherited default fields properly, for instance at product variant creation" do
