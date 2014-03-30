@@ -1,4 +1,5 @@
 [![Build Status](https://secure.travis-ci.org/akretion/ooor.png?branch=master)](http://travis-ci.org/akretion/ooor) [![Code Climate](https://codeclimate.com/github/akretion/ooor.png)](https://codeclimate.com/github/akretion/ooor)
+[![Coverage Status](https://coveralls.io/repos/akretion/ooor/badge.png?branch=master)](https://coveralls.io/r/akretion/ooor?branch=master) [![Gem Version](https://badge.fury.io/rb/ooor.png)](http://badge.fury.io/rb/ooor) [![Dependency Status](https://www.versioneye.com/ruby/ooor/badge.png)](https://www.versioneye.com/ruby/ooor)
 
 [![OOOR by Akretion](https://s3.amazonaws.com/akretion/assets/ooor_by_akretion.png)](http://akretion.com)
 
