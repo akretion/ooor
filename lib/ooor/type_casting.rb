@@ -160,12 +160,6 @@ module Ooor
         new_rel = self.cast_relation(k, v, self.class.one2many_associations, self.class.many2many_associations)
         if new_rel #matches a known o2m or m2m
           associations2[k] = new_rel
-        else
-          self.class.many2one_associations.each do |k2, field| #try to cast the association to an inherited o2m or m2m:
-            linked_class = self.class.const_get(field['relation'])
-            new_rel = self.cast_relation(k, v, linked_class.one2many_associations, linked_class.many2many_associations)
-            associations2[k] = new_rel and break if new_rel
-          end
         end
       end
       associations2
