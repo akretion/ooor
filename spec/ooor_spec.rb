@@ -346,6 +346,10 @@ describe Ooor do
         p.save.should == false
         p.errors.messages[:ean13].should_not be_nil 
       end
+
+      it "should list all available fields when you call an invalid field" do
+        lambda { ProductProduct.unexisting_field_or_method }.should raise_error(Ooor::UnknownAttributeOrAssociationError)
+      end
     end
 
     describe "ARel emulation" do
