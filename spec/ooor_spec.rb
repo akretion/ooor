@@ -42,15 +42,7 @@ describe Ooor do
     end
 
     it "should be able to load a profile" do
-      module_ids = IrModuleModule.search(['name', '=', 'sale']) + IrModuleModule.search(['name', '=', 'account_voucher'])
-      module_ids.each do |accounting_module_id|
-        mod = IrModuleModule.find(accounting_module_id) 
-        unless mod.state == "installed"
-          mod.button_install
-        end
-      end
-      wizard = BaseModuleUpgrade.create
-      wizard.upgrade_module
+      IrModuleModule.install_modules(['sale', 'account_voucher'])
       @ooor.load_models
       @ooor.models.keys.should_not be_empty
     end

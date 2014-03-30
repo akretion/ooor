@@ -19,9 +19,9 @@ Ooor.xtend('ir.module.module') do
     dependency_modules = []
     modules.select { |m| m.dependencies_id }.each do |mod|
       mod.dependencies_id.each do |dep|
-        dep_module = IrModuleModule.find(:first,
-                                         :domain => [['name', '=', dep.name]],
-                                         :fields => ['id', 'state', 'dependencies_id'])
+        dep_module = self.find(:first,
+                               :domain => [['name', '=', dep.name]],
+                               :fields => ['id', 'state', 'dependencies_id'])
         if dep_module.nil?
           raise RuntimeError, "#{dep.name} not found"
         end
@@ -32,53 +32,15 @@ Ooor.xtend('ir.module.module') do
     dependency_modules.uniq { |m| m.id }
   end
   
-  ##########################################################################
-  # Run the upgrade wizard in order to install the required
-  # modules. Upgrade installed modules as well.
-  # Input :
-  #  - modules : A [] of valid IrModuleModule instance
-  # Return
-  #  - True
-  # Usage Example:
-  # res = IrModuleModule.install_modules(@openerp, modules)
-  def self.install_modules(modules, dependencies=false)
-    res = true
-    if dependencies
-      dependency_modules = get_dependencies(modules)
-      modules.concat(dependency_modules) if dependency_modules
+  def self.install_modules(modules)
+    modules = modules.map { |name| self.find(:first, domain: {name: name})}
+    modules.each do |mod|
+      mod.button_install unless mod.state == "installed"
     end
-    modules_toinstall_ids = []
-    modules_toupgrade_ids = []
-    # If not installed, do it. Otherwise update it
-    modules.each do |m|
-      if m.state == 'uninstalled'
-        m.state = 'to install'
-        m.save
-        modules_toinstall_ids << m.id
-      elsif m.state == 'installed'
-        m.state = 'to upgrade'
-        m.save
-        modules_toupgrade_ids << m.id
-      elsif m.state == 'to install'
-        modules_toinstall_ids << m.id
-      elsif m.state == 'to upgrade'
-        modules_toupgrade_ids << m.id
-      end
-    end
-    #First installed required modules, then upgrade the others
-    upgrade = BaseModuleUpgrade.create()
-    upgrade.upgrade_module()
-    # IrModuleModule.button_install(modules_toinstall_ids)
-    # IrModuleModule.button_upgrade(modules_toupgrade_ids)
-
-    if res
-      return true
-    else
-      raise "!!! --- HELPER ERROR : install_modules was unable to install needed modules.."
-    end
-    openerp.load_models() # reload in order to have model Classes for modules installed
+    wizard = BaseModuleUpgrade.create
+    wizard.upgrade_module
   end
-  
+
   def print_uml
     l = IrModelData.find(:all, :domain => {:model=>"ir.model", :module=>name})
     model_names = []
@@ -122,7 +84,6 @@ Ooor.xtend('ir.module.module') do
     system("tred < #{self.name}-pre.dot > #{self.name}.dot")
     cmd_line2 = "dot -Tcmapx -o#{self.name}.map -Tpng -o#{self.name}.png #{self.name}.dot"
     system(cmd_line2)
-      
   end
     
 end
