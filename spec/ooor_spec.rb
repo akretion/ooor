@@ -169,6 +169,10 @@ describe Ooor do
         c.nextcall.should be_kind_of(DateTime)
       end
 
+      it "should map OpenERP types to Rails types" do
+        (%w[char binary many2one one2many many2many]).each { |t| Ooor::Base.to_rails_type(t).should be_kind_of(Symbol) }
+      end
+
       it "should be able to call any Class method" do
         ResPartner.name_search('ax', [], 'ilike', {}).should_not be_nil
       end
