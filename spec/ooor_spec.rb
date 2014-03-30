@@ -439,6 +439,7 @@ describe Ooor do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connectio reuse here
       with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
         session['products'].search().should be_kind_of(Array)
+        session['product.product'].alias.should == 'products'
       end
     end
 

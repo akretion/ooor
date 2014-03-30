@@ -52,7 +52,7 @@ module Ooor
       def alias(context={})
         # NOTE in v8, see if we can use ModelConvert here https://github.com/akretion/openerp-addons/blob/trunk-website-al/website/models/ir_http.py#L126
         if connection.config[:aliases]
-          lang = context['lang'] || connection.config[:aliases][connection.config['lang'] || 'en_US']
+          lang = context['lang'] || connection.config['lang'] || 'en_US'
           if alias_data = connection.config[:aliases][lang]
             alias_data.select{|key, value| value == openerp_model }.keys[0] || openerp_model
           else
