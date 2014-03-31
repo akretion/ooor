@@ -68,24 +68,6 @@ module Ooor
         self.class.__send__(:split_options, options)
       end
 
-      def method_missing(method_symbol, *arguments) #:nodoc:
-        method_name = method_symbol.to_s
-
-        if method_name =~ /(=|\?)$/
-          case $1
-          when "="
-            attributes[$`] = arguments.first
-          when "?"
-            attributes[$`]
-          end
-        else
-          return attributes[method_name] if attributes.include?(method_name)
-          # not set right now but we know about it
-          return nil if known_attributes.include?(method_name)
-          super
-        end
-      end
-
     include ActiveModel::Conversion
     include ActiveModel::Serializers::JSON
     include ActiveModel::Serializers::Xml
