@@ -352,7 +352,7 @@ describe Ooor do
       end
 
       it "should list all available fields when you call an invalid field" do
-        lambda { ProductProduct.unexisting_field_or_method }.should raise_error(Ooor::UnknownAttributeOrAssociationError)
+        expect { ProductProduct.find(1).unexisting_field_or_method }.to raise_error(Ooor::UnknownAttributeOrAssociationError, /AVAILABLE FIELDS/)
       end
     end
 
@@ -364,7 +364,7 @@ describe Ooor do
       it "should be ready for Kaminari pagination via ARel scoping" do
         num = 2
         default_per_page = 5
-        collection = ProductProduct.limit(default_per_page).offset(default_per_page * ([num.to_i, 1].max - 1))
+        collection = ProductProduct.where(active: true).limit(default_per_page).offset(default_per_page * ([num.to_i, 1].max - 1)).order("categ_id")
         collection.all(fields:['name']).should be_kind_of(Array)
         collection.all.size.should == 5
       end
