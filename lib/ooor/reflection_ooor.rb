@@ -23,6 +23,7 @@ module Ooor
       end
 
       def create_reflection(name)
+        reload_fields_definition()
         options = {}
         if many2one_associations.keys.include?(name)
           macro = :belongs_to
