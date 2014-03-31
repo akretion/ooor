@@ -463,22 +463,28 @@ describe Ooor do
     end
   end
 
-  describe "Ative-Record like Reflection" do
+  describe "Ative-Record like Reflections" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :models => ['product.product'], :reload => true)
+      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :models => ['product.product', 'product.category'], :reload => true)
     end
 
-    it "should test correct class attributes" do
+    it "should test correct class attributes of ActiveRecord Reflection" do
       object = Ooor::Reflection::AssociationReflection.new(:test, :people, {}, nil)
       object.name.should == :people
       object.macro.should == :test
       object.options.should == {}
     end
 
-    it "should test correct class name matching wit class name" do
+    it "should test correct class name matching with class name" do
       object = Ooor::Reflection::AssociationReflection.new(:test, 'product_product', {class_name: 'product.product'}, nil)
       object.connection = @ooor
       object.klass.should == ProductProduct
+    end
+
+    it "should reflect on association (used in simple_form, cocoon...)" do
+      reflection = ProductProduct.reflect_on_association(:categ_id)
+      reflection.should be_kind_of(Ooor::Reflection::AssociationReflection)
+      reflection.klass.should == ProductCategory
     end
 
   end
