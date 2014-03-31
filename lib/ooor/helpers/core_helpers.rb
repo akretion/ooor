@@ -41,21 +41,6 @@ Ooor.xtend('ir.module.module') do
     wizard.upgrade_module
   end
 
-  def print_uml
-    l = IrModelData.find(:all, :domain => {:model=>"ir.model", :module=>name})
-    model_names = []
-    l.each {|i| model_names << i.name.gsub('_', '.').gsub(/^model.report/, '').gsub(/^model./, '')}
-    classes = []
-    model_names.each {|i| begin classes << Object.const_get(IrModel.class_name_from_model_key i); rescue; end}
-    classes.reject! {|m| m.openerp_model.index("report")} #NOTE we would need a more robust test
-    begin
-      classes.reject! {|m| IrModel.read(m.openerp_id, ['osv_memory'])['osv_memory']}
-    rescue
-    end
-    classes.reject! {|m| m.openerp_model == "res.company"} if classes.size > 10
-    OoorDoc::UML.print_uml(classes, {:file_name => "#{name}_uml"})
-  end
-
   def print_dependency_graph
     modules = [self] + self.class.get_dependencies([self])
 
