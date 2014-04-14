@@ -1,5 +1,6 @@
 require "rails/railtie"
 require "ooor/rack"
+require "yaml"
 
 module Ooor
   class Railtie < Rails::Railtie
@@ -29,7 +30,7 @@ module Ooor
 
     def load_config(config_file=nil, env=nil)
       config_file ||= defined?(Rails.root) && "#{Rails.root}/config/ooor.yml" || 'ooor.yml'
-      @config = HashWithIndifferentAccess.new(YAML.load_file(config_file)[env || 'development'])
+      @config = HashWithIndifferentAccess.new(::YAML.load_file(config_file)[env || 'development'])
     rescue SystemCallError
       Ooor.logger.error """failed to load OOOR yaml configuration file.
          make sure your app has a #{config_file} file correctly set up
