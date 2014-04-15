@@ -135,6 +135,21 @@ module Ooor
     end
     
     def cast_relations_to_openerp(associations=@associations)
+      associations2 = remap_associations(associations)
+      associations2.each do |k, v| #see OpenERP awkward associations API
+        #already casted, possibly before server error!
+        next if (v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array)) \
+                || self.class.many2one_associations[k] \
+                || !v.is_a?(Array)
+        new_rel = self.cast_relation(k, v, self.class.one2many_associations, self.class.many2many_associations)
+        if new_rel #matches a known o2m or m2m
+          associations2[k] = new_rel
+        end
+      end
+      associations2
+    end
+
+    def remap_associations(associations)
       associations2 = {}
       associations.each do |k, v|
         if k.match(/_ids$/) && !self.class.associations_keys.index(k) && self.class.associations_keys.index(rel = k.gsub(/_ids$/, ""))
@@ -149,17 +164,6 @@ module Ooor
             v = v.split(",").map{|i| i.to_i}
           end
           associations2[k] = v
-        end
-      end
-
-      associations2.each do |k, v| #see OpenERP awkward associations API
-        #already casted, possibly before server error!
-        next if (v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array)) \
-                || self.class.many2one_associations[k] \
-                || !v.is_a?(Array)
-        new_rel = self.cast_relation(k, v, self.class.one2many_associations, self.class.many2many_associations)
-        if new_rel #matches a known o2m or m2m
-          associations2[k] = new_rel
         end
       end
       associations2

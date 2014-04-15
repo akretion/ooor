@@ -96,10 +96,21 @@ module Ooor
       @loaded_associations = {}
       attributes.each do |key, value|
         skey = key.to_s
-        if self.class.associations_keys.index(skey) || value.is_a?(Array) #FIXME may miss m2o with inherits!
+        if self.class.associations_keys.index(skey) || value.is_a?(Array)
           if value.is_a?(Ooor::Base) || value.is_a?(Array) && value.all? {|i| i.is_a?(Ooor::Base)}
             @loaded_associations[skey] = value #we want the method to load the association through method missing
+          elsif self.class.polymorphic_m2o_associations.keys.index(skey)
+            @associations[skey] = value
           else
+            if value.is_a?(String)
+              if value.blank?
+                value = false
+              elsif self.class.many2one_associations.keys.index(skey)
+                value = value.to_i
+              else#if value.index(',')
+                value = value.split(",").map{|i| i.to_i}
+              end
+            end
             @associations[skey] = value
           end
         else
@@ -146,12 +157,19 @@ module Ooor
     end
 
     def update_attributes(attributes, context={}, reload=true)
-      load(attributes, false) && save(context, reload)
+      load(attributes, false) && update(context, reload, attributes.keys)
     end
 
     #compatible with the Rails way but also supports OpenERP context
-    def update(context={}, reload=true) #TODO use http://apidock.com/rails/ActiveRecord/Dirty to minimize data to save back
-      rpc_execute('write', [self.id], to_openerp_hash, context)
+    def update(context={}, reload=true, keys=nil) #TODO use http://apidock.com/rails/ActiveRecord/Dirty to minimize data to save back
+      if keys
+        attributes = @attributes.select {|k| keys.index(k)}
+        associations = @associations.select {|k| keys.index(k)}
+      else
+        attributes = @attributes
+        associations = @associations
+      end
+      rpc_execute('write', [self.id], to_openerp_hash(attributes, associations), context)
       reload_fields(context) if reload
       @persisted = true
     end

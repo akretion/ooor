@@ -341,6 +341,20 @@ describe Ooor do
         so = SaleOrder.find :first
         so.order_line.build().should be_kind_of(SaleOrderLine)
       end
+
+      it "should recast string m2o string id to an integer (it happens in forms)" do
+        uom_id = @ooor.const_get('product.uom').search()[0]
+        p = ProductProduct.new(name: "z recast id", uom_id: uom_id.to_s)
+        p.save
+        p.uom_id.id.should == uom_id
+      end
+
+      it "should recast string m2m string ids to an array of integer (it happens in forms)" do
+        categ_ids = @ooor.const_get('res.partner.category').search()[0..1]
+        p = ResPartner.new(name: "z recast ids", category_id: categ_ids.join(','))
+        p.save
+        p.category_id.map{|c| c.id}.should == categ_ids
+      end
     end
 
     describe "Fields validations" do
