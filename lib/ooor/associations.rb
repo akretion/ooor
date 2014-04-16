@@ -35,7 +35,7 @@ module Ooor
       elsif self.class.many2many_associations.has_key?(method_name)
         rel = self.class.many2many_associations[method_name]['relation']
         load_association(rel, @associations[method_name], [], *arguments)
-      elsif self.class.polymorphic_m2o_associations.has_key?(method_name)
+      elsif self.class.polymorphic_m2o_associations.has_key?(method_name) && @associations[method_name]
         values = @associations[method_name].split(',')
         load_association(values[0], values[1].to_i, nil, *arguments)
       else
