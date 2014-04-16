@@ -135,44 +135,39 @@ module Ooor
     end
     
     def cast_relations_to_openerp(associations=@associations)
-      associations2 = remap_associations(associations)
+      associations2 = remap_associations_keys(associations)
       associations2.each do |k, v| #see OpenERP awkward associations API
         #already casted, possibly before server error!
-        next if (v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array)) \
-                || self.class.many2one_associations[k] \
-                || !v.is_a?(Array)
-        new_rel = self.cast_relation(k, v, self.class.one2many_associations, self.class.many2many_associations)
-        if new_rel #matches a known o2m or m2m
+        next if v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array) || !v.is_a?(Array)
+        if new_rel = self.cast_association(k, v)
           associations2[k] = new_rel
         end
       end
       associations2
     end
 
-    def remap_associations(associations)
+    # associations can be renamed by Rails (inflection, _ids suffix...)
+    def remap_associations_keys(associations)
       associations2 = {}
       associations.each do |k, v|
-        if k.match(/_ids$/) && !self.class.associations_keys.index(k) && self.class.associations_keys.index(rel = k.gsub(/_ids$/, ""))
-          if v.is_a? Array
-           v.reject! {|i| i == ''}.map! {|i| i.to_i}
+        if k.match(/_ids$/) && !self.class.associations_keys.index(k)
+          if self.class.associations_keys.index(rel = k.gsub(/_ids$/, ""))
+            associations2[rel] = v
+          elsif i = self.class.associations_keys.map{|k| k.singularize}.index(k.gsub(/_ids$/, ""))
+            associations2[self.class.associations_keys[i]] = v
           end
-          associations2[rel] = v
-        elsif v.is_a?(Array) && (v.size == 0 or v[1].is_a?(String)) #reject non assigned many2one or empty list
-         next
         else
-          if k.end_with?("_ids") && v.is_a?(String)
-            v = v.split(",").map{|i| i.to_i}
-          end
           associations2[k] = v
         end
       end
       associations2
     end
 
-    def cast_relation(k, v, one2many_associations, many2many_associations)
-      if one2many_associations[k]
-        return v.collect do |value|
-          if value.is_a?(Base) #on the fly creation as in the GTK client
+    # talk OpenERP cryptic associations API
+    def cast_association(k, v)
+      if self.class.one2many_associations[k]
+        v.collect do |value|
+          if value.is_a?(Base)
             [0, 0, value.to_openerp_hash]
           else
             if value.is_a?(Hash)
@@ -182,8 +177,10 @@ module Ooor
             end
           end
         end
-      elsif many2many_associations[k]
-        return v = [[6, false, v]]
+      elsif self.class.many2many_associations[k]
+        [[6, false, v]]
+      elsif self.class.many2one_associations[k]
+        v.is_a?(Array) ? v[0] : v
       end
     end
  

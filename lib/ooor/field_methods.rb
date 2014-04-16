@@ -113,6 +113,9 @@ module Ooor
         return many2one_id_method(rel, *arguments)
       elsif method_name.match(/_ids$/) && self.class.associations_keys.index(rel=method_name.gsub(/_ids$/, ""))
         return x_to_many_ids_method(rel, *arguments)
+      elsif method_name.match(/_ids$/) && i=self.class.associations_keys.map{|k| k.singularize}.index(method_name.gsub(/_ids$/, ""))
+        rel = "#{self.class.associations_keys[i]}_ids"
+        return x_to_many_ids_method(rel, *arguments)
       elsif id
         rpc_execute(method_key, [id], *arguments) #we assume that's an action
       else

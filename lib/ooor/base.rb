@@ -102,16 +102,7 @@ module Ooor
           elsif self.class.polymorphic_m2o_associations.keys.index(skey)
             @associations[skey] = value
           else
-            if value.is_a?(String)
-              if value.blank?
-                value = false
-              elsif self.class.many2one_associations.keys.index(skey)
-                value = value.to_i
-              else#if value.index(',')
-                value = value.split(",").map{|i| i.to_i}
-              end
-            end
-            @associations[skey] = value
+            @associations[skey] = sanitize_association(skey, value)
           end
         else
           @attributes[skey] = value || nil #don't bloat with false values
@@ -209,6 +200,24 @@ module Ooor
     def type() method_missing(:type) end #skips deprecated Object#type method
 
     private
+
+    def sanitize_association(skey, value)
+      if value.is_a?(Array) && !self.class.many2one_associations.keys.index(skey)
+        value.reject {|i| i == ''}.map {|i| i.is_a?(String) ? i.to_i : i}
+      elsif value.is_a?(String)
+        if self.class.many2one_associations.keys.index(skey)
+          if value.blank?
+            false
+          else
+            value.to_i
+          end
+        else
+          value.split(",").map{|i| i.to_i}
+        end
+      else
+        value
+      end
+    end
 
     def load_with_defaults(attributes, default_get_list)
       defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
