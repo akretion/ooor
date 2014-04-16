@@ -28,7 +28,7 @@ module Ooor
         fields.merge(polymorphic_m2o_associations).merge(many2many_associations).merge(one2many_associations).merge(many2one_associations)
       end
 
-      def fast_fields(options)
+      def fast_fields(options={})
         fields = all_fields
         fields.keys.select do |k|
           fields[k]["type"] != "binary" && (options[:include_functions] || !fields[k]["function"])
@@ -88,7 +88,19 @@ module Ooor
           attributes[method_key]
         end
       elsif @loaded_associations.has_key?(method_name)
-        @loaded_associations[method_name]
+        @loaded_associations[method_name].tap do |r|
+          def r.association=(association)
+            @association = association
+          end
+#p "self.class.associations", self.class.all_fields, method_name
+          rel = self.class.all_fields[method_name]['relation']
+          if rel #polymorphic m2o don't have one
+            r.association = self.class.const_get(self.class.all_fields[method_name]['relation'])
+            def r.build(attrs={})
+              @association.new(attrs)
+            end
+          end
+        end
       elsif @associations.has_key?(method_name)
         result = relationnal_result(method_name, *arguments)
         @loaded_associations[method_name] = result and return result if result
