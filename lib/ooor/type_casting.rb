@@ -74,9 +74,9 @@ module Ooor
               if v.is_a?(Hash)
                 v.each do |key, val|
                   if !val["_destroy"].empty?
-                    attrs << [2, val[:id] || val['id']]
+                    attrs << [2, val[:id].to_i || val['id']]
                   elsif val[:id] || val['id']
-                    attrs << [1, val[:id] || val['id'], cast_request_to_openerp(val)]
+                    attrs << [1, val[:id].to_i || val['id'], cast_request_to_openerp(val)]
                   else
                     attrs << [0, 0, cast_request_to_openerp(val)]
                   end
@@ -183,7 +183,7 @@ module Ooor
           end
         end
       elsif many2many_associations[k]
-        return v = [[6, 0, v]]
+        return v = [[6, false, v]]
       end
     end
  
