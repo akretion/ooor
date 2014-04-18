@@ -20,7 +20,7 @@ module Ooor
 
   class Base < Ooor::MiniActiveResource
     #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
-    include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection, Associations, Report, FinderMethods, FieldMethods
+    include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection, Associations, Report, FinderMethods, FieldMethods, Callbacks
 
 
     # ********************** class methods ************************************
@@ -127,8 +127,10 @@ module Ooor
       end
     end
 
-    def save(context={}, reload=true)
-      new? ? create(context, reload) : update(context, reload)
+    def save(context={}, reload=true, keys=nil)
+      run_callbacks :save do
+        new? ? create(context, reload) : update(context, reload, keys)
+      end
     rescue ValidationError => e
       e.extract_validation_error!(errors)
       return false
@@ -136,38 +138,43 @@ module Ooor
 
     #compatible with the Rails way but also supports OpenERP context
     def create(context={}, reload=true)
-      self.id = rpc_execute('create', to_openerp_hash, context)
-      if @ir_model_data_id
-        IrModelData.create(model: self.class.openerp_model,
-          'module' => @ir_model_data_id[0],
-          'name' => @ir_model_data_id[1],
-          'res_id' => self.id)
+      run_callbacks :create do
+        self.id = rpc_execute('create', to_openerp_hash, context)
+        if @ir_model_data_id
+          IrModelData.create(model: self.class.openerp_model,
+            'module' => @ir_model_data_id[0],
+            'name' => @ir_model_data_id[1],
+            'res_id' => self.id)
+        end
+        @persisted = true
+        reload_from_record!(self.class.find(self.id, context: context)) if reload
       end
-      reload_from_record!(self.class.find(self.id, context: context)) if reload
-      @persisted = true
     end
 
     def update_attributes(attributes, context={}, reload=true)
-      load(attributes, false) && update(context, reload, attributes.keys)
+      load(attributes, false) && save(context, reload, attributes.keys)
     end
 
-    #compatible with the Rails way but also supports OpenERP context
     def update(context={}, reload=true, keys=nil) #TODO use http://apidock.com/rails/ActiveRecord/Dirty to minimize data to save back
-      if keys
-        attributes = @attributes.select {|k| keys.index(k)}
-        associations = @associations.select {|k| keys.index(k)}
-      else
-        attributes = @attributes
-        associations = @associations
+      run_callbacks :update do
+        if keys
+          attributes = @attributes.select {|k| keys.index(k)}
+          associations = @associations.select {|k| keys.index(k)}
+        else
+          attributes = @attributes
+          associations = @associations
+        end
+        rpc_execute('write', [self.id], to_openerp_hash(attributes, associations), context)
+        reload_fields(context) if reload
+        @persisted = true
       end
-      rpc_execute('write', [self.id], to_openerp_hash(attributes, associations), context)
-      reload_fields(context) if reload
-      @persisted = true
     end
 
     #compatible with the Rails way but also supports OpenERP context
     def destroy(context={})
-      rpc_execute('unlink', [self.id], context)
+      run_callbacks :destroy do
+        rpc_execute('unlink', [self.id], context)
+      end
     end
 
     #OpenERP copy method, load persisted copied Object
