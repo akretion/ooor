@@ -1,5 +1,5 @@
 #    OOOR: OpenObject On Ruby
-#    Copyright (C) 2009-2012 Akretion LTDA (<http://www.akretion.com>).
+#    Copyright (C) 2009-2014 Akretion LTDA (<http://www.akretion.com>).
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
@@ -9,6 +9,27 @@ module Ooor
     
     OPERATORS = ["=", "!=", "<=", "<", ">", ">=", "=?", "=like", "=ilike", "like", "not like", "ilike", "not ilike", "in", "not in", "child_of"]
   
+    # utility to reformat possible strig values coming from HTML forms
+    def self.sanitize_association(skey, value, many2one_associations)
+      if value.is_a?(Ooor::Base) || value.is_a?(Array) && value.all? {|i| i.is_a?(Ooor::Base)}
+        value
+      elsif value.is_a?(Array) && !many2one_associations.keys.index(skey)
+        value.reject {|i| i == ''}.map {|i| i.is_a?(String) ? i.to_i : i}
+      elsif value.is_a?(String)
+        if many2one_associations.keys.index(skey)
+          if value.blank?
+            false
+          else
+            value.to_i
+          end
+        else
+          value.split(",").map {|i| i.to_i}
+        end
+      else
+        value
+      end
+    end
+
     module ClassMethods
       
       def openerp_string_domain_to_ruby(string_domain) #FIXME: used? broken?
@@ -120,47 +141,32 @@ module Ooor
       
     end
     
-    def to_openerp_hash(attributes=@attributes, associations=@associations)
-      associations = cast_relations_to_openerp(associations)
+    def to_openerp_hash
+      associations = {}
+      attributes = {}
+
+      changed.each do |k|
+        if self.class.associations_keys.index(k)
+          associations[k] = @associations[k]#changes[k][1]
+        elsif self.class.fields.has_key?(k)
+          attributes[k]= @attributes[k]
+        else
+          attributes[k] = changes[k][1]
+        end
+      end
+      associations = cast_associations_to_openerp(associations)
       blacklist = %w[id write_date create_date write_ui create_ui]
       r = {}
       attributes.reject {|k, v| blacklist.index(k)}.merge(associations).each do |k, v|
-        if k.end_with?("_id") && !self.class.associations_keys.index(k) && self.class.associations_keys.index(k.gsub(/_id$/, ""))
-          r[k.gsub(/_id$/, "")] = v && v.to_i || v
-        else
-          r[k] = v
-        end
+        r[k] = v
       end
       r
     end
     
-    def cast_relations_to_openerp(associations=@associations)
-      associations2 = remap_associations_keys(associations)
-      associations2.each do |k, v| #see OpenERP awkward associations API
-        #already casted, possibly before server error!
-        next if v.is_a?(Array) && v.size == 1 && v[0].is_a?(Array) || !v.is_a?(Array)
-        if new_rel = self.cast_association(k, v)
-          associations2[k] = new_rel
-        end
+    def cast_associations_to_openerp(associations=@associations)
+      associations.each do |k, v| #see OpenERP awkward associations API
+        associations[k] = self.cast_association(k, v)
       end
-      associations2
-    end
-
-    # associations can be renamed by Rails (inflection, _ids suffix...)
-    def remap_associations_keys(associations)
-      associations2 = {}
-      associations.each do |k, v|
-        if k.match(/_ids$/) && !self.class.associations_keys.index(k)
-          if self.class.associations_keys.index(rel = k.gsub(/_ids$/, ""))
-            associations2[rel] = v
-          elsif i = self.class.associations_keys.map{|k| k.singularize}.index(k.gsub(/_ids$/, ""))
-            associations2[self.class.associations_keys[i]] = v
-          end
-        else
-          associations2[k] = v
-        end
-      end
-      associations2
     end
 
     # talk OpenERP cryptic associations API
@@ -178,9 +184,15 @@ module Ooor
           end
         end
       elsif self.class.many2many_associations[k]
-        [[6, false, v]]
+        [[6, false, (v || []).map {|i| i.is_a?(Base) ? i.id : i}]]
       elsif self.class.many2one_associations[k]
-        v.is_a?(Array) ? v[0] : v
+        if v.is_a?(Array)
+          v[0]
+        elsif v.is_a?(Base)
+          v.id
+        else
+          v
+        end
       end
     end
  

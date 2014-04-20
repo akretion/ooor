@@ -1,23 +1,6 @@
 module Ooor
   module Associations
 
-    def many2one_id_method(rel, *arguments)
-      if @associations[rel]
-        @associations[rel][0]
-      else
-        obj = method_missing(rel.to_sym, *arguments)
-        obj.is_a?(Base) ? obj.id : obj
-      end
-    end
-
-    def x_to_many_ids_method(rel, *arguments)
-      if @associations[rel]
-        @associations[rel]
-      else
-        method_missing(rel.to_sym, *arguments)
-      end
-    end
-
     # fakes associations like much like ActiveRecord according to the cached OpenERP data model
     def relationnal_result(method_name, *arguments)
       self.class.reload_fields_definition(false, object_session)

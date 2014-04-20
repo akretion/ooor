@@ -214,6 +214,12 @@ describe Ooor do
         p.name.should == "testProduct1"
       end
 
+      it "should properly change value when m2o is set" do
+        p = ProductProduct.find(:first)
+        p.categ_id = 7
+        p.categ_id.id.should == 7
+      end
+
       it "should be able to create a product" do
         p = ProductProduct.create(:name => "testProduct1", :categ_id => 1)
         ProductProduct.find(p.id).categ_id.id.should == 1
@@ -235,8 +241,8 @@ describe Ooor do
       end
 
       it "should be able to create an order" do
-        o = SaleOrder.create(:partner_id => ResPartner.search([['name', 'ilike', 'Agrolait']])[0], 
-          :partner_order_id => 1, :partner_invoice_id => 1, :partner_shipping_id => 1, :pricelist_id => 1)
+        p_id = ResPartner.search([['name', 'ilike', 'Agrolait']])[0]
+        o = SaleOrder.create(partner_id: p_id, partner_invoice_id: p_id, partner_shipping_id: p_id, pricelist_id: 1)
         o.id.should be_kind_of(Integer)
       end
 
@@ -397,12 +403,12 @@ describe Ooor do
         inv.state.should == "draft"
         inv.wkf_action('invoice_open')
         inv.state.should == "open"
-        voucher = AccountVoucher.new({:amount=>inv.amount_total, :type=>"receipt", :partner_id => inv.partner_id.id}, {"default_amount"=>inv.amount_total, "invoice_id"=>inv.id})
-        voucher.on_change("onchange_partner_id", [], :partner_id, inv.partner_id.id, AccountJournal.find('account.bank_journal').id, 0.0, 1, 'receipt', false)
+        voucher = @ooor.const_get('account.voucher').new({:amount=>inv.amount_total, :type=>"receipt", :partner_id => inv.partner_id.id}, {"default_amount"=>inv.amount_total, "invoice_id"=>inv.id})
+        voucher.on_change("onchange_partner_id", [], :partner_id, inv.partner_id.id, @ooor.const_get('account.journal').find('account.bank_journal').id, 0.0, 1, 'receipt', false)
         voucher.save
-        voucher.wkf_action 'proforma_voucher'
+#        voucher.wkf_action 'proforma_voucher'
         
-        inv.reload
+#        inv.reload
       end
 
       it "should be possible to call resource actions and workflow actions" do
@@ -469,7 +475,7 @@ describe Ooor do
     end
 
     it "should find by permalink" do
-      Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connectio reuse here
+      Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connection reuse here
       with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
         lang = Ooor::Locale.to_erp_locale('en')
         session['products'].find_by_permalink('Service', context: {'lang' => lang}, fields: ['name']).should be_kind_of(Ooor::Base)

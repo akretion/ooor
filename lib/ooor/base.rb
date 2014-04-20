@@ -1,27 +1,35 @@
 #    OOOR: OpenObject On Ruby
-#    Copyright (C) 2009-2013 Akretion LTDA (<http://www.akretion.com>).
+#    Copyright (C) 2009-2014 Akretion LTDA (<http://www.akretion.com>).
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
 require 'active_support/core_ext/hash/indifferent_access'
 require 'active_support/core_ext/module/delegation.rb'
+require 'active_model/attribute_methods'
+require 'active_model/dirty'
 require 'ooor/reflection'
 require 'ooor/reflection_ooor'
+require 'ooor/errors'
 
 module Ooor
-  class ModelTemplate #meta data shared across sessions
-    TEMPLATE_PROPERTIES = [:openerp_id, :info, :access_ids, :description,
+
+  # meta data shared across sessions, a cache of the data in ir_model in OpenERP.
+  # reused accross workers in a multi-process web app (via memcache for instance).
+  class ModelTemplate
+
+    TEMPLATE_PROPERTIES = [:name, :openerp_id, :info, :access_ids, :description,
       :openerp_model, :field_ids, :state, :fields,
-      :many2one_associations, :one2many_associations, :many2many_associations, :polymorphic_m2o_associations, :associations_keys,
+      :many2one_associations, :one2many_associations, :many2many_associations,
+      :polymorphic_m2o_associations, :associations_keys,
       :associations, :columns, :columns_hash]
-    attr_accessor *TEMPLATE_PROPERTIES
+
+      attr_accessor *TEMPLATE_PROPERTIES
   end
 
-
+  # the base class for proxies to OpenERP objects
   class Base < Ooor::MiniActiveResource
-    #PREDEFINED_INHERITS = {'product.product' => 'product_tmpl_id'}
-    include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection, Associations, Report, FinderMethods, FieldMethods, Callbacks
-
+    include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection
+    include Associations, Report, FinderMethods, FieldMethods, Callbacks, ActiveModel::Dirty
 
     # ********************** class methods ************************************
     class << self
@@ -95,18 +103,7 @@ module Ooor
       @attributes ||= {}
       @loaded_associations = {}
       attributes.each do |key, value|
-        skey = key.to_s
-        if self.class.associations_keys.index(skey) || value.is_a?(Array)
-          if value.is_a?(Ooor::Base) || value.is_a?(Array) && value.all? {|i| i.is_a?(Ooor::Base)}
-            @loaded_associations[skey] = value #we want the method to load the association through method missing
-          elsif self.class.polymorphic_m2o_associations.keys.index(skey)
-            @associations[skey] = value
-          else
-            @associations[skey] = sanitize_association(skey, value)
-          end
-        else
-          @attributes[skey] = value || nil #don't bloat with false values
-        end
+        self.send "#{key}=".to_sym, value if self.respond_to?("#{key}=".to_sym)
       end
       self
     end
@@ -124,20 +121,35 @@ module Ooor
         load(attributes)
       else
         load_with_defaults(attributes, default_get_list)
+      end.tap do
+        if id
+          @previously_changed = ActiveSupport::HashWithIndifferentAccess.new # see ActiveModel::Dirty reset_changes
+          @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new
+        end
       end
     end
 
-    def save(context={}, reload=true, keys=nil)
+    # Saves (+create+) or \updates (+write+) a resource. Delegates to +create+ if the object is \new,
+    # +update+ if it exists.
+    def save(context={}, reload=true)
+      create_or_update(context, reload)
+    end
+
+    def create_or_update(context={}, reload=true)
       run_callbacks :save do
-        new? ? create(context, reload) : update(context, reload, keys)
+        new? ? create_record(context, reload) : update_record(context, reload)
       end
     rescue ValidationError => e
       e.extract_validation_error!(errors)
       return false
     end
 
-    #compatible with the Rails way but also supports OpenERP context
+    # Create (i.e., \save to OpenERP service) the \new resource.
     def create(context={}, reload=true)
+      create_or_update(context, reload)
+    end
+
+    def create_record(context={}, reload=true)
       run_callbacks :create do
         self.id = rpc_execute('create', to_openerp_hash, context)
         if @ir_model_data_id
@@ -147,25 +159,28 @@ module Ooor
             'res_id' => self.id)
         end
         @persisted = true
-        reload_from_record!(self.class.find(self.id, context: context)) if reload
+        (reload_from_record!(self.class.find(self.id, context: context)) if reload).tap do
+          @previously_changed = ActiveSupport::HashWithIndifferentAccess.new # see ActiveModel::Dirty
+          @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new
+        end # see ActiveModel::Dirty
       end
     end
 
     def update_attributes(attributes, context={}, reload=true)
-      load(attributes, false) && save(context, reload, attributes.keys)
+      load(attributes, false) && save(context, reload)
     end
 
-    def update(context={}, reload=true, keys=nil) #TODO use http://apidock.com/rails/ActiveRecord/Dirty to minimize data to save back
+    # Update the resource on the remote service.
+    def update(context={}, reload=true, keys=nil)
+      create_or_update(context, reload, keys)
+    end
+
+    def update_record(context={}, reload=true)
       run_callbacks :update do
-        if keys
-          attributes = @attributes.select {|k| keys.index(k)}
-          associations = @associations.select {|k| keys.index(k)}
-        else
-          attributes = @attributes
-          associations = @associations
-        end
-        rpc_execute('write', [self.id], to_openerp_hash(attributes, associations), context)
+        rpc_execute('write', [self.id], to_openerp_hash, context)
         reload_fields(context) if reload
+        @previously_changed = changes # see ActiveModel::Dirty
+        @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new
         @persisted = true
       end
     end
@@ -207,24 +222,6 @@ module Ooor
     def type() method_missing(:type) end #skips deprecated Object#type method
 
     private
-
-    def sanitize_association(skey, value)
-      if value.is_a?(Array) && !self.class.many2one_associations.keys.index(skey)
-        value.reject {|i| i == ''}.map {|i| i.is_a?(String) ? i.to_i : i}
-      elsif value.is_a?(String)
-        if self.class.many2one_associations.keys.index(skey)
-          if value.blank?
-            false
-          else
-            value.to_i
-          end
-        else
-          value.split(",").map{|i| i.to_i}
-        end
-      else
-        value
-      end
-    end
 
     def load_with_defaults(attributes, default_get_list)
       defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
