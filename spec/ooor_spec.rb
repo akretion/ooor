@@ -169,6 +169,10 @@ describe Ooor do
         c.nextcall.should be_kind_of(DateTime)
       end
 
+      it "should not load false values in empty strings (for HTML forms)" do
+        ResPartner.first.phone.should be_nil
+      end
+
       it "should map OpenERP types to Rails types" do
         (%w[char binary many2one one2many many2many]).each { |t| Ooor::Base.to_rails_type(t).should be_kind_of(Symbol) }
       end
@@ -403,6 +407,10 @@ describe Ooor do
 
       it "should be possible to invoke batch methods on relations" do
         Ooor.default_session.const_get('product.product').where(type: 'service').write(type: 'service').should == true
+      end
+
+      it "should support reloading relation" do
+        Ooor.default_session.const_get('product.product').where(type: 'service').reload.all.should be_kind_of(Array)
       end
     end
 
