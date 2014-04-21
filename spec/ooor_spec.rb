@@ -388,6 +388,10 @@ describe Ooor do
         collection.all(fields:['name']).should be_kind_of(Array)
         collection.all.size.should == 5
       end
+
+      it "should support name_search in ARel (used in association widgets with Ooorest)" do
+        Ooor.default_session.const_get('product.category').where([]).apply_finder_options(name_search: 'Com').all[0].name.should == "All products / Saleable / Components"
+      end
     end
 
     describe "report support" do

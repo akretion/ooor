@@ -58,10 +58,10 @@ module Ooor
       relation
     end
     
-    def count(column_name = nil, options = {})
-      column_name, options = nil, column_name if column_name.is_a?(Hash)
-      calculate(:count, column_name, options)
-    end
+#    def count(column_name = nil, options = {}) #TODO possible to implement?
+#      column_name, options = nil, column_name if column_name.is_a?(Hash)
+#      calculate(:count, column_name, options)
+#    end
     
     def initialize(klass, options={})
       @klass = klass
@@ -128,26 +128,10 @@ module Ooor
         if @options && @options[:name_search]
           name_search = @klass.name_search(@options[:name_search], where_values, 'ilike', @options[:context], @limit_value)
           @records = name_search.map do |tuple|
-            r = @klass.new({name: tuple[1]}, [])
-            r.id = tuple[0]
-            r #TODO load the fields optionally
+            @klass.new({name: tuple[1]}, []).tap { |r| r.id = tuple[0] } #TODO load the fields optionally
           end
         else
-          if @per_value && @page_value
-            offset = @per_value * @page_value
-            limit = @per_value
-          else
-            offset = @offset_value
-            limit = @limit_value || false
-          end
-          @loaded = true
-          opts = @options.merge({
-              domain: where_values,
-              offset: offset,
-              limit: limit,
-              order: search_order,
-            })
-          @records = @klass.find(:all, opts)
+          load_records_page(search_order)
         end
       end
     end
@@ -157,6 +141,24 @@ module Ooor
     end
     
     protected
+
+    def load_records_page(search_order)
+      if @per_value && @page_value
+        offset = @per_value * @page_value
+        limit = @per_value
+      else
+        offset = @offset_value
+        limit = @limit_value || false
+      end
+      @loaded = true
+      opts = @options.merge({
+          domain: where_values,
+          offset: offset,
+          limit: limit,
+          order: search_order,
+        })
+      @records = @klass.find(:all, opts)
+    end
 
     def method_missing(method, *args, &block)
       if Array.method_defined?(method)
