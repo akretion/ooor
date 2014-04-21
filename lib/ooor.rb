@@ -12,6 +12,7 @@ require 'logger'
 module Ooor
   extend ActiveSupport::Autoload
   autoload :Base
+  autoload :Persistence
   autoload :Callbacks
   autoload :Cache, 'active_support/cache'
   autoload :Serialization
