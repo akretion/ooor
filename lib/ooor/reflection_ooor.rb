@@ -27,17 +27,6 @@ module Ooor
         end
       end
 
-      def set_columns_hash(view_fields={})
-        reload_fields_definition()
-        @t.columns_hash ||= {}
-        @t.fields.each do |k, field|
-          unless @t.associations_keys.index(k)
-            @t.columns_hash[k] = field.merge({type: to_rails_type(view_fields[k] && view_fields[k]['type'] || field['type'])})
-          end
-        end
-        @t.columns_hash
-      end
-
       def create_reflection(name)
         reload_fields_definition()
         options = {}
