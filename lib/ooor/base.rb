@@ -78,6 +78,8 @@ module Ooor
       def limit(value); relation.limit(value); end
       def order(value); relation.order(value); end
       def offset(value); relation.offset(value); end
+      def first(*args); relation.first(*args); end
+      def last(*args); relation.last(*args); end
       
       def logger; Ooor.logger; end
 

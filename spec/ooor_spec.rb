@@ -381,6 +381,14 @@ describe Ooor do
         ResUsers.all.should be_kind_of(Array)
       end
 
+      it "should have a 'first' method" do
+        ResUsers.first.id.should == 1
+      end
+
+      it "should have a 'last' method" do
+        ResUsers.last.id.should == ResUsers.find(:last).id
+      end
+
       it "should be ready for Kaminari pagination via ARel scoping" do
         num = 2
         default_per_page = 5
@@ -390,7 +398,7 @@ describe Ooor do
       end
 
       it "should support name_search in ARel (used in association widgets with Ooorest)" do
-        Ooor.default_session.const_get('product.category').where([]).apply_finder_options(name_search: 'Com').all[0].name.should == "All products / Saleable / Components"
+        Ooor.default_session.const_get('product.category').all(name_search: 'Com')[0].name.should == "All products / Saleable / Components"
       end
 
       it "should be possible to invoke batch methods on relations" do

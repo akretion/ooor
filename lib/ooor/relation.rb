@@ -115,6 +115,14 @@ module Ooor
       args.any? ? apply_finder_options(args.first).to_a : to_a
     end
 
+    def first(*args)
+      limit(1).order('id').all(*args).first
+    end
+
+    def last(*args)
+      limit(1).order('id DESC').all(*args).first
+    end
+
     def to_a
       if loaded?
         @records
