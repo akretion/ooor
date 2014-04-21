@@ -3,7 +3,6 @@
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
-require 'active_support/core_ext/hash/indifferent_access'
 require 'active_support/core_ext/module/delegation.rb'
 require 'active_model/attribute_methods'
 require 'active_model/dirty'
@@ -29,7 +28,7 @@ module Ooor
   # the base class for proxies to OpenERP objects
   class Base < Ooor::MiniActiveResource
     include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection
-    include Associations, Report, FinderMethods, FieldMethods, Callbacks, ActiveModel::Dirty
+    include Associations, Report, FinderMethods, FieldMethods
 
     # ********************** class methods ************************************
     class << self
@@ -90,108 +89,11 @@ module Ooor
 
     attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
 
+    include Persistence, Callbacks, ActiveModel::Dirty
+
     def rpc_execute(method, *args)
       args += [self.class.connection.connection_session.merge(object_session)] unless args[-1].is_a? Hash
       self.class.object_service(:execute, self.class.openerp_model, method, *args)
-    end
-
-    def load(attributes, remove_root=false, persisted=false)#an attribute might actually be a association too, will be determined here
-      self.class.reload_fields_definition(false, object_session)
-      raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
-      @prefix_options, attributes = split_options(attributes)
-      @associations ||= {}
-      @attributes ||= {}
-      @loaded_associations = {}
-      attributes.each do |key, value|
-        self.send "#{key}=".to_sym, value if self.respond_to?("#{key}=".to_sym)
-      end
-      self
-    end
-
-    #takes care of reading OpenERP default field values.
-    def initialize(attributes = {}, default_get_list=false, context={}, persisted=false)
-      @attributes = {}
-      @prefix_options = {}
-      @ir_model_data_id = attributes.delete(:ir_model_data_id)
-      @object_session = {}
-      @object_session = HashWithIndifferentAccess.new(context)
-      @persisted = persisted
-      self.class.reload_fields_definition(false, @object_session)
-      if default_get_list == []
-        load(attributes)
-      else
-        load_with_defaults(attributes, default_get_list)
-      end.tap do
-        if id
-          @previously_changed = ActiveSupport::HashWithIndifferentAccess.new # see ActiveModel::Dirty reset_changes
-          @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new
-        end
-      end
-    end
-
-    # Saves (+create+) or \updates (+write+) a resource. Delegates to +create+ if the object is \new,
-    # +update+ if it exists.
-    def save(context={}, reload=true)
-      create_or_update(context, reload)
-    end
-
-    def create_or_update(context={}, reload=true)
-      run_callbacks :save do
-        new? ? create_record(context, reload) : update_record(context, reload)
-      end
-    rescue ValidationError => e
-      e.extract_validation_error!(errors)
-      return false
-    end
-
-    # Create (i.e., \save to OpenERP service) the \new resource.
-    def create(context={}, reload=true)
-      create_or_update(context, reload)
-    end
-
-    def create_record(context={}, reload=true)
-      run_callbacks :create do
-        self.id = rpc_execute('create', to_openerp_hash, context)
-        if @ir_model_data_id
-          IrModelData.create(model: self.class.openerp_model,
-            'module' => @ir_model_data_id[0],
-            'name' => @ir_model_data_id[1],
-            'res_id' => self.id)
-        end
-        @persisted = true
-        reload_fields(context) if reload
-      end
-    end
-
-    def update_attributes(attributes, context={}, reload=true)
-      load(attributes, false) && save(context, reload)
-    end
-
-    # Update the resource on the remote service.
-    def update(context={}, reload=true, keys=nil)
-      create_or_update(context, reload, keys)
-    end
-
-    def update_record(context={}, reload=true)
-      run_callbacks :update do
-        rpc_execute('write', [self.id], to_openerp_hash, context)
-        reload_fields(context) if reload
-        @persisted = true
-      end
-    end
-
-    #Deletes the record in OpenERP and freezes this instance to reflect that no changes should be made (since they can’t be persisted).
-    def destroy(context={})
-      run_callbacks :destroy do
-        rpc_execute('unlink', [self.id], context)
-        @destroyed = true
-        freeze 
-      end
-    end
-
-    #OpenERP copy method, load persisted copied Object
-    def copy(defaults={}, context={})
-      self.class.find(rpc_execute('copy', self.id, defaults, context), context: context)
     end
 
     #Generic OpenERP rpc method call
@@ -220,30 +122,8 @@ module Ooor
 
     private
 
-    def load_with_defaults(attributes, default_get_list)
-      defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
-      attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
-      load(attributes)
-    end
-      
-    def load_on_change_result(result, field_name, field_value)
-      if result["warning"]
-        self.class.logger.info result["warning"]["title"]
-        self.class.logger.info result["warning"]["message"]
-      end
-      attrs = @attributes.merge(field_name => field_value)
-      attrs.merge!(result["value"])
-      load(attrs)
-    end
-
     # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
     def to_ary; nil; end # :nodoc:
-
-    def reload_fields(context)
-      record = self.class.find(self.id, context: context)
-      load(record.attributes.merge(record.associations))
-      @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new # see ActiveModel::Dirty
-    end
 
   end
 end
