@@ -23,18 +23,7 @@ module Ooor
     # MacroReflection class has info for AggregateReflection and AssociationReflection
     # classes.
     module ClassMethods
-      def create_reflection(macro, name, options, active_record)
-        case macro
-          when :has_many, :belongs_to, :has_one, :has_and_belongs_to_many
-            klass = AssociationReflection
-            reflection = klass.new(macro, name, options, active_record)
-          when :composed_of
-            reflection = AggregateReflection.new(macro, name, options, active_record)
-        end
-
-        self.reflections = self.reflections.merge(name => reflection)
-        reflection
-      end
+      #def create_reflection(macro, name, options, active_record) #NOTE overriden in Ooor
 
       # Returns an array of AggregateReflection objects for all the aggregations in the class.
       def reflect_on_all_aggregations
@@ -118,9 +107,9 @@ module Ooor
       #
       # <tt>composed_of :balance, :class_name => 'Money'</tt> returns the Money class
       # <tt>has_many :clients</tt> returns the Client class
-      def klass
-        @klass ||= class_name.constantize
-      end
+#      def klass #NOTE overriden in Ooor
+#        @klass ||= class_name.constantize
+#      end
 
       # Returns the class name for the macro.
       #
@@ -140,9 +129,9 @@ module Ooor
           active_record == other_aggregation.active_record
       end
 
-      def sanitized_conditions #:nodoc:
-        @sanitized_conditions ||= klass.send(:sanitize_sql, options[:conditions]) if options[:conditions]
-      end
+#      def sanitized_conditions #:nodoc: #NOTE not applicable in Ooor
+#        @sanitized_conditions ||= klass.send(:sanitize_sql, options[:conditions]) if options[:conditions]
+#      end
 
       private
         def derive_class_name
