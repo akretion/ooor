@@ -2,7 +2,7 @@ require 'active_support/core_ext/class/attribute'
 require 'active_support/core_ext/object/inclusion'
 
 # NOTE this is a scoped copy of ActiveRecord reflection.rb
-# the few necessary hacks are explicited with a FIXME
+# the few necessary hacks are explicited with a FIXME or a NOTE
 # an addition Ooor specific reflection module completes this one explicitely
 module Ooor
   # = Active Record Reflection
@@ -26,7 +26,7 @@ module Ooor
       def create_reflection(macro, name, options, active_record)
         case macro
           when :has_many, :belongs_to, :has_one, :has_and_belongs_to_many
-            klass = options[:through] ? ThroughReflection : AssociationReflection
+            klass = AssociationReflection
             reflection = klass.new(macro, name, options, active_record)
           when :composed_of
             reflection = AggregateReflection.new(macro, name, options, active_record)
@@ -251,9 +251,9 @@ module Ooor
         end
       end
 
-      def through_reflection
-        nil
-      end
+#      def through_reflection #NOTE not supported in Ooor
+#        nil
+#      end
 
       def source_reflection
         nil
@@ -334,17 +334,17 @@ module Ooor
         when :has_and_belongs_to_many
           Associations::HasAndBelongsToManyAssociation
         when :has_many
-          if options[:through]
-            Associations::HasManyThroughAssociation
-          else
+#          if options[:through] #NOTE not supported in Ooor
+#            Associations::HasManyThroughAssociation
+#          else
             Associations::HasManyAssociation
-          end
+#          end
         when :has_one
-          if options[:through]
-            Associations::HasOneThroughAssociation
-          else
+#          if options[:through] #NOTE not supported in Ooor
+#            Associations::HasOneThroughAssociation
+#          else
             Associations::HasOneAssociation
-          end
+#          end
         end
       end
 
@@ -372,166 +372,6 @@ module Ooor
 
     # Holds all the meta-data about a :through association as it was specified
     # in the Active Record class.
-    class ThroughReflection < AssociationReflection #:nodoc:
-#      delegate :foreign_key, :foreign_type, :association_foreign_key,       #FIXME hacked for OOOR
-#               :active_record_primary_key, :type, :to => :source_reflection
-
-      # Gets the source of the through reflection. It checks both a singularized
-      # and pluralized form for <tt>:belongs_to</tt> or <tt>:has_many</tt>.
-      #
-      #   class Post < ActiveRecord::Base
-      #     has_many :taggings
-      #     has_many :tags, :through => :taggings
-      #   end
-      #
-      def source_reflection
-        @source_reflection ||= source_reflection_names.collect { |name| through_reflection.klass.reflect_on_association(name) }.compact.first
-      end
-
-      # Returns the AssociationReflection object specified in the <tt>:through</tt> option
-      # of a HasManyThrough or HasOneThrough association.
-      #
-      #   class Post < ActiveRecord::Base
-      #     has_many :taggings
-      #     has_many :tags, :through => :taggings
-      #   end
-      #
-      #   tags_reflection = Post.reflect_on_association(:tags)
-      #   taggings_reflection = tags_reflection.through_reflection
-      #
-      def through_reflection
-        @through_reflection ||= active_record.reflect_on_association(options[:through])
-      end
-
-      # Returns an array of reflections which are involved in this association. Each item in the
-      # array corresponds to a table which will be part of the query for this association.
-      #
-      # The chain is built by recursively calling #chain on the source reflection and the through
-      # reflection. The base case for the recursion is a normal association, which just returns
-      # [self] as its #chain.
-      def chain
-        @chain ||= begin
-          chain = source_reflection.chain + through_reflection.chain
-          chain[0] = self # Use self so we don't lose the information from :source_type
-          chain
-        end
-      end
-
-      # Consider the following example:
-      #
-      #   class Person
-      #     has_many :articles
-      #     has_many :comment_tags, :through => :articles
-      #   end
-      #
-      #   class Article
-      #     has_many :comments
-      #     has_many :comment_tags, :through => :comments, :source => :tags
-      #   end
-      #
-      #   class Comment
-      #     has_many :tags
-      #   end
-      #
-      # There may be conditions on Person.comment_tags, Article.comment_tags and/or Comment.tags,
-      # but only Comment.tags will be represented in the #chain. So this method creates an array
-      # of conditions corresponding to the chain. Each item in the #conditions array corresponds
-      # to an item in the #chain, and is itself an array of conditions from an arbitrary number
-      # of relevant reflections, plus any :source_type or polymorphic :as constraints.
-      def conditions
-        @conditions ||= begin
-          conditions = source_reflection.conditions.map { |c| c.dup }
-
-          # Add to it the conditions from this reflection if necessary.
-          conditions.first << options[:conditions] if options[:conditions]
-
-          through_conditions = through_reflection.conditions
-
-          if options[:source_type]
-            through_conditions.first << { foreign_type => options[:source_type] }
-          end
-
-          # Recursively fill out the rest of the array from the through reflection
-          conditions += through_conditions
-
-          # And return
-          conditions
-        end
-      end
-
-      # The macro used by the source association
-      def source_macro
-        source_reflection.source_macro
-      end
-
-      # A through association is nested if there would be more than one join table
-      def nested?
-        chain.length > 2 || through_reflection.macro == :has_and_belongs_to_many
-      end
-
-      # We want to use the klass from this reflection, rather than just delegate straight to
-      # the source_reflection, because the source_reflection may be polymorphic. We still
-      # need to respect the source_reflection's :primary_key option, though.
-      def association_primary_key(klass = nil)
-        # Get the "actual" source reflection if the immediate source reflection has a
-        # source reflection itself
-        source_reflection = self.source_reflection
-        while source_reflection.source_reflection
-          source_reflection = source_reflection.source_reflection
-        end
-
-        source_reflection.options[:primary_key] || primary_key(klass || self.klass)
-      end
-
-      # Gets an array of possible <tt>:through</tt> source reflection names:
-      #
-      #   [:singularized, :pluralized]
-      #
-      def source_reflection_names
-        @source_reflection_names ||= (options[:source] ? [options[:source]] : [name.to_s.singularize, name]).collect { |n| n.to_sym }
-      end
-
-      def source_options
-        source_reflection.options
-      end
-
-      def through_options
-        through_reflection.options
-      end
-
-      def check_validity!
-        if through_reflection.nil?
-          raise HasManyThroughAssociationNotFoundError.new(active_record.name, self)
-        end
-
-        if through_reflection.options[:polymorphic]
-          raise HasManyThroughAssociationPolymorphicThroughError.new(active_record.name, self)
-        end
-
-        if source_reflection.nil?
-          raise HasManyThroughSourceAssociationNotFoundError.new(self)
-        end
-
-        if options[:source_type] && source_reflection.options[:polymorphic].nil?
-          raise HasManyThroughAssociationPointlessSourceTypeError.new(active_record.name, self, source_reflection)
-        end
-
-        if source_reflection.options[:polymorphic] && options[:source_type].nil?
-          raise HasManyThroughAssociationPolymorphicSourceError.new(active_record.name, self, source_reflection)
-        end
-
-        if macro == :has_one && through_reflection.collection?
-          raise HasOneThroughCantAssociateThroughCollection.new(active_record.name, self, through_reflection)
-        end
-
-        check_validity_of_inverse!
-      end
-
-      private
-        def derive_class_name
-          # get the class_name of the belongs_to association of the through reflection
-          options[:source_type] || source_reflection.class_name
-        end
-    end
+    #class ThroughReflection < AssociationReflection #:nodoc: #NOTE commented out because not used in Ooor
   end
 end
