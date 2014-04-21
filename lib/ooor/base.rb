@@ -159,10 +159,7 @@ module Ooor
             'res_id' => self.id)
         end
         @persisted = true
-        (reload_from_record!(self.class.find(self.id, context: context)) if reload).tap do
-          @previously_changed = ActiveSupport::HashWithIndifferentAccess.new # see ActiveModel::Dirty
-          @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new
-        end # see ActiveModel::Dirty
+        reload_fields(context) if reload
       end
     end
 
@@ -179,16 +176,16 @@ module Ooor
       run_callbacks :update do
         rpc_execute('write', [self.id], to_openerp_hash, context)
         reload_fields(context) if reload
-#        @previously_changed = changes # FIXME seems to trigger useless reads, why?
-        @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new # see ActiveModel::Dirty
         @persisted = true
       end
     end
 
-    #compatible with the Rails way but also supports OpenERP context
+    #Deletes the record in OpenERP and freezes this instance to reflect that no changes should be made (since they can’t be persisted).
     def destroy(context={})
       run_callbacks :destroy do
         rpc_execute('unlink', [self.id], context)
+        @destroyed = true
+        freeze 
       end
     end
 
@@ -242,11 +239,10 @@ module Ooor
     # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
     def to_ary; nil; end # :nodoc:
 
-    def reload_from_record!(record) load(record.attributes.merge(record.associations)) end
-
     def reload_fields(context)
-      records = self.class.find(self.id, context: context, fields: @attributes.keys + @associations.keys)
-      reload_from_record!(records)
+      record = self.class.find(self.id, context: context)
+      load(record.attributes.merge(record.associations))
+      @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new # see ActiveModel::Dirty
     end
 
   end
