@@ -21,9 +21,9 @@ module Ooor
       :openerp_model, :field_ids, :state, :fields,
       :many2one_associations, :one2many_associations, :many2many_associations,
       :polymorphic_m2o_associations, :associations_keys,
-      :associations, :columns, :columns_hash]
+      :associations, :columns]
 
-      attr_accessor *TEMPLATE_PROPERTIES
+      attr_accessor *TEMPLATE_PROPERTIES, :columns_hash
   end
 
   # the base class for proxies to OpenERP objects
@@ -179,8 +179,8 @@ module Ooor
       run_callbacks :update do
         rpc_execute('write', [self.id], to_openerp_hash, context)
         reload_fields(context) if reload
-        @previously_changed = changes # see ActiveModel::Dirty
-        @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new
+#        @previously_changed = changes # FIXME seems to trigger useless reads, why?
+        @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new # see ActiveModel::Dirty
         @persisted = true
       end
     end

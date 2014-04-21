@@ -6,7 +6,27 @@ module Ooor
   module ReflectionOoor # :nodoc:
     extend ActiveSupport::Concern
 
+      def column_for_attribute(name)
+        self.class.columns_hash[name.to_s]
+      end
+
     module ClassMethods
+      def columns_hash(view_fields=nil)
+        if view_fields || !@t.columns_hash
+          view_fields ||= {}
+          reload_fields_definition()
+          @t.columns_hash ||= {}
+          @t.fields.each do |k, field|
+            unless @t.associations_keys.index(k)
+              @t.columns_hash[k] = field.merge({type: to_rails_type(view_fields[k] && view_fields[k]['type'] || field['type'])})
+            end
+          end
+          @t.columns_hash
+        else
+          @t.columns_hash
+        end
+      end
+
       def set_columns_hash(view_fields={})
         reload_fields_definition()
         @t.columns_hash ||= {}
@@ -16,10 +36,6 @@ module Ooor
           end
         end
         @t.columns_hash
-      end
-
-      def column_for_attribute(name)
-        columns_hash[name.to_s]
       end
 
       def create_reflection(name)
