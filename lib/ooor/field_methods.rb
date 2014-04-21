@@ -118,8 +118,8 @@ module Ooor
     end
 
     def set_attribute(meth, *args)
-      value = args[0]
-      attributes[meth] ||= nil
+      value = sanitize_attribute(meth, args[0])
+      @attributes[meth] ||= nil
       send("#{meth}_will_change!") unless @attributes[meth] == value
       @attributes[meth] = value
     end
@@ -156,18 +156,22 @@ module Ooor
     end
 
     def set_association(meth, *args)
-      value = args[0]
+      value = sanitize_association(meth, args[0])
+      if self.class.many2one_associations.has_key?(meth) # TODO detect false positives for other associations too
+        if @associations[meth].is_a?(Array) && @associations[meth][0] == value \
+           || @associations[meth] == value #\
+          return value
+        end
+      end
       @skip = true
-      @associations[meth] ||= :undef
-      send("#{meth}_will_change!")# unless @associations[meth] == value #TODO sure we check loaded_associations only?
+      send("#{meth}_will_change!")
       @skip = false
-      new_value = TypeCasting.sanitize_association(meth, args[0], self.class.many2one_associations)
-      if new_value.is_a?(Ooor::Base) || new_value.is_a?(Array) && new_value.all? {|i| i.is_a?(Ooor::Base)}
-        @loaded_associations[meth] = new_value
+      if value.is_a?(Ooor::Base) || value.is_a?(Array) && value.all? {|i| i.is_a?(Ooor::Base)}
+        @loaded_associations[meth] = value
       else
         @loaded_associations.delete(meth)
       end
-      @associations[meth] = new_value
+      @associations[meth] = value
     end
 
     # Raise NoMethodError if the named attribute does not exist in order to preserve behavior expected by #clone.

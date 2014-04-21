@@ -9,27 +9,6 @@ module Ooor
     
     OPERATORS = ["=", "!=", "<=", "<", ">", ">=", "=?", "=like", "=ilike", "like", "not like", "ilike", "not ilike", "in", "not in", "child_of"]
   
-    # utility to reformat possible strig values coming from HTML forms
-    def self.sanitize_association(skey, value, many2one_associations)
-      if value.is_a?(Ooor::Base) || value.is_a?(Array) && value.all? {|i| i.is_a?(Ooor::Base)}
-        value
-      elsif value.is_a?(Array) && !many2one_associations.keys.index(skey)
-        value.reject {|i| i == ''}.map {|i| i.is_a?(String) ? i.to_i : i}
-      elsif value.is_a?(String)
-        if many2one_associations.keys.index(skey)
-          if value.blank?
-            false
-          else
-            value.to_i
-          end
-        else
-          value.split(",").map {|i| i.to_i}
-        end
-      else
-        value
-      end
-    end
-
     module ClassMethods
       
       def openerp_string_domain_to_ruby(string_domain) #FIXME: used? broken?
@@ -141,6 +120,41 @@ module Ooor
       
     end
     
+      def sanitize_attribute(skey, value)
+        type = self.class.fields[skey]['type']
+        if type == 'boolean' && value == 1 || value == "1"
+          true
+        elsif type == 'boolean'&& value == 0 || value == "0"
+          false
+        elsif value == false and type != 'boolean'
+          nil
+        else
+         value
+        end
+      end
+
+      def sanitize_association(skey, value)
+        if value.is_a?(Ooor::Base) || value.is_a?(Array) && value.all? {|i| i.is_a?(Ooor::Base)}
+          value
+        elsif value.is_a?(Array) && !self.class.many2one_associations.keys.index(skey)
+          value.reject {|i| i == ''}.map {|i| i.is_a?(String) ? i.to_i : i}
+        elsif value.is_a?(String)
+          if self.class.polymorphic_m2o_associations.has_key?(skey)
+            value
+          elsif self.class.many2one_associations.has_key?(skey)
+            if value.blank? || value == "0"
+              false
+            else
+              value.to_i
+            end
+          else
+            value.split(",").map {|i| i.to_i}
+          end
+        else
+          value
+        end
+      end
+
     def to_openerp_hash
       associations = {}
       attributes = {}
