@@ -92,6 +92,25 @@ module Ooor
         @klass ||= connection.class_name_from_model_key(class_name).constantize
       end
 
+      def initialize(macro, name, options, active_record)
+        super
+        @collection = macro.in?([:has_many, :has_and_belongs_to_many])
+      end
+
+      # Returns a new, unsaved instance of the associated class. +options+ will
+      # be passed to the class's constructor.
+      def build_association(*options, &block)
+        klass.new(*options, &block)
+      end
+
+      # Returns whether or not this association reflection is for a collection
+      # association. Returns +true+ if the +macro+ is either +has_many+ or
+      # +has_and_belongs_to_many+, +false+ otherwise.
+      def collection?
+        @collection
+      end
+
+
     end
 
   end
