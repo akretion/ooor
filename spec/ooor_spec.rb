@@ -507,6 +507,9 @@ describe Ooor do
       reflection.klass.should == ProductCategory
     end
 
+    it "should support column_for_attribute (used by simple_form)" do
+      @ooor.const_get('ir.cron').find(:first).column_for_attribute('name')[:type].should == :string
+    end
   end
 
   describe "Multi-instance and class name scoping" do
