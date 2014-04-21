@@ -237,7 +237,7 @@ describe Ooor do
         u.save
         u.id.should_not be_nil
         u.name.should == "joe"
-        u.destroy
+        u.destroy.should be_kind_of(ResUsers)
       end
 
       it "should be able to create an order" do
@@ -391,6 +391,10 @@ describe Ooor do
 
       it "should support name_search in ARel (used in association widgets with Ooorest)" do
         Ooor.default_session.const_get('product.category').where([]).apply_finder_options(name_search: 'Com').all[0].name.should == "All products / Saleable / Components"
+      end
+
+      it "should be possible to invoke batch methods on relations" do
+        Ooor.default_session.const_get('product.product').where(type: 'service').write(type: 'service').should == true
       end
     end
 
