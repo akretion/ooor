@@ -78,6 +78,8 @@ module Ooor
       @klass.new(*args, &block)
     end
     
+    alias build new
+
     def reload
       reset
       to_a # force reload

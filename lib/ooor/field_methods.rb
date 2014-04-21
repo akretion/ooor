@@ -136,6 +136,8 @@ module Ooor
         if @attributes["id"]
           @associations[meth] = rpc_execute('read', [@attributes["id"]], [meth], *args || object_session)[0][meth]
           self.send meth, *args # will load the association object(s)
+        elsif self.class.one2many_associations.has_key?(meth) || self.class.many2many_associations.has_key?(meth)
+          [] #TODO wrapped in ARel
         else
           nil
         end
@@ -157,7 +159,7 @@ module Ooor
 
     def set_association(meth, *args)
       value = sanitize_association(meth, args[0])
-      if self.class.many2one_associations.has_key?(meth) # TODO detect false positives for other associations too
+      if self.class.many2one_associations.has_key?(meth) # TODO detect false positives changes for other associations too
         if @associations[meth].is_a?(Array) && @associations[meth][0] == value \
            || @associations[meth] == value #\
           return value

@@ -409,6 +409,10 @@ describe Ooor do
         Ooor.default_session.const_get('product.product').where(type: 'service').write(type: 'service').should == true
       end
 
+      it "should forward Array methods to the Array" do
+        Ooor.default_session.const_get('product.product').where(type: 'service').size.should be_kind_of(Integer)
+      end
+
       it "should support reloading relation" do
         Ooor.default_session.const_get('product.product').where(type: 'service').reload.all.should be_kind_of(Array)
       end
@@ -569,6 +573,15 @@ describe Ooor do
 
       with_ooor_default_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
         session['res.users'].search().should be_kind_of(Array)
+      end
+    end
+
+    it "should recover from expired sessions" do
+      with_ooor_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
+        user_obj = session['res.users']
+        user_obj.search().should be_kind_of(Array)
+        session.web_session[:session_id] = 'invalid'
+        user_obj.search().should be_kind_of(Array)
       end
     end
   end
