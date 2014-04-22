@@ -14,6 +14,7 @@ module Ooor
                   :select_values, :group_values, :order_values, :reorder_flag, :joins_values, :where_values, :having_values,
                   :limit_value, :offset_value, :lock_value, :readonly_value, :create_with_value, :from_value, :page_value, :per_value
     alias :loaded? :loaded
+    alias :model :klass
 
     def build_where(opts, other = [])#TODO OpenERP domain is more than just the intersection of restrictions
       case opts
@@ -150,6 +151,13 @@ module Ooor
       false
     end
     
+    def inspect
+      entries = to_a.take([limit_value, 11].compact.min).map!(&:inspect)
+      entries[10] = '...' if entries.size == 11
+
+      "#<#{self.class.name} [#{entries.join(', ')}]>"
+    end
+
     protected
 
     def load_records_page(search_order)
@@ -166,8 +174,10 @@ module Ooor
           offset: offset,
           limit: limit,
           order: search_order,
+          fields: fields
         })
-      @records = @klass.find(:all, opts)
+      scope = @options.delete(:ids) || :all
+      @records = @klass.find(scope, opts)
     end
 
     def method_missing(method, *args, &block)
