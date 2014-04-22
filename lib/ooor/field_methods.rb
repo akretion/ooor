@@ -46,7 +46,7 @@ module Ooor
 
       private
 
-      def generate_accessors
+      def generate_accessors #TODO we should cache this is a module cached like the template, or eventually generate source code or both
         fields.keys.each { |meth| define_field_method meth }
         associations_keys.each { |meth| define_association_method meth }
         one2many_associations.keys.each { |meth| define_nested_attributes_method meth }
@@ -127,9 +127,7 @@ module Ooor
     def get_association(meth, *args)
       return @associations[meth] || :undef if @skip
       if @loaded_associations.has_key?(meth)
-        @loaded_associations[meth].tap do |r|
-          define_association_builder(r, meth)
-        end
+        @loaded_associations[meth]
       elsif @associations.has_key?(meth)
         @loaded_associations[meth] = relationnal_result(meth, *args)
       else
@@ -137,22 +135,9 @@ module Ooor
           @associations[meth] = rpc_execute('read', [@attributes["id"]], [meth], *args || object_session)[0][meth]
           self.send meth, *args # will load the association object(s)
         elsif self.class.one2many_associations.has_key?(meth) || self.class.many2many_associations.has_key?(meth)
-          [] #TODO wrapped in ARel
+          load_x2m_association(self.class.all_fields[meth]['relation'], [], *args)
         else
           nil
-        end
-      end
-    end
-
-    def define_association_builder(r, meth)
-      def r.association=(association)
-        @association = association
-      end
-      rel = self.class.all_fields[meth]['relation']
-      if rel #polymorphic m2o don't have one
-        r.association = self.class.const_get(self.class.all_fields[meth]['relation'])
-        def r.build(attrs={})
-          @association.new(attrs)
         end
       end
     end
