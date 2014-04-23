@@ -41,6 +41,7 @@ unless ARGV.empty?
     system "stty -echo"
     password = $stdin.gets.chomp!
     system "stty echo"
+    password = 'admin' if password.blank?
   end
   
 else
