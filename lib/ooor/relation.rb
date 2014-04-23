@@ -55,7 +55,7 @@ module Ooor
     
     def order(*args)
       relation = clone
-      relation.order_values += args.flatten unless args.blank?
+      relation.order_values += args.flatten unless args.blank? || args[0] == false
       relation
     end
     
@@ -177,7 +177,11 @@ module Ooor
           fields: fields
         })
       scope = @options.delete(:ids) || :all
-      @records = @klass.find(scope, opts)
+      if scope == []
+        @records = []
+      else
+        @records = @klass.find(scope, opts)
+      end
     end
 
     def method_missing(method, *args, &block)
