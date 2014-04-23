@@ -35,10 +35,12 @@ module Ooor
         unless self.respond_to?(meth)
           self.instance_eval do
             define_method "#{meth}_attributes=" do |*args|
-              self.send :method_missing, *[meth, *args]
+              send("#{meth}_will_change!")
+              @associations[meth] = args[0]
+              @loaded_associations[meth] = args[0]
             end
             define_method "#{meth}_attributes" do |*args|
-              self.send :method_missing, *[meth, *args]
+              @loaded_associations[meth]
             end
           end
         end
@@ -162,7 +164,7 @@ module Ooor
       @skip = true
       send("#{meth}_will_change!")
       @skip = false
-      if value.is_a?(Ooor::Base) || value.is_a?(Array) && value.all? {|i| i.is_a?(Ooor::Base)}
+      if value.is_a?(Ooor::Base) || value.is_a?(Array) && !value.empty? && value.all? {|i| i.is_a?(Ooor::Base)}
         @loaded_associations[meth] = value
       else
         @loaded_associations.delete(meth)
