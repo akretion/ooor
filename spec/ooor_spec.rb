@@ -341,10 +341,24 @@ describe Ooor do
         p.taxes_id_ids.should be_kind_of(Array)
       end
 
-      it "should support Rails nested attributes" do
+      it "should support Rails nested attributes methods" do
         so = SaleOrder.find :first
         so.respond_to?(:order_line_attributes).should be_true
         so.respond_to?(:order_line_attributes=).should be_true
+      end
+
+      it "should support CRUD on o2m via nested attributes" do
+        p = ProductProduct.create(name:'Ooor product with packages')
+        p.packaging_attributes = {'1' => {name: 'pack1'}, '2' => {name: 'pack2'}}
+        p.save
+        p = ProductProduct.find p.id
+        pack1 = p.packaging[0]
+        pack2 = p.packaging[1]
+        pack2.name.should == 'pack2'
+        p.packaging_attributes = {'1' => {name: 'pack1', '_destroy'=> true, id: pack1.id}, '2' => {name: 'pack2_modified', id: pack2.id}}
+        p.save
+        p.packaging.size.should == 1
+        p.packaging[0].name.should == 'pack2_modified'
       end
 
       it "should be able to call build upon a o2m association" do
