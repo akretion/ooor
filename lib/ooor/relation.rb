@@ -174,7 +174,6 @@ module Ooor
           offset: offset,
           limit: limit,
           order: search_order,
-          fields: fields
         })
       scope = @options.delete(:ids) || :all
       if scope == []
