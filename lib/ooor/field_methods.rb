@@ -172,17 +172,17 @@ module Ooor
       @associations[meth] = value
     end
 
-    # Raise NoMethodError if the named attribute does not exist in order to preserve behavior expected by #clone.
-    def attribute(name)
-      key = name.to_s
-      if self.class.fields.has_key?(key) #TODO check not symbols
-        get_attribute(key)
-      elsif self.class.associations_keys.index(key)
-        get_association(key)
-      else
-        raise NoMethodError
-      end
-    end
+#    # Raise NoMethodError if the named attribute does not exist in order to preserve behavior expected by #clone.
+#    def attribute(name)
+#      key = name.to_s
+#      if self.class.fields.has_key?(key) #TODO check not symbols
+#        get_attribute(key)
+#      elsif self.class.associations_keys.index(key)
+#        get_association(key)
+#      else
+#        raise NoMethodError
+#      end
+#    end
 
     def method_missing(method_symbol, *arguments)
       self.class.reload_fields_definition(false, object_session)
