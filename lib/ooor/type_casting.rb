@@ -69,28 +69,8 @@ module Ooor
         elsif request.is_a?(Hash)
           request2 = {}
           request.each do |k, v|
-
-            if k.to_s.end_with?("_attributes")
-              attrs = []
-              if v.is_a?(Hash)
-                v.each do |key, val|
-                  if !val["_destroy"].empty?
-                    attrs << [2, val[:id].to_i || val['id']]
-                  elsif val[:id] || val['id']
-                    attrs << [1, val[:id].to_i || val['id'], cast_request_to_openerp(val)]
-                  else
-                    attrs << [0, 0, cast_request_to_openerp(val)]
-                  end
-                end
-              end
-
-              request2[k.to_s.gsub("_attributes", "")] = attrs
-            else
-              request2[k] = cast_request_to_openerp(v)
-            end
+            request2[k] = cast_request_to_openerp(v)
           end
-          request2
-
         else
           value_to_openerp(request)
         end
@@ -204,15 +184,30 @@ module Ooor
     end
 
     def cast_o2m_assocation(v)
-      v.collect do |value|
-        if value.is_a?(Base)
-          [0, 0, value.to_openerp_hash]
-        else
-          if value.is_a?(Hash)
+      if v.is_a?(Hash)
+        cast_o2m_nested_attributes(v)
+      else
+        v.collect do |value|
+          if value.is_a?(Base)
+            [0, 0, value.to_openerp_hash]
+          elsif value.is_a?(Hash)
             [0, 0, value]
           else
             [1, value, {}]
           end
+        end
+      end
+    end
+
+    def cast_o2m_nested_attributes(v)
+      v.keys.collect do |key|
+        val = v[key]
+        if !val["_destroy"].blank?
+          [2, val[:id].to_i || val['id']]
+        elsif val[:id] || val['id']
+          [1, val[:id].to_i || val['id'], val]
+        else
+          [0, 0, val]
         end
       end
     end
