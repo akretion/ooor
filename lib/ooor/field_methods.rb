@@ -50,10 +50,16 @@ module Ooor
         fields.keys.each { |meth| define_field_method meth }
         associations_keys.each { |meth| define_association_method meth }
         one2many_associations.keys.each { |meth| define_nested_attributes_method meth }
-        many2one_associations.keys.each { |meth| define_m2o_association_method meth }
+        many2one_associations.keys.each do |meth|
+          define_association_method meth
+          define_m2o_association_method meth
+        end
         (one2many_associations.keys + many2many_associations.keys).each do |meth|
-          define_association_method(meth, "#{meth}_ids")
-          define_association_method(meth, "#{meth.to_s.singularize}_ids")
+          define_association_method meth
+          alias_method "#{meth}_ids", meth
+          alias_method "#{meth}_ids=", "#{meth}="
+          alias_method "#{meth.to_s.singularize}_ids", meth
+          alias_method "#{meth.to_s.singularize}_ids=", "#{meth}="
         end
         @accessor_defined = true
       end
@@ -69,22 +75,25 @@ module Ooor
         end
       end
 
-      def define_association_method(meth, alias_meth=nil)
-        alias_meth ||= meth
-        define_attribute_methods alias_meth
-        define_method alias_meth do |*args|
+      def define_association_method(meth)
+        define_attribute_methods meth
+        define_method meth do |*args|
           get_association(meth, *args)
         end
 
-        define_method "#{alias_meth}=" do |*args|
+        define_method "#{meth}=" do |*args|
           set_association(meth, *args)
         end
       end
 
       def define_m2o_association_method(meth)
         define_method "#{meth}_id" do |*args|
-          r = get_association(meth, *args)
-          r.is_a?(Ooor::Base) ? r.id : r
+          if @associations[meth].is_a? Array
+            @associations[meth][0]
+          else
+            r = get_association(meth, *args)
+            r.is_a?(Ooor::Base) ? r.id : r
+          end
         end
       end
 
@@ -133,7 +142,7 @@ module Ooor
       else
         if @attributes["id"]
           @associations[meth] = rpc_execute('read', [@attributes["id"]], [meth], *args || object_session)[0][meth]
-          self.send meth, *args # will load the association object(s)
+          @loaded_associations[meth] = relationnal_result(meth, *args)
         elsif self.class.one2many_associations.has_key?(meth) || self.class.many2many_associations.has_key?(meth)
           load_x2m_association(self.class.all_fields[meth]['relation'], [], *args)
         else
