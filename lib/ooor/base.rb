@@ -71,7 +71,6 @@ module Ooor
 
       # ******************** AREL Minimal implementation ***********************
 
-      def relation(context={}); @relation ||= Relation.new(self, context); end #TODO template
       def scoped(context={}); relation(context); end
       def where(opts, *rest); relation.where(opts, *rest); end
       def all(*args); relation.all(*args); end
@@ -82,6 +81,10 @@ module Ooor
       def last(*args); relation.last(*args); end
       
       def logger; Ooor.logger; end
+
+      private
+
+      def relation; @relation ||= Relation.new(self); end
 
     end
 
