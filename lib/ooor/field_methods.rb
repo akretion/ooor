@@ -6,7 +6,7 @@ module Ooor
 
     module ClassMethods
 
-      def reload_fields_definition(force=false, context=connection.web_session)
+      def reload_fields_definition(force=false)
         if force || !fields
           @t.fields = {}
           @columns_hash = {}
@@ -121,7 +121,7 @@ module Ooor
         @attributes[meth]
       else #lazy loading
         if @attributes["id"]
-          @attributes[meth] = rpc_execute('read', [@attributes["id"]], [meth], *args || object_session)[0][meth]
+          @attributes[meth] = rpc_execute('read', [@attributes["id"]], [meth], *args || context)[0][meth]
         else
           nil
         end
@@ -143,7 +143,7 @@ module Ooor
         @loaded_associations[meth] = relationnal_result(meth, *args)
       else
         if @attributes["id"]
-          @associations[meth] = rpc_execute('read', [@attributes["id"]], [meth], *args || object_session)[0][meth]
+          @associations[meth] = rpc_execute('read', [@attributes["id"]], [meth], *args || context)[0][meth]
           @loaded_associations[meth] = relationnal_result(meth, *args)
         elsif self.class.one2many_associations.has_key?(meth) || self.class.many2many_associations.has_key?(meth)
           load_x2m_association(self.class.all_fields[meth]['relation'], [], *args)
@@ -185,7 +185,7 @@ module Ooor
 #    end
 
     def method_missing(method_symbol, *arguments)
-      self.class.reload_fields_definition(false, object_session)
+      self.class.reload_fields_definition(false)
       if id
         rpc_execute(method_symbol, [id], *arguments) #we assume that's an action
       else

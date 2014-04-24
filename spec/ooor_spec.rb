@@ -143,14 +143,14 @@ describe Ooor do
         partner.should be_kind_of ResPartner
       end
 
-      it "should support OpenERP context in finders" do
+      it "should support OpenERP context in finders" do #TODO
         p = ProductProduct.find(1, :context => {:my_key => 'value'})
         p.should_not be_nil
         products = ProductProduct.find(:all, :context => {:lang => 'es_ES'})
         products.should be_kind_of(Array)
       end
 
-      it "should support writing with a context" do
+      it "should support writing with a context" do #TODO
         p = ProductProduct.find(1, fields: ['name'])
         ProductProduct.write(1, {name: p.name}, {lang: 'en_US'})
         ProductProduct.write(1, {name: p.name}, lang: 'en_US')
@@ -279,7 +279,7 @@ describe Ooor do
 
       it "should skipped inherited default fields properly, for instance at product variant creation" do
         #note that we force [] here for the default_get_fields otherwise OpenERP will blows up while trying to write in the product template!
-        ProductProduct.create({:product_tmpl_id => 25, :code => 'OOOR variant'}, {}, []).should be_kind_of(ProductProduct)
+        ProductProduct.create({:product_tmpl_id => 25, :code => 'OOOR variant'}, []).should be_kind_of(ProductProduct)
       end
     end
 
@@ -507,7 +507,7 @@ describe Ooor do
       @ooor = Ooor.new(:url => @url, :database => @database)
     end
 
-    it "should support context when instanciating collections" do
+    it "should support context when instanciating collections" do #TODO
       @ooor.const_get('product.product')
       products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US'})
       p = products[0]

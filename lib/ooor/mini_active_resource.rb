@@ -9,20 +9,6 @@ module Ooor
       def element_name
         @element_name ||= model_name.element
       end
-
-      private
-        # split an option hash into two hashes, one containing the prefix options,
-        # and the other containing the leftovers.
-        def split_options(options = {})
-          prefix_options, query_options = {}, {}
-
-          (options || {}).each do |key, value|
-            next if key.blank? || !key.respond_to?(:to_sym)
-            query_options[key.to_sym] = value
-          end
-
-          [ prefix_options, query_options ]
-        end
     end
 
     attr_accessor :attributes, :id
@@ -62,11 +48,6 @@ module Ooor
       @errors ||= ActiveModel::Errors.new(self)
     end
 
-    private
-
-      def split_options(options = {})
-        self.class.__send__(:split_options, options)
-      end
 
     include ActiveModel::Conversion
     include ActiveModel::Serializers::JSON

@@ -9,32 +9,89 @@ require 'active_model/dirty'
 require 'ooor/errors'
 
 module Ooor
+  # = Ooor RecordInvalid
+  #
+  # Raised by <tt>save!</tt> and <tt>create!</tt> when the record is invalid. Use the
+  # +record+ method to retrieve the record which did not validate.
+  #
+  #   begin
+  #     complex_operation_that_calls_save!_internally
+  #   rescue ActiveRecord::RecordInvalid => invalid
+  #     puts invalid.record.errors
+  #   end
+  class RecordInvalid < OpenERPServerError
+    attr_reader :record # :nodoc:
+    def initialize(record) # :nodoc:
+      @record = record
+      errors = @record.errors.full_messages.join(", ")
+      super(I18n.t(:"#{@record.class.i18n_scope}.errors.messages.record_invalid", :errors => errors, :default => :"errors.messages.record_invalid"))
+    end
+  end
 
-  # CRUD methods for OpenERP proxies
+  # = Ooor Persistence
+  # Not at the moment it also includes the Validations stuff as it is quite superficial in Ooor
   module Persistence
+    extend ActiveSupport::Concern
+    include ActiveModel::Validations
 
-    def load(attributes, persisted=false)#an attribute might actually be a association too, will be determined here
-      self.class.reload_fields_definition(false, object_session)
+    module ClassMethods
+
+      # Creates an object (or multiple objects) and saves it to the database, if validations pass.
+      # The resulting object is returned whether the object was saved successfully to the database or not.
+      #
+      # The +attributes+ parameter can be either a Hash or an Array of Hashes. These Hashes describe the
+      # attributes on the objects that are to be created.
+      # 
+      # the +default_get_list+ parameter differs from the ActiveRecord API
+      # it is used to tell OpenERP the list of fields for which we want the default values
+      # false will request all default values while [] will not ask for any default value (faster)
+      # +reload+ can be set to false to indicate you don't want to reload the record after it is saved
+      # which will save a roundtrip to OpenERP and perform faster.
+      def create(attributes = {}, default_get_list = false, reload = true, &block)
+        if attributes.is_a?(Array)
+          attributes.collect { |attr| create(attr, &block) }
+        else
+          object = new(attributes, default_get_list, &block)
+          object.save(reload)
+          object
+        end
+      end
+
+      # Creates an object just like Base.create but calls <tt>save!</tt> instead of +save+
+      # so an exception is raised if the record is invalid.
+      def create!(attributes = {}, default_get_listi = false, reload = true, &block)
+        if attributes.is_a?(Array)
+          attributes.collect { |attr| create!(attr, &block) }
+        else
+          object = new(attributes, default_get_list)
+          yield(object) if block_given?
+          object.save!(reload)
+          object
+        end
+      end
+
+    end
+
+    # Flushes the current object and loads the +attributes+ Hash
+    # containing the attributes and the associations into the current object
+    def load(attributes)
+      self.class.reload_fields_definition(false)
       raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
-      @prefix_options, attributes = split_options(attributes)
       @associations ||= {}
       @attributes ||= {}
       @loaded_associations = {}
       attributes.each do |key, value|
-        self.send "#{key}=".to_sym, value if self.respond_to?("#{key}=".to_sym)
+        self.send "#{key}=", value if self.respond_to?("#{key}=")
       end
       self
     end
 
     #takes care of reading OpenERP default field values.
-    def initialize(attributes = {}, default_get_list=false, context={}, persisted=false)
+    def initialize(attributes = {}, default_get_list = false, persisted = false)
+      self.class.reload_fields_definition(false)
       @attributes = {}
-      @prefix_options = {}
       @ir_model_data_id = attributes.delete(:ir_model_data_id)
-      @object_session = {}
-      @object_session = HashWithIndifferentAccess.new(context)
       @persisted = persisted
-      self.class.reload_fields_definition(false, @object_session)
       if default_get_list == []
         load(attributes)
       else
@@ -47,27 +104,49 @@ module Ooor
       end
     end
 
-    # Saves (+create+) or \updates (+write+) a resource. Delegates to +create+ if the object is \new,
-    # +update+ if it exists.
-    def save(context={}, reload=true)
-      create_or_update(context, reload)
+    # Saves the model.
+    #
+    # If the model is new a record gets created in OpenERP, otherwise
+    # the existing record gets updated.
+    #
+    # By default, save always run validations. If any of them fail the action
+    # is cancelled and +save+ returns +false+. However, if you supply
+    # validate: false, validations are bypassed altogether.
+    # In Ooor however, real validations always happen on the OpenERP side
+    # so the only validations you can bypass or not are extra pre-validations
+    # in Ruby if you have any.
+    #
+    # There's a series of callbacks associated with +save+. If any of the
+    # <tt>before_*</tt> callbacks return +false+ the action is cancelled and
+    # +save+ returns +false+. See ActiveRecord::Callbacks for further
+    # details.
+    #
+    # Attributes marked as readonly are silently ignored if the record is
+    # being updated. (TODO)
+    def save(options = {})
+      perform_validations(options) ? save_without_raising(options) : false
     end
 
-    def create_or_update(context={}, reload=true)
+    # Attempts to save the record just like save but will raise a +RecordInvalid+
+    # exception instead of returning +false+ if the record is not valid.
+    def save!(options = {})
+      perform_validations(options) ? save_without_raising(options) : raise(RecordInvalid.new(self))
+    end
+
+    # Saves (+create+) or \updates (+write+) a resource. Delegates to +create+ if the object is \new,
+    # +update+ if it exists.
+    def create_or_update(options={})
       run_callbacks :save do
-        new? ? create_record(context, reload) : update_record(context, reload)
+        new? ? create_record(options) : update_record(options)
       end
     rescue ValidationError => e
       e.extract_validation_error!(errors)
       return false
     end
 
-    # Create (i.e., \save to OpenERP service) the \new resource.
-    def create(context={}, reload=true)
-      create_or_update(context, reload)
-    end
+    alias_method :update, :create_or_update
 
-    def create_record(context={}, reload=true)
+    def create_record(options={})
       run_callbacks :create do
         self.id = rpc_execute('create', to_openerp_hash, context)
         if @ir_model_data_id
@@ -77,7 +156,7 @@ module Ooor
             'res_id' => self.id)
         end
         @persisted = true
-        reload_fields(context) if reload
+        reload_fields if should_reload?(options)
       end
     end
 
@@ -85,21 +164,16 @@ module Ooor
       load(attributes) && save(context, reload)
     end
 
-    # Update the resource on the remote service.
-    def update(context={}, reload=true, keys=nil)
-      create_or_update(context, reload, keys)
-    end
-
-    def update_record(context={}, reload=true)
+    def update_record(options)
       run_callbacks :update do
         rpc_execute('write', [self.id], to_openerp_hash, context)
-        reload_fields(context) if reload
+        reload_fields if should_reload?(options)
         @persisted = true
       end
     end
 
     #Deletes the record in OpenERP and freezes this instance to reflect that no changes should be made (since they can’t be persisted).
-    def destroy(context={})
+    def destroy
       run_callbacks :destroy do
         rpc_execute('unlink', [self.id], context)
         @destroyed = true
@@ -112,10 +186,67 @@ module Ooor
       self.class.find(rpc_execute('copy', self.id, defaults, context), context: context)
     end
 
-    private
+    # Runs all the validations within the specified context. Returns +true+ if
+    # no errors are found, +false+ otherwise.
+    #
+    # Aliased as validate.
+    #
+    # If the argument is +false+ (default is +nil+), the context is set to <tt>:create</tt> if
+    # <tt>new_record?</tt> is +true+, and to <tt>:update</tt> if it is not.
+    #
+    # Validations with no <tt>:on</tt> option will run no matter the context. Validations with
+    # some <tt>:on</tt> option will only run in the specified context.
+    def valid?(context = nil)
+      context ||= (new_record? ? :create : :update)
+      output = super(context)
+      errors.empty? && output
+    end
+
+    alias_method :validate, :valid?
+
+  protected
+
+    # Real validations happens on OpenERP side, only pre-validations can happen here eventually
+    def perform_validations(options={}) # :nodoc:
+      if options.is_a?(Hash)
+        options[:validate] == false || valid?(options[:context])
+      else
+        valid?
+      end
+    end
+
+  private
+
+    def save_without_raising(options = {})
+      create_or_update(options)
+    rescue Ooor::RecordInvalid
+      false
+    end
+
+    def context
+      @connection.session_context
+    end
+
+    def should_validate?(options)
+      if options.is_a?(Hash)
+        options[:validate] != false
+      else
+        true
+      end
+    end
+
+    def should_reload?(options)
+      if options == false
+        false
+      elsif options.is_a?(Hash) && options[:reload] == false
+        false
+      else
+        true
+      end
+    end
 
     def load_with_defaults(attributes, default_get_list)
-      defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, object_session.dup)
+      defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, context)
       attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
       load(attributes)
     end
@@ -130,7 +261,7 @@ module Ooor
       load(attrs)
     end
 
-    def reload_fields(context)
+    def reload_fields
       record = self.class.find(self.id, context: context)
       load(record.attributes.merge(record.associations))
       @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new # see ActiveModel::Dirty

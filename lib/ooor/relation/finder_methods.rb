@@ -41,7 +41,7 @@ module Ooor
         #actually finds many resources specified with scope = ids_array
         def find_single(scope, options)
           context = options[:context] || {}
-          reload_fields_definition(false, context)
+          reload_fields_definition(false)
           fields = options[:fields] || options[:only] || fast_fields(options)
           fields += options[:include] if options[:include]
           
@@ -51,7 +51,7 @@ module Ooor
             is_collection, records = read_domain(context, fields, options)
           end
           active_resources = []
-          records.each { |record| active_resources << new(record, [], context, true)}
+          records.each { |record| active_resources << new(record, [], true)}
           if is_collection
             active_resources
           else

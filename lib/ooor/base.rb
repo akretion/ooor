@@ -38,10 +38,6 @@ module Ooor
 
       # ******************** remote communication *****************************
 
-      def create(attributes = {}, context={}, default_get_list=false, reload=true)
-        self.new(attributes, default_get_list, context).tap { |resource| resource.save(context, reload) }
-      end
-
       #OpenERP search method
       def search(domain=[], offset=0, limit=false, order=false, context={}, count=false)
         rpc_execute(:search, to_openerp_domain(domain), offset, limit, order, context, count)
@@ -63,6 +59,12 @@ module Ooor
         reload_fields_definition(false)
         cast_answer_to_ruby!(connection.object.object_service(service, obj, method, *cast_request_to_openerp(args)))
       end
+
+    def context
+      connection.session_context
+    end
+
+
 
       def method_missing(method_symbol, *args)
         raise RuntimeError.new("Invalid RPC method:  #{method_symbol}") if [:type!, :allowed!].index(method_symbol)
@@ -91,12 +93,12 @@ module Ooor
 
     # ********************** instance methods **********************************
 
-    attr_accessor :associations, :loaded_associations, :ir_model_data_id, :object_session
+    attr_accessor :associations, :loaded_associations, :ir_model_data_id
 
     include Persistence, Callbacks, ActiveModel::Dirty
 
     def rpc_execute(method, *args)
-      args += [self.class.connection.connection_session.merge(object_session)] unless args[-1].is_a? Hash
+      args += [self.class.context] unless args[-1].is_a? Hash
       self.class.object_service(:execute, self.class.openerp_model, method, *args)
     end
 
@@ -113,8 +115,8 @@ module Ooor
 
     #wrapper for OpenERP exec_workflow Business Process Management engine
     def wkf_action(action, context={}, reload=true)
-      self.class.object_service(:exec_workflow, self.class.openerp_model, action, self.id, object_session)
-      reload_fields(context) if reload
+      self.class.object_service(:exec_workflow, self.class.openerp_model, action, self.id, context)
+      reload_fields if reload
     end
 
     #Add get_report_data to obtain [report["result"],report["format]] of a concrete openERP Object
@@ -125,6 +127,10 @@ module Ooor
     def type() method_missing(:type) end #skips deprecated Object#type method
 
     private
+
+    def context
+      self.class.context
+    end
 
     # Ruby 1.9.compat, See also http://tenderlovemaking.com/2011/06/28/til-its-ok-to-return-nil-from-to_ary/
     def to_ary; nil; end # :nodoc:
