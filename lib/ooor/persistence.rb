@@ -29,7 +29,9 @@ module Ooor
   end
 
   # = Ooor Persistence
-  # Not at the moment it also includes the Validations stuff as it is quite superficial in Ooor
+  # Note that at the moment it also includes the Validations stuff as it is quite superficial in Ooor
+  # Most of the time, when we talk about validation here we talk about extra Rails validations
+  # as OpenERP validations will happen anyhow when persisting records to OpenERP.
   module Persistence
     extend ActiveSupport::Concern
     include ActiveModel::Validations
@@ -59,7 +61,7 @@ module Ooor
 
       # Creates an object just like Base.create but calls <tt>save!</tt> instead of +save+
       # so an exception is raised if the record is invalid.
-      def create!(attributes = {}, default_get_listi = false, reload = true, &block)
+      def create!(attributes = {}, default_get_list = false, reload = true, &block)
         if attributes.is_a?(Array)
           attributes.collect { |attr| create!(attr, &block) }
         else
@@ -133,57 +135,86 @@ module Ooor
       perform_validations(options) ? save_without_raising(options) : raise(RecordInvalid.new(self))
     end
 
-    # Saves (+create+) or \updates (+write+) a resource. Delegates to +create+ if the object is \new,
-    # +update+ if it exists.
-    def create_or_update(options={})
-      run_callbacks :save do
-        new? ? create_record(options) : update_record(options)
-      end
-    rescue ValidationError => e
-      e.extract_validation_error!(errors)
-      return false
+    # Deletes the record in OpenERP and freezes this instance to
+    # reflect that no changes should be made (since they can't be
+    # persisted). Returns the frozen instance.
+    #
+    # no callbacks are executed.
+    #
+    # To enforce the object's +before_destroy+ and +after_destroy+
+    # callbacks or any <tt>:dependent</tt> association
+    # options, use <tt>#destroy</tt>.
+    def delete
+      rpc_execute('unlink', [id], context) if persisted?
+      @destroyed = true
+      freeze
     end
 
-    alias_method :update, :create_or_update
-
-    def create_record(options={})
-      run_callbacks :create do
-        self.id = rpc_execute('create', to_openerp_hash, context)
-        if @ir_model_data_id
-          IrModelData.create(model: self.class.openerp_model,
-            'module' => @ir_model_data_id[0],
-            'name' => @ir_model_data_id[1],
-            'res_id' => self.id)
-        end
-        @persisted = true
-        reload_fields if should_reload?(options)
-      end
-    end
-
-    def update_attributes(attributes, context={}, reload=true)
-      load(attributes) && save(context, reload)
-    end
-
-    def update_record(options)
-      run_callbacks :update do
-        rpc_execute('write', [self.id], to_openerp_hash, context)
-        reload_fields if should_reload?(options)
-        @persisted = true
-      end
-    end
-
-    #Deletes the record in OpenERP and freezes this instance to reflect that no changes should be made (since they can’t be persisted).
+    # Deletes the record in OpenERP and freezes this instance to reflect
+    # that no changes should be made (since they can't be persisted).
+    #
+    # There's a series of callbacks associated with <tt>destroy</tt>. If
+    # the <tt>before_destroy</tt> callback return +false+ the action is cancelled
+    # and <tt>destroy</tt> returns +false+. See
+    # ActiveRecord::Callbacks for further details.
     def destroy
       run_callbacks :destroy do
-        rpc_execute('unlink', [self.id], context)
+        rpc_execute('unlink', [id], context)
         @destroyed = true
         freeze 
       end
     end
 
+    # Deletes the record in the database and freezes this instance to reflect
+    # that no changes should be made (since they can't be persisted).
+    #
+    # There's a series of callbacks associated with <tt>destroy!</tt>. If
+    # the <tt>before_destroy</tt> callback return +false+ the action is cancelled
+    # and <tt>destroy!</tt> raises ActiveRecord::RecordNotDestroyed. See
+    # ActiveRecord::Callbacks for further details.
+    def destroy! #TODO
+      destroy || raise(ActiveRecord::RecordNotDestroyed)
+    end
+
+    #TODO implement becomes / becomes! eventually
+
+    # Updates a single attribute and saves the record.
+    # This is especially useful for boolean flags on existing records. Also note that
+    #
+    # * Validation is skipped.
+    # * Callbacks are invoked.
+    # * updated_at/updated_on column is updated if that column is available.
+    # * Updates all the attributes that are dirty in this object.
+    #
+    # This method raises an +ActiveRecord::ActiveRecordError+  if the
+    # attribute is marked as readonly.
+    #
+    # See also +update_column+.
+    def update_attribute(name, value)
+      send("#{name}=", value)
+      save(validate: false)
+    end
+
+    # Updates the attributes of the model from the passed-in hash and saves the
+    # record, all wrapped in a transaction. If the object is invalid, the saving
+    # will fail and false will be returned.
+    def update(attributes, reload=true)
+      load(attributes) && save(reload)
+    end
+
+    alias update_attributes update
+
+    # Updates its receiver just like +update+ but calls <tt>save!</tt> instead
+    # of +save+, so an exception is raised if the record is invalid.
+    def update!(attributes, reload=true)
+      load(attributes) && save!(reload)
+    end
+
+    alias update_attributes! update!
+
     #OpenERP copy method, load persisted copied Object
     def copy(defaults={}, context={})
-      self.class.find(rpc_execute('copy', self.id, defaults, context), context: context)
+      self.class.find(rpc_execute('copy', id, defaults, context), context: context)
     end
 
     # Runs all the validations within the specified context. Returns +true+ if
@@ -216,6 +247,37 @@ module Ooor
     end
 
   private
+
+    def create_or_update(options={})
+      run_callbacks :save do
+        new? ? create_record(options) : update_record(options)
+      end
+    rescue ValidationError => e
+      e.extract_validation_error!(errors)
+      return false
+    end
+
+    def update_record(options)
+      run_callbacks :update do
+        rpc_execute('write', [self.id], to_openerp_hash, context)
+        reload_fields if should_reload?(options)
+        @persisted = true
+      end
+    end
+
+    def create_record(options={})
+      run_callbacks :create do
+        self.id = rpc_execute('create', to_openerp_hash, context)
+        if @ir_model_data_id
+          IrModelData.create(model: self.class.openerp_model,
+            'module' => @ir_model_data_id[0],
+            'name' => @ir_model_data_id[1],
+            'res_id' => self.id)
+        end
+        @persisted = true
+        reload_fields if should_reload?(options)
+      end
+    end
 
     def save_without_raising(options = {})
       create_or_update(options)
