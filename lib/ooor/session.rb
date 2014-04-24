@@ -14,6 +14,7 @@ module Ooor
     def initialize(connection, web_session, id)
       super(connection)
       @connection = connection
+      @local_context = {}
       @web_session = web_session || {}
       @id = id || web_session[:session_id]
     end
@@ -31,8 +32,14 @@ module Ooor
       load_models(config[:models], options[:reload])
     end
 
+    def with_context(context)
+      @local_context = context
+      yield
+      @local_context = {}
+    end
+
     def session_context(context={})
-      connection_session.merge(web_session.slice('lang', 'tz')).merge(context) # not just lang and tz?
+      connection_session.merge(web_session.slice('lang', 'tz')).merge(@local_context).merge(context) # not just lang and tz?
     end
 
     def const_get(model_key, lang=nil);

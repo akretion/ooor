@@ -6,7 +6,7 @@
 require 'active_support/core_ext/hash/indifferent_access'
 
 module Ooor
-  class Connection
+  class Connection #TODO call that configuration?
     attr_accessor :config, :connection_session
 
     def initialize(config, env=false)
@@ -14,8 +14,9 @@ module Ooor
       Object.const_set(@config[:scope_prefix], Module.new) if @config[:scope_prefix]
     end
 
+    # a part of the config that will be mixed in the context of each session
     def connection_session
-      @connection_session ||= {}.merge!(@config[:connection_session] || {})
+      @connection_session ||= HashWithIndifferentAccess.new(@config[:connection_session] || {})
     end
 
     def helper_paths
