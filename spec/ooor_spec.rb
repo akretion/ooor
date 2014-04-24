@@ -394,6 +394,24 @@ describe Ooor do
       end
     end
 
+    describe "Life cycle Callbacks" do
+      include Ooor
+
+      it "should call customized before_save callback" do
+        expect do
+          Ooor.xtend('ir.ui.menu') do
+            before_save do
+              raise 'before_save_called'
+            end
+          end
+
+          with_ooor_session username: 'demo', password: 'demo' do |session|
+            session['ir.ui.menu'].first.save
+          end
+        end.to raise_error(RuntimeError, /before_save_called/)
+      end
+    end
+
     describe "ARel emulation" do
       it "should have an 'all' method" do
         ResUsers.all.should be_kind_of(Array)
