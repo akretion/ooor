@@ -143,19 +143,20 @@ describe Ooor do
         partner.should be_kind_of ResPartner
       end
 
-      it "should support OpenERP context in finders" do #TODO
-        p = ProductProduct.find(1, :context => {:my_key => 'value'})
-        p.should_not be_nil
-        products = ProductProduct.find(:all, :context => {:lang => 'es_ES'})
-        products.should be_kind_of(Array)
-      end
+#      NOTE: in Ooor 2.1 we don't support this anymore, use session.with_context(context) {} instead
+#      it "should support OpenERP context in finders" do #TODO
+#        p = ProductProduct.find(1, :context => {:my_key => 'value'})
+#        p.should_not be_nil
+#        products = ProductProduct.find(:all, :context => {:lang => 'es_ES'})
+#        products.should be_kind_of(Array)
+#      end
 
-      it "should support writing with a context" do #TODO
-        p = ProductProduct.find(1, fields: ['name'])
-        ProductProduct.write(1, {name: p.name}, {lang: 'en_US'})
-        ProductProduct.write(1, {name: p.name}, lang: 'en_US')
-        p.write({name: p.name}, lang: 'en_US')
-      end
+#      it "should support writing with a context" do #TODO
+#        p = ProductProduct.find(1, fields: ['name'])
+#        ProductProduct.write(1, {name: p.name}, {lang: 'en_US'})
+#        ProductProduct.write(1, {name: p.name}, lang: 'en_US')
+#        p.write({name: p.name}, lang: 'en_US')
+#      end
 
       it "should support OpenERP search method" do
         partners = ResPartner.search([['name', 'ilike', 'a']], 0, 2)
@@ -504,15 +505,16 @@ describe Ooor do
 
   describe "Object context abilities" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :database => @database)
+      @ooor = Ooor.new(:url => @url, :database => @database, :username => @username, :password => @password)
     end
 
-    it "should support context when instanciating collections" do #TODO
+    it "should support context when instanciating collections" do
       @ooor.const_get('product.product')
-      products = ProductProduct.find([1, 2, 3], :context => {:lang => 'en_US'})
-      p = products[0]
-      p.object_session[:lang].should == 'en_US'
-      p.save
+      Ooor.default_session.with_context(lang: 'fr_FR') do
+        products = ProductProduct.find([1, 2, 3])
+        p = products[0]
+        p.save #TODO check that actions keep executing with proper context
+      end
     end
   end
 
