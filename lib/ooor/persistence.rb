@@ -10,10 +10,10 @@ require 'ooor/errors'
 
 module Ooor
 
-  # the base class for proxies to OpenERP objects
+  # CRUD methods for OpenERP proxies
   module Persistence
 
-    def load(attributes, remove_root=false, persisted=false)#an attribute might actually be a association too, will be determined here
+    def load(attributes, persisted=false)#an attribute might actually be a association too, will be determined here
       self.class.reload_fields_definition(false, object_session)
       raise ArgumentError, "expected an attributes Hash, got #{attributes.inspect}" unless attributes.is_a?(Hash)
       @prefix_options, attributes = split_options(attributes)
@@ -82,7 +82,7 @@ module Ooor
     end
 
     def update_attributes(attributes, context={}, reload=true)
-      load(attributes, false) && save(context, reload)
+      load(attributes) && save(context, reload)
     end
 
     # Update the resource on the remote service.
