@@ -71,7 +71,6 @@ module Ooor
 
       # ******************** AREL Minimal implementation ***********************
 
-      def scoped(context={}); relation(context); end
       def where(opts, *rest); relation.where(opts, *rest); end
       def all(*args); relation.all(*args); end
       def limit(value); relation.limit(value); end
