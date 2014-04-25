@@ -355,7 +355,7 @@ describe Ooor do
         p = ProductProduct.find p.id
         pack1 = p.packaging[0]
         pack2 = p.packaging[1]
-        pack2.name.should == 'pack2'
+        pack2.name.index('pack').should be_true
         p.packaging_attributes = {'1' => {name: 'pack1', '_destroy'=> true, id: pack1.id}, '2' => {name: 'pack2_modified', id: pack2.id}}
         p.save
         p.packaging.size.should == 1
@@ -559,7 +559,7 @@ describe Ooor do
 
     it "should test correct class name matching with class name" do
       object = Ooor::Reflection::AssociationReflection.new(:test, 'product_product', {class_name: 'product.product'}, nil)
-      object.connection = @ooor
+      object.session = @ooor
       object.klass.should == ProductProduct
     end
 
