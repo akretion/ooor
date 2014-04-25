@@ -21,13 +21,13 @@ module Ooor
     module ClassMethods
       def model_name
         @_model_name ||= begin
-          namespace = self.parents.detect do |n|
-            n.respond_to?(:use_relative_model_naming?) && n.use_relative_model_naming?
-          end
-          if self.is_a? Ooor::Base
-            Ooor::Naming::Name.new(self, namespace)
+          unless self.is_a? Ooor::Base
+            super
           else
-           ActiveModel::Name.new(self, namespace)
+            namespace = self.parents.detect do |n|
+              n.respond_to?(:use_relative_model_naming?) && n.use_relative_model_naming?
+            end
+            Ooor::Naming::Name.new(self, namespace)
           end
         end
       end
