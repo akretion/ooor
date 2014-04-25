@@ -65,13 +65,29 @@ module Ooor
       helper_paths.each do |dir|
         Dir[dir].each { |file| require file }
       end
-      domain = model_names ? [['model', 'in', model_names]] : []
-      search_domain = domain - [1]
-      model_ids = object.object_service(:execute, "ir.model", :search, search_domain, 0, false, false, {}, false)
-      models_records = object.object_service(:execute, "ir.model", :read, model_ids, ['model', 'name']) #TODO use search_read
+      search_domain = model_names ? [['model', 'in', model_names]] : []
+      models_records = read_model_data(search_domain)
       models_records.each do |opts|
-        options = HashWithIndifferentAccess.new(opts.merge(scope_prefix: config[:scope_prefix], reload: reload, generate_constants: config[:generate_constants]))
+        options = HashWithIndifferentAccess.new(opts.merge(scope_prefix: config[:scope_prefix],
+                                                           reload: reload,
+                                                           generate_constants: config[:generate_constants]))
         define_openerp_model(options)
+      end
+    end
+
+    def read_model_data(search_domain)
+      if config[:force_xml_rpc]
+        model_ids = object.object_service(:execute, "ir.model", :search, search_domain, 0, false, false, {}, false)
+        models_records = object.object_service(:execute, "ir.model", :read, model_ids, ['model', 'name'])
+      else
+        response = object.object_service(:search_read, "ir.model", 'search_read', 
+                fields: ['model', 'name'],
+                offset: 0,
+                limit: false,
+                domain: search_domain,
+                sort: false,
+                context: {})
+        models_records = response["records"]
       end
     end
 
