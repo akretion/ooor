@@ -12,19 +12,6 @@ require 'ooor/errors'
 
 module Ooor
 
-  # meta data shared across sessions, a cache of the data in ir_model in OpenERP.
-  # reused accross workers in a multi-process web app (via memcache for instance).
-  class ModelTemplate
-
-    TEMPLATE_PROPERTIES = [:openerp_id, :info, :access_ids, :description,
-      :openerp_model, :field_ids, :state, :fields,
-      :many2one_associations, :one2many_associations, :many2many_associations,
-      :polymorphic_m2o_associations, :associations_keys,
-      :associations, :columns]
-
-      attr_accessor *TEMPLATE_PROPERTIES, :name, :columns_hash
-  end
-
   # the base class for proxies to OpenERP objects
   class Base < Ooor::MiniActiveResource
     include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection
@@ -34,7 +21,7 @@ module Ooor
     class << self
 
       attr_accessor :name, :session, :t, :scope_prefix
-      delegate *ModelTemplate::TEMPLATE_PROPERTIES, to: :t
+      delegate *ModelSchema::TEMPLATE_PROPERTIES, to: :t
 
       # ******************** remote communication *****************************
 

@@ -83,7 +83,7 @@ module Ooor
           klass.define_nested_attributes_method(meth)
         end
       else
-        template = Ooor::ModelTemplate.new
+        template = Ooor::ModelSchema.new
         template.openerp_model = options[:model]
         template.openerp_id = options[:id]
         template.description = options[:name]
