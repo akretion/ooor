@@ -95,9 +95,6 @@ module Ooor
       template = Ooor.model_registry.get_template(config, options[:model])
       if template
         klass.t = template
-        klass.one2many_associations.keys.each do |meth|
-          klass.define_nested_attributes_method(meth)
-        end
       else
         template = Ooor::ModelSchema.new
         template.openerp_model = options[:model]

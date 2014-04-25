@@ -30,28 +30,12 @@ module Ooor
         end
       end
       
-      # this is used by fields_for in ActionView FormHelper
-      def define_nested_attributes_method(meth)
-        unless self.respond_to?(meth)
-          self.instance_eval do
-            define_method "#{meth}_attributes=" do |*args|
-              send("#{meth}_will_change!")
-              @associations[meth] = args[0]
-              @loaded_associations[meth] = args[0]
-            end
-            define_method "#{meth}_attributes" do |*args|
-              @loaded_associations[meth]
-            end
-          end
-        end
-      end
-
       private
 
       def generate_accessors #TODO we should cache this is a module cached like the template, or eventually generate source code or both
         fields.keys.each { |meth| define_field_method meth }
         associations_keys.each { |meth| define_association_method meth }
-        one2many_associations.keys.each { |meth| define_nested_attributes_method meth }
+        one2many_associations.keys.each { |meth| accepts_nested_attributes_for meth } #TODO do it for m2o too
         many2one_associations.keys.each do |meth|
           define_association_method meth
           define_m2o_association_method meth

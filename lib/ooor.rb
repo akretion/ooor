@@ -14,6 +14,7 @@ module Ooor
   autoload :Base
   autoload :ModelSchema
   autoload :Persistence
+  autoload :NestedAttributes
   autoload :Callbacks
   autoload :Cache, 'active_support/cache'
   autoload :Serialization
