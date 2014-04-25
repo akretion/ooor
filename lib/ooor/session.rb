@@ -107,7 +107,7 @@ module Ooor
         set_model_template!(klass, options)
         klass.name = model_class_name
         klass.scope_prefix = scope_prefix
-        klass.connection = self
+        klass.session = self
         if options[:generate_constants] && (options[:reload] || !scope.const_defined?(model_class_name))
           scope.const_set(model_class_name, klass)
         end

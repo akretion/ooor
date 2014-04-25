@@ -55,7 +55,7 @@ module Ooor
 
       def reflect_on_association(association)
         reflections[association] ||= create_reflection(association.to_s).tap do |reflection|
-          reflection.connection = connection
+          reflection.session = session
         end
       end
     end
@@ -69,7 +69,7 @@ module Ooor
   module Reflection # :nodoc:
 
     class MacroReflection
-      attr_accessor :connection
+      attr_accessor :session
     end
 
     # Holds all the meta-data about an association as it was specified in the
@@ -89,7 +89,7 @@ module Ooor
       # instead. This allows plugins to hook into association object creation.
       def klass
 #        @klass ||= active_record.send(:compute_type, class_name)
-        @klass ||= connection.class_name_from_model_key(class_name).constantize
+        @klass ||= session.class_name_from_model_key(class_name).constantize
       end
 
       def initialize(macro, name, options, active_record)

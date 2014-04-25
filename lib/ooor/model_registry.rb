@@ -1,4 +1,9 @@
 module Ooor
+  # Enables to cache expensive model metadata and reuse these metadata
+  # according to connection parameters. Indeed, these metadata are
+  # expensive before they require a fields_get request to OpenERP
+  # so in a web application with several worker processes, it's a good
+  # idea to cache them and share them using a data store like Memcache
   class ModelRegistry
     
     def cache_key(config, model_name)

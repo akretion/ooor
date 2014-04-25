@@ -7,19 +7,19 @@ module Ooor
     module ClassMethods
       #Added methods to obtain report data for a model
       def report(report_name, ids, report_type='pdf', context={}) #TODO move to ReportService
-        context = connection.object.inject_session_context(:report, false, context)[0]
-        uid = @connection.config[:user_id]
-        pass = @connection.config[:password]
-        db = @connection.config[:database]
+        context = session.object.inject_session_context(:report, false, context)[0]
+        uid = @session.config[:user_id]
+        pass = @session.config[:password]
+        db = @session.config[:database]
         params = {model: openerp_model, id: ids[0], report_type: report_type}
-        connection.report.report(db, uid, pass, report_name, ids, params, context)
+        session.report.report(db, uid, pass, report_name, ids, params, context)
       end
 
       def report_get(report_id)
-        uid = @connection.config[:user_id]
-        pass = @connection.config[:password]
-        db = @connection.config[:database]
-        connection.report.report_get(db, uid, pass, report_id)
+        uid = @session.config[:user_id]
+        pass = @session.config[:password]
+        db = @session.config[:database]
+        session.report.report_get(db, uid, pass, report_id)
       end
 
       def get_report_data(report_name, ids, report_type='pdf', context={})

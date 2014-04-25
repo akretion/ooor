@@ -14,7 +14,7 @@ module Ooor
           fields_get.each { |k, field| reload_field_definition(k, field) }
           @t.associations_keys = many2one_associations.keys + one2many_associations.keys + many2many_associations.keys + polymorphic_m2o_associations.keys
           logger.debug "#{fields.size} fields loaded in model #{self.name}"
-          Ooor.model_registry.set_template(connection.config, @t)
+          Ooor.model_registry.set_template(session.config, @t)
         end
         generate_accessors if fields != {} && (force || !@accessor_defined) #TODOmove in define_accessors method
       end

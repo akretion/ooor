@@ -285,10 +285,6 @@ module Ooor
       false
     end
 
-    def context
-      @connection.session_context
-    end
-
     def should_validate?(options)
       if options.is_a?(Hash)
         options[:validate] != false

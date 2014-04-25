@@ -68,12 +68,12 @@ module Ooor
           end
           scope.map! { |item| item_to_id(item, context) }.reject! {|item| !item}
           records = rpc_execute('read', scope, fields, context.dup)
-          records.sort_by! {|r| scope.index(r["id"])} if @connection.config[:force_xml_rpc]
+          records.sort_by! {|r| scope.index(r["id"])} if @session.config[:force_xml_rpc]
           return is_collection, records
         end
         
         def read_domain(context, fields, options)
-          if @connection.config[:force_xml_rpc]
+          if @session.config[:force_xml_rpc]
             domain = to_openerp_domain(options[:domain] || options[:conditions] || [])
             ids = rpc_execute('search', domain, options[:offset] || 0, options[:limit] || false,  options[:order] || false, context.dup)
             records = rpc_execute('read', ids, fields, context.dup)

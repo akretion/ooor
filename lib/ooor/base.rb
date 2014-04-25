@@ -16,13 +16,13 @@ module Ooor
   # reused accross workers in a multi-process web app (via memcache for instance).
   class ModelTemplate
 
-    TEMPLATE_PROPERTIES = [:name, :openerp_id, :info, :access_ids, :description,
+    TEMPLATE_PROPERTIES = [:openerp_id, :info, :access_ids, :description,
       :openerp_model, :field_ids, :state, :fields,
       :many2one_associations, :one2many_associations, :many2many_associations,
       :polymorphic_m2o_associations, :associations_keys,
       :associations, :columns]
 
-      attr_accessor *TEMPLATE_PROPERTIES, :columns_hash
+      attr_accessor *TEMPLATE_PROPERTIES, :name, :columns_hash
   end
 
   # the base class for proxies to OpenERP objects
@@ -33,7 +33,7 @@ module Ooor
     # ********************** class methods ************************************
     class << self
 
-      attr_accessor  :name, :connection, :t, :scope_prefix #template
+      attr_accessor :name, :session, :t, :scope_prefix
       delegate *ModelTemplate::TEMPLATE_PROPERTIES, to: :t
 
       # ******************** remote communication *****************************
@@ -57,14 +57,12 @@ module Ooor
 
       def object_service(service, obj, method, *args)
         reload_fields_definition(false)
-        cast_answer_to_ruby!(connection.object.object_service(service, obj, method, *cast_request_to_openerp(args)))
+        cast_answer_to_ruby!(session.object.object_service(service, obj, method, *cast_request_to_openerp(args)))
       end
 
-    def context
-      connection.session_context
-    end
-
-
+      def context
+        session.session_context
+      end
 
       def method_missing(method_symbol, *args)
         raise RuntimeError.new("Invalid RPC method:  #{method_symbol}") if [:type!, :allowed!].index(method_symbol)

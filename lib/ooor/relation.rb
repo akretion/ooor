@@ -4,7 +4,6 @@
 #    Licensed under the MIT license, see MIT-LICENSE file
 
 #TODO chainability of where via scopes
-#TODO include relations for single read
 
 module Ooor
   # = Similar to Active Record Relation
