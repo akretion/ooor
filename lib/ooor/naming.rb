@@ -21,13 +21,13 @@ module Ooor
     module ClassMethods
       def model_name
         @_model_name ||= begin
-          unless self.respond_to? :openerp_model
-            super
-          else
+          if self.respond_to? :openerp_model
             namespace = self.parents.detect do |n|
               n.respond_to?(:use_relative_model_naming?) && n.use_relative_model_naming?
             end
             Ooor::Naming::Name.new(self, namespace)
+          else
+            super
           end
         end
       end
