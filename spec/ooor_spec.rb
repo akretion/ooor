@@ -521,6 +521,14 @@ describe Ooor do
   describe "Web SEO utilities" do
     include Ooor
 
+    it "should support ActiveModel::Naming" do
+      with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password) do |session|
+        session['product.product'].name.should == "ProductProduct"
+        session['product.product'].model_name.route_key.should == "product-product"
+        session['product.product'].model_name.param_key.should == "product_product" #TODO add more expectations
+      end
+    end
+
     it "should support model aliases" do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connectio reuse here
       with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|

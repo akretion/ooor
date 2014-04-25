@@ -21,7 +21,7 @@ module Ooor
     module ClassMethods
       def model_name
         @_model_name ||= begin
-          unless self.is_a? Ooor::Base
+          unless self.respond_to? :openerp_model
             super
           else
             namespace = self.parents.detect do |n|
