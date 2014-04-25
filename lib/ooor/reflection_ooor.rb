@@ -30,25 +30,16 @@ module Ooor
       def create_reflection(name)
         reload_fields_definition()
         options = {}
+        relation = all_fields[name]['relation']
+        options[:class_name] = relation
         if many2one_associations.keys.include?(name)
           macro = :belongs_to
-          relation = many2one_associations[name]['relation'] #TODO prefix?
-          const_get(relation)
-          options[:class_name] = relation #TODO or pass it camelized already?
         elsif many2many_associations.keys.include?(name)
           macro = :has_and_belongs_to_many
         elsif one2many_associations.keys.include?(name)
           macro = :has_many
         end
         reflection = Reflection::AssociationReflection.new(macro, name, options, nil)#active_record) #TODO active_record?
-#        case macro
-#          when :has_many, :belongs_to, :has_one, :has_and_belongs_to_many
-#            klass = options[:through] ? ThroughReflection : AssociationReflection
-#            reflection = klass.new(macro, name, options, active_record)
-#          when :composed_of
-#            reflection = AggregateReflection.new(macro, name, options, active_record)
-#        end
-
         self.reflections = self.reflections.merge(name => reflection)
         reflection
       end
