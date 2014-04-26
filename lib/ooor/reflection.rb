@@ -9,10 +9,12 @@ module Ooor
   module Reflection # :nodoc:
     extend ActiveSupport::Concern
 
-    included do
-      class_attribute :reflections
-      self.reflections = {}
-    end
+# NOTE we do the following differently in Ooor because we really don't want to share
+# reflactions between the various sessions!!     
+#    included do
+#      class_attribute :reflections
+#      self.reflections = {}
+#    end
 
     # Reflection enables to interrogate Active Record classes and objects
     # about their associations and aggregations. This information can,

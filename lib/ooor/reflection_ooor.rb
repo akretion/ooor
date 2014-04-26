@@ -6,11 +6,19 @@ module Ooor
   module ReflectionOoor # :nodoc:
     extend ActiveSupport::Concern
 
-      def column_for_attribute(name)
-        self.class.columns_hash[name.to_s]
-      end
+    def column_for_attribute(name)
+      self.class.columns_hash[name.to_s]
+    end
 
     module ClassMethods
+      def reflections
+        @reflections ||= {}
+      end
+
+      def reflections=(reflections)
+        @reflections = reflections
+      end
+
       def columns_hash(view_fields=nil)
         if view_fields || !@t.columns_hash
           view_fields ||= {}
