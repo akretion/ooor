@@ -1,23 +1,28 @@
 require 'ooor/services'
 
 module Ooor
-  class Session < SimpleDelegator
+  class Session
     include Transport
 
-    attr_accessor :web_session, :connection, :id, :models
+    attr_accessor :web_session, :config, :id, :models
 
     def common(); @common_service ||= CommonService.new(self); end
     def db(); @db_service ||= DbService.new(self); end
     def object(); @object_service ||= ObjectService.new(self); end
     def report(); @report_service ||= ReportService.new(self); end
 
-    def initialize(connection, web_session, id)
-      super(connection)
-      @connection = connection
+    def initialize(config, web_session, id)
+      @config = _config(config)
+      Object.const_set(@config[:scope_prefix], Module.new) if @config[:scope_prefix]
       @models = {}
       @local_context = {}
       @web_session = web_session || {}
       @id = id || web_session[:session_id]
+    end
+
+    # a part of the config that will be mixed in the context of each session
+    def connection_session
+      HashWithIndifferentAccess.new(@config[:connection_session] || {})
     end
 
     def [](key)
@@ -136,6 +141,21 @@ module Ooor
 #    def models; @models ||= {}; end
     
     def logger; Ooor.logger; end
+
+    def helper_paths
+      [File.dirname(__FILE__) + '/helpers/*', *@config[:helper_paths]]
+    end
+
+    def class_name_from_model_key(model_key)
+      model_key.split('.').collect {|name_part| name_part.capitalize}.join
+    end
+
+    private
+
+    def _config(config)
+      c = config.is_a?(String) ? Ooor.load_config(config, env) : config #TODO env, see old Connection
+      HashWithIndifferentAccess.new(c)
+    end
 
   end
 end
