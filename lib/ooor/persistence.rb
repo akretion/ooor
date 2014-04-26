@@ -32,6 +32,8 @@ module Ooor
   # Note that at the moment it also includes the Validations stuff as it is quite superficial in Ooor
   # Most of the time, when we talk about validation here we talk about extra Rails validations
   # as OpenERP validations will happen anyhow when persisting records to OpenERP.
+  # some of the methods found in ActiveRecord Persistence which are identical in ActiveResource
+  # may be found in the Ooor::MiniActiveResource module instead
   module Persistence
     extend ActiveSupport::Concern
     include ActiveModel::Validations
@@ -74,6 +76,11 @@ module Ooor
 
     end
 
+    # Returns true if this object has been destroyed, otherwise returns false.
+    def destroyed?
+      @destroyed
+    end
+
     # Flushes the current object and loads the +attributes+ Hash
     # containing the attributes and the associations into the current object
     def load(attributes)
@@ -89,17 +96,18 @@ module Ooor
     end
 
     #takes care of reading OpenERP default field values.
-    def initialize(attributes = {}, default_get_list = false, persisted = false)
+    def initialize(attributes = {}, default_get_list = false, persisted = false, has_changed = false)
       self.class.reload_fields_definition(false)
       @attributes = {}
       @ir_model_data_id = attributes.delete(:ir_model_data_id)
+      @marked_for_destruction = false
       @persisted = persisted
       if default_get_list == []
         load(attributes)
       else
         load_with_defaults(attributes, default_get_list)
       end.tap do
-        if id
+        if id && !has_changed
           @previously_changed = ActiveSupport::HashWithIndifferentAccess.new # see ActiveModel::Dirty reset_changes
           @changed_attributes = ActiveSupport::HashWithIndifferentAccess.new
         end
