@@ -80,7 +80,8 @@ module Ooor
       # instead. This allows plugins to hook into association object creation.
       def klass
 #        @klass ||= active_record.send(:compute_type, class_name)
-        @klass ||= session.class_name_from_model_key(class_name).constantize
+#        @klass ||= session.class_name_from_model_key(class_name).constantize
+        @klass = session.const_get(class_name)
       end
 
       def initialize(macro, name, options, active_record)
