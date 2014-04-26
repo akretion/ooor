@@ -51,8 +51,9 @@ module Ooor
     #
     # This method finds record by its primary key (which could be assigned manually) and
     # modifies the receiver in-place
-    def reload
-      self.class.find(id)
+    # NOTE in Ooor, like ActiveRecord and unlike ActiveResource, reload can take an options parameter
+    def reload(options = nil)
+      self.class.find(id, options)
     end
 
     # Returns the Errors object that holds all information about attribute error messages.
