@@ -21,7 +21,7 @@ module Ooor
     module ClassMethods
       def model_name
         @_model_name ||= begin
-          if self.respond_to? :openerp_model
+          if self.respond_to?(:openerp_model) && self.t
             namespace = self.parents.detect do |n|
               n.respond_to?(:use_relative_model_naming?) && n.use_relative_model_naming?
             end
