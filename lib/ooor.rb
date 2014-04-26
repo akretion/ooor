@@ -14,6 +14,7 @@ module Ooor
   autoload :Base
   autoload :ModelSchema
   autoload :Persistence
+  autoload :AutosaveAssociation
   autoload :NestedAttributes
   autoload :Callbacks
   autoload :Cache, 'active_support/cache'
@@ -98,8 +99,10 @@ module Ooor
     end
 
 
-    def with_ooor_session(config={}, id=nil)
-      yield Ooor.session_handler.retrieve_session(config, id)
+    def with_ooor_session(config={}, id=:noweb)
+      session = Ooor.session_handler.retrieve_session(config, id)
+      Ooor.session_handler.register_session(session)
+      yield session
     end
 
     def with_ooor_default_session(config={})

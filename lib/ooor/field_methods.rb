@@ -100,6 +100,10 @@ module Ooor
 
     end
 
+    def _destroy=(dummy)
+      @marked_for_destruction = true unless dummy.blank?
+    end
+
     def get_attribute(meth, *args)
       if @attributes.has_key?(meth)
         @attributes[meth]

@@ -15,7 +15,7 @@ module Ooor
   # the base class for proxies to OpenERP objects
   class Base < Ooor::MiniActiveResource
     include Naming, TypeCasting, Serialization, ReflectionOoor, Reflection
-    include Associations, Report, FinderMethods, FieldMethods, NestedAttributes
+    include Associations, Report, FinderMethods, FieldMethods, AutosaveAssociation, NestedAttributes
 
     # ********************** class methods ************************************
     class << self

@@ -145,56 +145,51 @@ module Ooor
     end
 
     def to_openerp_hash
-      attributes, associations = get_changed_values
-      associations = cast_associations_to_openerp(associations)
-      attributes.merge(associations)
+      attribute_keys, association_keys = get_changed_values
+      associations = {}
+      association_keys.each { |k| associations[k] = self.cast_association(k) }
+      @attributes.slice(*attribute_keys).merge(associations)
     end
     
     def get_changed_values
-      attributes = {}
-      associations = {}
-
-      changed.each do |k|
-        if self.class.associations_keys.index(k)
-          associations[k] = @associations[k]#changes[k][1]
-        elsif self.class.fields.has_key?(k)
-          attributes[k]= @attributes[k]
-        elsif !BLACKLIST.index(k)
-          attributes[k] = changes[k][1]
-        end
-      end
-      return attributes, associations
-    end
-
-    def cast_associations_to_openerp(associations=@associations)
-      associations.each do |k, v|
-        associations[k] = self.cast_association(k, v)
-      end
+      attribute_keys = changed.select {|k| self.class.fields.has_key?(k)} - BLACKLIST
+      association_keys = changed.select {|k| self.class.associations_keys.index(k)}
+      return attribute_keys, association_keys
     end
 
     # talk OpenERP cryptic associations API
-    def cast_association(k, v)
+    def cast_association(k)
       if self.class.one2many_associations[k]
-        cast_o2m_assocation(v)
+        if @loaded_associations[k]
+          v = @loaded_associations[k].select {|i| i.changed?}
+          v = @associations[k] if v.empty?
+        else
+          v = @associations[k]
+        end
+        cast_o2m_association(v)
       elsif self.class.many2many_associations[k]
+        v = @associations[k]
         [[6, false, (v || []).map {|i| i.is_a?(Base) ? i.id : i}]]
       elsif self.class.many2one_associations[k]
+        v = @associations[k] # TODO support for nested
         cast_m2o_association(v)
       end
     end
 
-    def cast_o2m_assocation(v)
-      if v.is_a?(Hash)
-        cast_o2m_nested_attributes(v)
-      else
-        v.collect do |value|
-          if value.is_a?(Base)
+    def cast_o2m_association(v)
+      v.collect do |value|
+        if value.is_a?(Base)
+          if value.new_record?
             [0, 0, value.to_openerp_hash]
-          elsif value.is_a?(Hash)
-            [0, 0, value]
-          else
-            [1, value, {}]
+          elsif value.marked_for_destruction?
+            [2, value.id]
+          elsif value.id
+            [1, value.id , value]
           end
+        elsif value.is_a?(Hash)
+          [0, 0, value]
+        else #use case?
+          [1, value, {}]
         end
       end
     end

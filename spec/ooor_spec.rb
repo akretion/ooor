@@ -1,5 +1,5 @@
 #    OOOR: OpenObject On Ruby
-#    Copyright (C) 2009-2012 Akretion LTDA (<http://www.akretion.com>).
+#    Copyright (C) 2009-2014 Akretion LTDA (<http://www.akretion.com>).
 #    Author: Raphaël Valyi
 #    Licensed under the MIT license, see MIT-LICENSE file
 
@@ -344,7 +344,6 @@ describe Ooor do
 
       it "should support Rails nested attributes methods" do
         so = SaleOrder.find :first
-        so.respond_to?(:order_line_attributes).should be_true
         so.respond_to?(:order_line_attributes=).should be_true
       end
 
@@ -399,18 +398,39 @@ describe Ooor do
       include Ooor
 
       it "should call customized before_save callback" do
-        expect do
-          Ooor.xtend('ir.ui.menu') do
-            before_save do
-              raise 'before_save_called'
-            end
+        probe = nil
+        Ooor.xtend('ir.ui.menu') do
+          before_save do |record|
+            probe = record.name
           end
+        end
 
-          with_ooor_session username: 'demo', password: 'demo' do |session|
-            session['ir.ui.menu'].first.save
-          end
-        end.to raise_error(RuntimeError, /before_save_called/)
+        with_ooor_session username: 'admin', password: 'admin' do |session|
+          menu = session['ir.ui.menu'].first
+          menu.save
+          probe.should == menu.name
+        end
       end
+
+      it "should call customized before_save callback on nested o2m" do
+        with_ooor_session({username: 'admin', password: 'admin'}, 'noshare1') do |session|
+          # we purposely make reflections happen to ensure they won't be reused in next session
+          p = session['product.product'].create name: 'noise', packaging_attributes: {'1' => {name: 'pack'}}
+        end
+
+        probe = nil
+        Ooor.xtend('product.packaging') do
+          before_save do |record|
+             probe = record.name
+          end
+        end
+
+        with_ooor_session({username: 'admin', password: 'admin'}, 'noshare2') do |session|
+          p = session['product.product'].create name: 'nested callback test', packaging_attributes: {'1' => {name: 'pack'}, '2' => {name: 'pack'}}
+          probe.should == 'pack'
+        end
+      end
+
     end
 
     describe "ARel emulation" do
@@ -571,10 +591,22 @@ describe Ooor do
       object.klass.should == ProductProduct
     end
 
-    it "should reflect on association (used in simple_form, cocoon...)" do
+    it "should reflect on m2o association (used in simple_form, cocoon...)" do
       reflection = ProductProduct.reflect_on_association(:categ_id)
       reflection.should be_kind_of(Ooor::Reflection::AssociationReflection)
       reflection.klass.should == ProductCategory
+    end
+
+    it "should reflect on o2m association (used in simple_form, cocoon...)" do
+      reflection = ProductProduct.reflect_on_association(:packaging)
+      reflection.should be_kind_of(Ooor::Reflection::AssociationReflection)
+      reflection.klass.openerp_model == 'product.packaging'
+    end
+
+    it "should reflect on m2m association (used in simple_form, cocoon...)" do
+      reflection = ResPartner.reflect_on_association(:category_id)
+      reflection.should be_kind_of(Ooor::Reflection::AssociationReflection)
+      reflection.klass.should == ResPartnerCategory
     end
 
     it "should support column_for_attribute (used by simple_form)" do
@@ -626,6 +658,112 @@ describe Ooor do
         user_obj.search().should be_kind_of(Array)
       end
     end
+
+    it "should raise AccessDenied/UnAuthorizedError errors" do
+      expect do
+        with_ooor_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session|
+          session['ir.ui.menu'].first.save
+        end
+      end.to raise_error(Ooor::UnAuthorizedError)
+    end
+
+    it "should assign a secure web session_id to a new web session" do
+      session = Ooor.session_handler.retrieve_session({}, nil, {})
+      session.id.should be_kind_of String
+      session.id.size.should == 32
+    end
+
+    it "should keep existing web session_id" do
+      session = Ooor.session_handler.retrieve_session({}, "12345678912345", {})
+      session.id.should == "12345678912345"
+    end
+
+    it "should reuse the same session and proxies with session with same spec" do
+      obj1 = 1
+      obj2 = 2
+      s1 = 1
+      s2 = 2
+      with_ooor_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session1|
+        s1 = session1
+        obj1 = session1['ir.ui.menu']
+      end
+      with_ooor_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session2|
+        s2 = session2
+        obj2 = session2['ir.ui.menu']
+      end
+      s1.object_id.should == s2.object_id
+      obj1.object_id.should == obj2.object_id
+    end
+
+    it "should not reuse the same session and proxies with session with different spec" do
+      obj1 = 1
+      obj2 = 2
+      s1 = 1
+      s2 = 2
+      with_ooor_session(:url => @url, :username => 'admin', :password => 'admin', :database => @database) do |session1|
+        s1 = session1
+        obj1 = session1['ir.ui.menu']
+      end
+
+      with_ooor_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session2|
+        s2 = session2
+        obj2 = session2['ir.ui.menu']
+      end
+
+      s1.object_id.should_not == s2.object_id
+      obj1.object_id.should_not == obj2.object_id
+    end
+
+    it "when using different web sessions, it should still share model schemas" do
+      obj1 = 1
+      obj2 = 2
+      s1 = 1
+      s2 = 2
+      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 111) do |session1|
+        s1 = session1
+        obj1 = Ooor.model_registry.get_template(session1.config, 'ir.ui.menu')
+      end
+
+      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 123) do |session2|
+        s2 = session2
+        obj2 = Ooor.model_registry.get_template(session2.config, 'ir.ui.menu')
+      end
+
+      s1.object_id.should_not == s2.object_id
+      obj1.should == obj2
+    end
+
+
+    it "should use the same session when its session_id is specified and session spec matches (web)" do
+      s1 = 1
+      s2 = 2
+
+      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 123) do |session1|
+        s1 = session1
+      end
+
+      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 123) do |session1|
+        s2 = session1
+      end
+
+      s1.object_id.should == s2.object_id
+    end
+
+    it "should not use the same session when session spec matches but session_id is different (web)" do
+      s1 = 1
+      s2 = 2
+    
+      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 111) do |session1|
+        s1 = session1
+      end
+
+      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 123) do |session1|
+        s2 = session1
+      end
+    
+      s1.object_id.should_not == s2.object_id
+    end
+
   end
 
 

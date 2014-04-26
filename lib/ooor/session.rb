@@ -4,7 +4,7 @@ module Ooor
   class Session < SimpleDelegator
     include Transport
 
-    attr_accessor :web_session, :connection, :id
+    attr_accessor :web_session, :connection, :id, :models
 
     def common(); @common_service ||= CommonService.new(self); end
     def db(); @db_service ||= DbService.new(self); end
@@ -14,17 +14,18 @@ module Ooor
     def initialize(connection, web_session, id)
       super(connection)
       @connection = connection
+      @models = {}
       @local_context = {}
       @web_session = web_session || {}
       @id = id || web_session[:session_id]
     end
 
     def [](key)
-      @session[key]
+      self[key]
     end
 
     def []=(key, value)
-      @session[key] = value
+      self[key] = value
     end
 
     def global_login(options)
@@ -132,7 +133,7 @@ module Ooor
       models[options[:model]]
     end
 
-    def models; @models ||= {}; end
+#    def models; @models ||= {}; end
     
     def logger; Ooor.logger; end
 
