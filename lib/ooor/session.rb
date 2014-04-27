@@ -1,10 +1,12 @@
 require 'ooor/services'
+require 'active_support/configurable'
 
 module Ooor
   class Session
+    include ActiveSupport::Configurable
     include Transport
 
-    attr_accessor :web_session, :config, :id, :models
+    attr_accessor :web_session, :id, :models
 
     def common(); @common_service ||= CommonService.new(self); end
     def db(); @db_service ||= DbService.new(self); end
@@ -12,17 +14,23 @@ module Ooor
     def report(); @report_service ||= ReportService.new(self); end
 
     def initialize(config, web_session, id)
-      @config = _config(config)
-      Object.const_set(@config[:scope_prefix], Module.new) if @config[:scope_prefix]
+      set_config(_config(config))
+      Object.const_set(config[:scope_prefix], Module.new) if config[:scope_prefix]
       @models = {}
       @local_context = {}
       @web_session = web_session || {}
       @id = id || web_session[:session_id]
     end
 
+    def set_config(configuration)
+      configuration.each do |k, v|
+        config.send "#{k}=", v
+      end
+    end
+
     # a part of the config that will be mixed in the context of each session
     def connection_session
-      HashWithIndifferentAccess.new(@config[:connection_session] || {})
+      HashWithIndifferentAccess.new(config[:connection_session] || {})
     end
 
     def [](key)
@@ -69,7 +77,7 @@ module Ooor
 
     def load_models(model_names=config[:models], reload=config[:reload])
       helper_paths.each do |dir|
-        Dir[dir].each { |file| require file }
+        ::Dir[dir].each { |file| require file }
       end
       search_domain = model_names ? [['model', 'in', model_names]] : []
       models_records = read_model_data(search_domain)
@@ -143,7 +151,7 @@ module Ooor
     def logger; Ooor.logger; end
 
     def helper_paths
-      [File.dirname(__FILE__) + '/helpers/*', *@config[:helper_paths]]
+      [File.dirname(__FILE__) + '/helpers/*', *config[:helper_paths]]
     end
 
     def class_name_from_model_key(model_key)

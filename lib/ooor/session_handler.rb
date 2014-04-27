@@ -5,12 +5,9 @@ module Ooor
   autoload :SecureRandom, 'securerandom'
   # The SessionHandler allows to retrieve a session with its loaded proxies to OpenERP
   class SessionHandler
-    def connection_spec(config)
-      HashWithIndifferentAccess.new(config.slice(:url, :database, :username, :password, :scope_prefix, :helper_paths)) #TODO should really password be part of it?
-    end
 
     def noweb_session_spec(config)
-      HashWithIndifferentAccess.new(config.slice(:url, :database, :username)).map{|k, v| v}.join('-')
+      "#{config[:url]}-#{config[:database]}-#{config[:username]}"
     end
 
     def retrieve_session(config, id=nil, web_session={})

@@ -40,7 +40,7 @@ module Ooor
       def const_get(model_key)
         scope = self.scope_prefix ? Object.const_get(self.scope_prefix) : Object
         klass_name = session.class_name_from_model_key(model_key)
-        if scope.const_defined?(klass_name) && Ooor.session_handler.connection_spec(scope.const_get(klass_name).session.config) == Ooor.session_handler.connection_spec(session.config)
+        if scope.const_defined?(klass_name) && Ooor.session_handler.noweb_session_spec(scope.const_get(klass_name).session.config) == Ooor.session_handler.noweb_session_spec(session.config)
           scope.const_get(klass_name)
         else
           session.define_openerp_model(model: model_key, scope_prefix: self.scope_prefix)
