@@ -43,9 +43,16 @@ module Ooor
       if !@associations[method_name]
         nil
       else
-        id = @associations[method_name].is_a?(Integer) ? @associations[method_name] : @associations[method_name][0]
+        if @associations[method_name].is_a?(Integer)
+          id = @associations[method_name]
+          display_name = nil
+        else
+          id = @associations[method_name][0]
+          display_name = @associations[method_name][1]
+        end
         rel = self.class.many2one_associations[method_name]['relation']
-        self.class.const_get(rel).find(id, arguments.extract_options!)
+        self.class.const_get(rel).new({id: id, _display_name: display_name}, [], true, false, true)
+#        self.class.const_get(rel).find(id, arguments.extract_options!)
       end
     end
 

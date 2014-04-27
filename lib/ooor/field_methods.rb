@@ -100,11 +100,22 @@ module Ooor
 
     end
 
+    attr_accessor :_display_name
+    alias _name _display_name
+
     def _destroy=(dummy)
       @marked_for_destruction = true unless dummy.blank? || ["false", "0", 0].index(dummy)
     end
 
+    def lazy_load(meth, *args)
+      @lazy = false
+      load(rpc_execute('read', [id], (self.class.fast_fields + [meth]).uniq, *args || context)[0]).tap do
+        @lazy = false
+      end
+    end
+
     def get_attribute(meth, *args)
+      lazy_load(meth, *args) if @lazy
       if @attributes.has_key?(meth)
         @attributes[meth]
       else #lazy loading
@@ -125,6 +136,7 @@ module Ooor
 
     def get_association(meth, *args)
       return @associations[meth] || :undef if @skip
+      lazy_load(meth, *args) if @lazy
       if @loaded_associations.has_key?(meth)
         @loaded_associations[meth]
       elsif @associations.has_key?(meth)

@@ -96,12 +96,13 @@ module Ooor
     end
 
     #takes care of reading OpenERP default field values.
-    def initialize(attributes = {}, default_get_list = false, persisted = false, has_changed = false)
+    def initialize(attributes = {}, default_get_list = false, persisted = false, has_changed = false, lazy = false)
       self.class.reload_fields_definition(false)
       @attributes = {}
       @ir_model_data_id = attributes.delete(:ir_model_data_id)
       @marked_for_destruction = false
       @persisted = persisted
+      @lazy = lazy
       if default_get_list == []
         load(attributes)
       else
