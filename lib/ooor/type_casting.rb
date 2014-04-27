@@ -184,7 +184,7 @@ module Ooor
           elsif value.marked_for_destruction?
             [2, value.id]
           elsif value.id
-            [1, value.id , value]
+            [1, value.id , value.to_openerp_hash]
           end
         elsif value.is_a?(Hash)
           [0, 0, value]
