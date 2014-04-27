@@ -101,7 +101,7 @@ module Ooor
     end
 
     def _destroy=(dummy)
-      @marked_for_destruction = true unless dummy.blank?
+      @marked_for_destruction = true unless dummy.blank? || ["false", "0", 0].index(dummy)
     end
 
     def get_attribute(meth, *args)
