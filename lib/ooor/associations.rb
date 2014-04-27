@@ -28,23 +28,30 @@ module Ooor
     def relationnal_result(method_name, *arguments)
       self.class.reload_fields_definition(false)
       if self.class.many2one_associations.has_key?(method_name)
-        if !@associations[method_name]
-          nil
-        else
-          id = @associations[method_name].is_a?(Integer) ? @associations[method_name] : @associations[method_name][0]
-          rel = self.class.many2one_associations[method_name]['relation']
-          self.class.const_get(rel).find(id, arguments.extract_options!)
-        end
+        load_m2o_association(method_name, *arguments)
       elsif self.class.polymorphic_m2o_associations.has_key?(method_name) && @associations[method_name]
         values = @associations[method_name].split(',')
         self.class.const_get(values[0]).find(values[1], arguments.extract_options!)
       else # o2m or m2m
-        rel = self.class.all_fields[method_name]['relation']
-        load_x2m_association(rel, @associations[method_name], *arguments)
+        load_x2m_association(method_name, *arguments)
       end
     end
 
-    def load_x2m_association(model_key, ids, *arguments)
+    private
+
+    def load_m2o_association(method_name, *arguments)
+      if !@associations[method_name]
+        nil
+      else
+        id = @associations[method_name].is_a?(Integer) ? @associations[method_name] : @associations[method_name][0]
+        rel = self.class.many2one_associations[method_name]['relation']
+        self.class.const_get(rel).find(id, arguments.extract_options!)
+      end
+    end
+
+    def load_x2m_association(method_name, *arguments)
+      model_key = self.class.all_fields[method_name]['relation']
+      ids = @associations[method_name]
       options = arguments.extract_options!
       related_class = self.class.const_get(model_key)
       CollectionProxy.new(related_class, {}).apply_finder_options(options.merge(ids: ids))      
