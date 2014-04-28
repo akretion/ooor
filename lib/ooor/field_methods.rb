@@ -107,6 +107,10 @@ module Ooor
       @marked_for_destruction = true unless dummy.blank? || ["false", "0", 0].index(dummy)
     end
 
+    def _destroy
+      @marked_for_destruction
+    end
+
     def lazy_load(meth, *args)
       @lazy = false
       load(rpc_execute('read', [id], (self.class.fast_fields + [meth]).uniq, *args || context)[0]).tap do
