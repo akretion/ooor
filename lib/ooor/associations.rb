@@ -29,15 +29,25 @@ module Ooor
       self.class.reload_fields_definition(false)
       if self.class.many2one_associations.has_key?(method_name)
         load_m2o_association(method_name, *arguments)
-      elsif self.class.polymorphic_m2o_associations.has_key?(method_name) && @associations[method_name]
-        values = @associations[method_name].split(',')
-        self.class.const_get(values[0]).find(values[1], arguments.extract_options!)
+      elsif self.class.polymorphic_m2o_associations.has_key?(method_name)# && @associations[method_name]
+        load_polymorphic_m2o_association(method_name, *arguments)
+#        values = @associations[method_name].split(',')
+#        self.class.const_get(values[0]).find(values[1], arguments.extract_options!)
       else # o2m or m2m
         load_x2m_association(method_name, *arguments)
       end
     end
 
     private
+
+    def load_polymorphic_m2o_association(method_name, *arguments)
+      if @associations[method_name]
+        values = @associations[method_name].split(',')
+        self.class.const_get(values[0]).find(values[1], arguments.extract_options!)
+      else
+        false
+      end
+    end
 
     def load_m2o_association(method_name, *arguments)
       if !@associations[method_name]
