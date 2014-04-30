@@ -42,7 +42,7 @@ module Ooor
     end
 
     def global_login(options)
-      config.merge!(options)
+      config.merge!(options.symbolize_keys)
       load_models(config[:models], options[:reload])
     end
 
