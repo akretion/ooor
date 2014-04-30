@@ -42,10 +42,10 @@ module Ooor
         end
         (one2many_associations.keys + many2many_associations.keys).each do |meth|
           define_association_method meth
-          alias_method "#{meth}_ids", meth
           alias_method "#{meth}_ids=", "#{meth}="
-          alias_method "#{meth.to_s.singularize}_ids", meth
           alias_method "#{meth.to_s.singularize}_ids=", "#{meth}="
+          define_x2m_ids_association_method meth
+          alias_method "#{meth.to_s.singularize}_ids", "#{meth}_ids"
         end
         @accessor_defined = true
       end
@@ -69,6 +69,12 @@ module Ooor
 
         define_method "#{meth}=" do |*args|
           set_association(meth, *args)
+        end
+      end
+
+      def define_x2m_ids_association_method(meth)
+        define_method "#{meth}_ids" do |*args|
+          @associations[meth]
         end
       end
 
