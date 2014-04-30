@@ -51,7 +51,7 @@ module Ooor
       end
 
       def define_field_method(meth)
-        define_attribute_methods meth
+        define_attribute_method meth
         define_method meth do |*args|
           get_attribute(meth, *args)
         end
@@ -62,7 +62,7 @@ module Ooor
       end
 
       def define_association_method(meth)
-        define_attribute_methods meth
+        define_attribute_method meth
         define_method meth do |*args|
           get_association(meth, *args)
         end
