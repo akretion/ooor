@@ -107,7 +107,9 @@ module Ooor
         true
       elsif type == 'boolean'&& value == 0 || value == "0"
         false
-      elsif value == false and type != 'boolean'
+      elsif value == false && type != 'boolean'
+        nil
+      elsif (type == 'char' || type == 'text') && value == "" && @attributes[skey] == nil
         nil
       else
         value
@@ -120,13 +122,13 @@ module Ooor
       elsif value.is_a?(Array) && !self.class.many2one_associations.keys.index(skey)
         value.reject {|i| i == ''}.map {|i| i.is_a?(String) ? i.to_i : i}
       elsif value.is_a?(String)
-        sanitize_associatio_as_string(skey, value)
+        sanitize_association_as_string(skey, value)
       else
         value
       end
     end
 
-    def sanitize_associatio_as_string(skey, value)
+    def sanitize_association_as_string(skey, value)
       if self.class.polymorphic_m2o_associations.has_key?(skey)
         value
       elsif self.class.many2one_associations.has_key?(skey)
