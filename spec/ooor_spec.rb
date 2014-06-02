@@ -344,7 +344,7 @@ describe Ooor do
 
       it "should support Rails nested attributes methods" do
         so = SaleOrder.find :first
-        so.respond_to?(:order_line_attributes=).should be_true
+        so.respond_to?(:order_line_attributes=).should == true
       end
 
       it "should support CRUD on o2m via nested attributes" do
@@ -354,7 +354,7 @@ describe Ooor do
         p = ProductProduct.find p.id
         pack1 = p.packaging[0]
         pack2 = p.packaging[1]
-        pack2.name.index('pack').should be_true
+        pack2.name.index('pack').should == 0
         p.packaging_attributes = {'1' => {name: 'pack1', '_destroy'=> true, id: pack1.id}, '2' => {name: 'pack2_modified', id: pack2.id}}
         p.save
         p.packaging.size.should == 1
