@@ -156,7 +156,7 @@ module Ooor
           @associations[meth] = rpc_execute('read', [@attributes["id"]], [meth], *args || context)[0][meth]
           @loaded_associations[meth] = relationnal_result(meth, *args)
         elsif self.class.one2many_associations.has_key?(meth) || self.class.many2many_associations.has_key?(meth)
-          load_x2m_association(self.class.all_fields[meth]['relation'], [], *args)
+          load_x2m_association(meth, [], *args)
         else
           nil
         end
