@@ -68,7 +68,7 @@ module Ooor
 
     def load_x2m_association(method_name, *arguments)
       model_key = self.class.all_fields[method_name]['relation']
-      ids = @associations[method_name]
+      ids = @associations[method_name] || []
       options = arguments.extract_options!
       related_class = self.class.const_get(model_key)
       CollectionProxy.new(related_class, {}).apply_finder_options(options.merge(ids: ids))      
