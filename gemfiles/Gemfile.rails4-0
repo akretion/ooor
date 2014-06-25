@@ -1,0 +1,6 @@
+source "http://rubygems.org"
+
+# Specify your gem's dependencies in cells.gemspec
+gemspec path: '../'
+
+gem 'activemodel', '4.0.2'

@@ -33,3 +33,8 @@ rvm:
 notifications:
   email:
     - raphael.valyi@akretion.com
+
+gemfile:
+  - gemfiles/Gemfile.rails3-2
+  - gemfiles/Gemfile.rails4-0
+  - gemfiles/Gemfile.rails4-1
