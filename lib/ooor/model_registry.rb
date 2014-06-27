@@ -7,7 +7,7 @@ module Ooor
   class ModelRegistry
     
     def cache_key(config, model_name)
-      h = config.slice(:url, :database, :username, :scope_prefix) #sure we want username?
+      h = config.to_h.slice(:url, :database, :username, :scope_prefix) #sure we want username?
       (h.map{|k, v| v} + [model_name]).join('-')
     end
 
