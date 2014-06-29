@@ -15,11 +15,10 @@ before_script:
     - psql -c 'create database ooor_test with owner openerp;' -U postgres
     - cd openerp
     - ./openerp-server --db_user=postgres --db_user=openerp --db_password=admin --db_host=localhost &
-    - cd ..
-    - bundle install
 
 install:
     - ./spec/install_nightly.sh
+    - bundle install
 
 script:
     - rake
@@ -30,6 +29,7 @@ rvm:
   - jruby-19mode
   - 2.1.0-preview2
   - rbx-2.2.1
+
 notifications:
   email:
     - raphael.valyi@akretion.com
@@ -38,3 +38,9 @@ gemfile:
   - gemfiles/Gemfile.rails3-2
   - gemfiles/Gemfile.rails4-0
   - gemfiles/Gemfile.rails4-1
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - rvm: jruby-19mode
+    - rvm: rbx-2.2.1
