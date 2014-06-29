@@ -34,10 +34,10 @@ notifications:
   email:
     - raphael.valyi@akretion.com
 
-gemfile:
-  - gemfiles/Gemfile.rails3-2
-  - gemfiles/Gemfile.rails4-0
-  - gemfiles/Gemfile.rails4-1
+env:
+  - "RAILS_VERSION=3.2"
+  - "RAILS_VERSION=4.0"
+  - "RAILS_VERSION=4.1"
 
 matrix:
   fast_finish: true
