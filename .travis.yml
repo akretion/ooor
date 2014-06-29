@@ -16,13 +16,13 @@ before_script:
     - cd openerp
     - ./openerp-server --db_user=postgres --db_user=openerp --db_password=admin --db_host=localhost &
     - cd ..
+    - bundle install
 
 install:
     - ./spec/install_nightly.sh
-    - bundle install
 
 script:
-    - rake
+    - bundle exec rake
 
 rvm:
   - 1.9.3
