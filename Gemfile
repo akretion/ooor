@@ -2,8 +2,7 @@ source "http://rubygems.org"
 
 gemspec
 
-#rails_version = ENV["RAILS_VERSION"] || "4.1"
-#gem "activemodel", "~> #{rails_version}"
+gem "activemodel", "~> #{ENV["RAILS_VERSION"]}" if ENV["RAILS_VERSION"]
 
 group :test do
   gem 'rspec'
