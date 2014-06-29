@@ -34,12 +34,3 @@ rvm:
 notifications:
   email:
     - raphael.valyi@akretion.com
-
-env:
-  - "RAILS_VERSION=4.1"
-
-matrix:
-  fast_finish: true
-  allow_failures:
-    - rvm: jruby-19mode
-    - rvm: rbx-2.2.1

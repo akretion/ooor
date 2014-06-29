@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.files = Dir["{lib}/**/*"] + ["MIT-LICENSE", "README.md", "Rakefile"]
   s.test_files = Dir["spec/**/*"]
 
-  s.add_dependency(%q<activemodel>, [">= 2.3.5"])
+  s.add_dependency(%q<activemodel>, [">= 3.2.0"])
   s.add_dependency(%q<faraday>)
   s.bindir       = "bin"
   s.executables  = %w( ooor )
