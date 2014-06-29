@@ -1,5 +1,6 @@
 require 'ooor/services'
 require 'active_support/configurable'
+require 'active_support/core_ext/hash/slice'
 
 module Ooor
   class Session
