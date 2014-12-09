@@ -82,7 +82,7 @@ module Ooor
       end
       search_domain = model_names ? [['model', 'in', model_names]] : []
       models_records = read_model_data(search_domain)
-      models_records.each do |opts|
+      models_records.reject {|opts| opts['model'] == '_unknown' }.each do |opts|
         options = HashWithIndifferentAccess.new(opts.merge(scope_prefix: config[:scope_prefix],
                                                            reload: reload,
                                                            generate_constants: config[:generate_constants]))
