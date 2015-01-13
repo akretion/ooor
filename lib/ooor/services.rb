@@ -66,7 +66,7 @@ module Ooor
 
     def create(password=@session.config[:db_password], db_name='ooor_test', demo=true, lang='en_US', user_password=@session.config[:password] || 'admin')
       @session.logger.info "creating database #{db_name} this may take a while..."
-      process_id = @session.get_client(:xml, @session.base_url + "/db").call("create", password, db_name, demo, lang, user_password)
+      process_id = @session.get_client(:xml, @session.base_url + "/db").call("create_database", password, db_name, demo, lang, user_password)
       sleep(2)
       while get_progress(password, process_id)[0] != 1
         @session.logger.info "..."
