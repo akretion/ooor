@@ -1,41 +1,40 @@
+# Config file .travis.yml
+
 language: python
+
 python:
   - "2.7"
-virtualenv:
-  system_site_packages: true
-
-before_install:
- - sudo apt-get install -qq graphviz
-
-services:
-  - postgresql
-
-before_script:
-    - psql -c "CREATE USER openerp WITH PASSWORD 'admin';" -U postgres
-    - psql -c 'create database ooor_test with owner openerp;' -U postgres
-    - cd openerp
-    - ./openerp-server --db_user=postgres --db_user=openerp --db_password=admin --db_host=localhost &
-    - cd ..
-    - bundle install
-
-install:
-    - ./spec/install_nightly.sh
-
-script:
-    - bundle exec rake
 
 rvm:
   - 1.9.3
-  - 2.0.0
   - jruby-19mode
-  - 2.1.0-preview2
-  - rbx-2.2.1
+  - 2.1.0
 
 env:
-  - "RAILS_VERSION=3.2"
-  - "RAILS_VERSION=4.0"
-  - "RAILS_VERSION=4.1"
+  - VERSION="7.0" ODOO_REPO="odoo/odoo" RAILS_VERSION=3.2
+  - VERSION="7.0" ODOO_REPO="odoo/odoo" RAILS_VERSION=4.0
+  - VERSION="7.0" ODOO_REPO="odoo/odoo" RAILS_VERSION=4.1
 
-notifications:
-  email:
-    - raphael.valyi@akretion.com
+virtualenv:
+  system_site_packages: true
+
+install:
+  - git clone https://github.com/oca/maintainer-quality-tools.git ${HOME}/maintainer-quality-tools
+  #- git clone https://github.com/OCA/connector $HOME/connector -b ${VERSION}
+  - export PATH=${HOME}/maintainer-quality-tools/travis:${PATH}
+  - travis_install_nightly ${VERSION}
+
+before_script:
+  - ls -la
+  - psql -c "CREATE USER openerp WITH PASSWORD 'admin';" -U postgres
+  - psql -c 'create database ooor_test with owner openerp;' -U postgres
+  - cd odoo
+  - ./openerp-server --db_user=postgres --db_user=openerp --db_password=admin --db_host=localhost &
+  - cd ..
+  - bundle install
+
+script:
+  - bundle exec rake
+
+services:
+  - postgresql
