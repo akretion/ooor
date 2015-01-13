@@ -43,4 +43,4 @@ services:
 
 matrix:
   allow_failures:
-    - env: VERSION="8.0"
+    - env: "VERSION=8.0"
