@@ -65,7 +65,8 @@ describe Ooor do
 
     describe "Finders operations" do
       it "should be able to find data by id" do
-        product1 = ProductProduct.find(1)
+        first_product_id = ProductProduct.search([], 0, 1).first
+        product1 = ProductProduct.find(first_product_id)
         expect(product1).not_to be_nil
         expect(ProductProduct.find(:first).attributes).to eq product1.attributes
       end
@@ -76,7 +77,7 @@ describe Ooor do
       end
 
       it "should fetches data given an implicit array of ids" do
-        products = ProductProduct.find(1,2)
+        products = ProductProduct.find(1, 2)
         products.size.should == 2
       end
       
@@ -164,14 +165,14 @@ describe Ooor do
       end
 
       it "should cast dates properly from OpenERP to Ruby" do
-        o = SaleOrder.find(1)
+        o = SaleOrder.find(:first)
         o.date_order.should be_kind_of(Date)
-        c = IrCron.find(1)
+        c = IrCron.find(:first)
         c.nextcall.should be_kind_of(DateTime)
       end
 
       it "should not load false values in empty strings (for HTML forms)" do
-        ResPartner.first.phone.should be_nil
+        ResPartner.first.mobile.should be_nil
       end
 
       it "should map OpenERP types to Rails types" do
@@ -185,26 +186,26 @@ describe Ooor do
 
     describe "Relations reading" do
       it "should read many2one relations" do
-        o = SaleOrder.find(1)
+        o = SaleOrder.find(:first)
         o.partner_id.should be_kind_of(ResPartner)
         p = ProductProduct.find(1) #inherited via product template
         p.categ_id.should be_kind_of(ProductCategory)
       end
 
       it "should read one2many relations" do
-        o = SaleOrder.find(1)
+        o = SaleOrder.find(:first)
         o.order_line.each do |line|
         line.should be_kind_of(SaleOrderLine)
         end
       end
 
       it "should read many2many relations" do
-        s = SaleOrder.find(1)
+        s = SaleOrder.find(:first)
         s.order_policy = 'manual'
         s.save
         s.wkf_action('order_confirm')
         s.wkf_action('manual_invoice')
-        SaleOrder.find(1).order_line[1].invoice_lines.should be_kind_of(Array)
+        SaleOrder.find(first).order_line[1].invoice_lines.should be_kind_of(Array)
       end
 
       it "should read polymorphic references" do
@@ -286,13 +287,13 @@ describe Ooor do
 
     describe "Basic updates" do
       it "should cast properly from Ruby to OpenERP" do
-        o = SaleOrder.find(1).copy()
+        o = SaleOrder.find(:first).copy()
         o.date_order = 2.days.ago
         o.save
       end
 
       it "should be able to reload resource" do
-        s = SaleOrder.find(1)
+        s = SaleOrder.find(:first)
         s.reload.should be_kind_of(SaleOrder)
       end
     end
@@ -493,7 +494,7 @@ describe Ooor do
       end
 
       it "should be possible to call resource actions and workflow actions" do
-        s = SaleOrder.find(1).copy()
+        s = SaleOrder.find(:first).copy()
         s.wkf_action('order_confirm')
         s.wkf_action('manual_invoice')
         i = s.invoice_ids[0]
