@@ -25,12 +25,13 @@ install:
   - travis_install_nightly ${VERSION}
 
 before_script:
-  - ls -la
+  - pwd
+  - cwd=$(pwd)
   - psql -c "CREATE USER openerp WITH PASSWORD 'admin';" -U postgres
   - psql -c 'create database ooor_test with owner openerp;' -U postgres
-  - cd odoo
+  - cd ${HOME}/odoo-${VERSION}
   - ./openerp-server --db_user=postgres --db_user=openerp --db_password=admin --db_host=localhost &
-  - cd ..
+  - cd $cwd
   - bundle install
 
 script:
