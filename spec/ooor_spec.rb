@@ -167,7 +167,7 @@ describe Ooor do
       it "should cast dates properly from OpenERP to Ruby" do
         o = SaleOrder.find(1)
         o.date_order.should be_kind_of(Date)
-        c = IrCron.find(:first)
+        c = IrCron.find(1)
         c.nextcall.should be_kind_of(DateTime)
       end
 
