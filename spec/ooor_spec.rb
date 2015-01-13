@@ -68,7 +68,7 @@ describe Ooor do
         first_product_id = ProductProduct.search([], 0, 1).first
         product1 = ProductProduct.find(first_product_id)
         expect(product1).not_to be_nil
-        expect(ProductProduct.find(:first).attributes).to eq product1.attributes
+        product1.attributes.should be_kind_of(Hash)
       end
 
       it "fetches data given an array of ids" do
@@ -165,7 +165,7 @@ describe Ooor do
       end
 
       it "should cast dates properly from OpenERP to Ruby" do
-        o = SaleOrder.find(:first)
+        o = SaleOrder.find(1)
         o.date_order.should be_kind_of(Date)
         c = IrCron.find(:first)
         c.nextcall.should be_kind_of(DateTime)
@@ -205,7 +205,7 @@ describe Ooor do
         s.save
         s.wkf_action('order_confirm')
         s.wkf_action('manual_invoice')
-        SaleOrder.find(first).order_line[1].invoice_lines.should be_kind_of(Array)
+        SaleOrder.find(:first).order_line[1].invoice_lines.should be_kind_of(Array)
       end
 
       it "should read polymorphic references" do
