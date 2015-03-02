@@ -10,6 +10,10 @@ module Ooor
       self.class.columns_hash[name.to_s]
     end
 
+    def has_attribute?(attr_name)
+      self.class.columns_hash.key?(attr_name.to_s)
+    end
+
     module ClassMethods
       def reflections
         @reflections ||= {}
