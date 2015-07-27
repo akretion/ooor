@@ -12,7 +12,7 @@ module Ooor
     def initialize(session)
       @session = session
     end
-    
+
     def self.define_service(service, methods)
       methods.each do |meth|
         self.instance_eval do
@@ -37,7 +37,7 @@ module Ooor
       else
         conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
         response = conn.post do |req|
-          req.url '/web/session/authenticate' 
+          req.url '/web/session/authenticate'
           req.headers['Content-Type'] = 'application/json'
           req.body = {method: 'call', params: { db: db, login: username, password: password}}.to_json
         end
@@ -50,7 +50,7 @@ module Ooor
           if sid_part1
             @session.web_session[:sid] = @session.web_session[:cookie].split("sid=")[1].split(";")[0] # NOTE side is required on v7 but not on v8, this enables to sniff if we are on v7
           end
-          
+
           @session.web_session[:session_id] = json_response['result']['session_id']
           user_id = json_response['result']['uid']
           @session.config[:user_id] = user_id
@@ -68,7 +68,7 @@ module Ooor
     def validate_response(json_response)
       error = json_response["error"]
 
-      if error["data"]["type"] == "server_exception"
+      if error["data"]["type"] == "server_exception" || error['message'] == "Odoo Server Error"
         raise "#{error["message"]} ------- #{error["data"]["debug"]}"
       end
     end
@@ -93,7 +93,7 @@ module Ooor
 
   class ObjectService < Service
     define_service(:object, %w[execute exec_workflow])
-    
+
     def object_service(service, obj, method, *args)
       unless @session.config[:user_id]
         @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password])
@@ -122,7 +122,7 @@ module Ooor
     end
 
     def inject_session_context(service, method, *args)
-      if service == :object && (i = Ooor.irregular_context_position(method)) && args.size >= i 
+      if service == :object && (i = Ooor.irregular_context_position(method)) && args.size >= i
         c = HashWithIndifferentAccess.new(args[i])
         args[i] = @session.session_context(c)
       elsif args[-1].is_a? Hash #context
@@ -136,7 +136,7 @@ module Ooor
       end
       args
     end
-    
+
   end
 
 
