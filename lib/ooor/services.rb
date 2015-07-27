@@ -68,7 +68,7 @@ module Ooor
     def validate_response(json_response)
       error = json_response["error"]
 
-      if error["data"]["type"] == "server_exception" || error['message'] == "Odoo Server Error"
+      if error && (error["data"]["type"] == "server_exception" || error['message'] == "Odoo Server Error")
         raise "#{error["message"]} ------- #{error["data"]["debug"]}"
       end
     end
