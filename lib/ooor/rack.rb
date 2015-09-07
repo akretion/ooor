@@ -11,6 +11,9 @@ module Ooor
       Ooor.default_config
     end
 
+    DEFAULT_OOOR_ENV_DECORATOR = Proc.new do |env|
+    end
+
     module RackBehaviour
       extend ActiveSupport::Concern
       module ClassMethods
@@ -18,6 +21,12 @@ module Ooor
           @ooor_session_config_mapper = block if block
           @ooor_session_config_mapper || DEFAULT_OOOR_SESSION_CONFIG_MAPPER
         end
+
+        def decorate_env(&block)
+          @ooor_env_decorator = block if block
+          @ooor_env_decorator || DEFAULT_OOOR_ENV_DECORATOR
+        end
+
       end
 
       def set_ooor!(env)
@@ -72,6 +81,7 @@ module Ooor
           ].join("\n")
         end
         response = ::Rack::Response.new body, status, headers
+        Ooor::Rack.decorate_env.call(env)
         response.finish
       end
         
