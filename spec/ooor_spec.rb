@@ -112,7 +112,7 @@ describe Ooor do
       end
 
       it "should load required models on the fly" do
-        SaleOrder.find(1).shop_id.should be_kind_of(SaleShop)
+        ProductProduct.find(:first).categ_id.should be_kind_of(ProductCategory)
       end
 
       it "should be able to specify the fields to read" do
