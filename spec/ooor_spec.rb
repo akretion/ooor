@@ -744,7 +744,7 @@ describe Ooor do
         s1 = session1
       end
 
-      with_ooor_session({:url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE}, 123) do |session1|
+      with_ooor_session({url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE}, 123) do |session1|
         s2 = session1
       end
 
