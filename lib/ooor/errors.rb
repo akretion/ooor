@@ -45,7 +45,7 @@ module Ooor
     end
     
     def filter_password(args)
-      if args[0].is_a?(String) && (args[1].is_a?(Integer) || args[1].to_i != 0) && args[2].is_a?(String)
+      if args[0].is_a?(String) && args[2].is_a?(String) && (args[1].is_a?(Integer) || args[1].to_i != 0)
         args[2] = "####"
       end
       args.map! do |arg|

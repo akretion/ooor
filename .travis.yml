@@ -30,7 +30,6 @@ install:
 
 before_script:
   - cwd=$(pwd)
-  - createdb -O travis -U travis ooor_test
   - cd ${HOME}/odoo-${VERSION}
   - ./openerp-server --addons-path=${HOME}/odoo-${VERSION}/addons --db_user=travis --db_password=admin --db_host=localhost &
   - cd $cwd
