@@ -18,7 +18,7 @@ rvm:
   - 2.1.0
 
 env:
-  - VERSION="8.0" ODOO_REPO="odoo/odoo" RAILS_VERSION=4.2
+  - VERSION="7.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" RAILS_VERSION=4.2
 
 virtualenv:
   system_site_packages: true
@@ -32,6 +32,7 @@ before_script:
   - cwd=$(pwd)
   - psql -c "CREATE USER openerp WITH PASSWORD 'admin';" -U postgres
   - psql -c 'create database ooor_test with owner openerp;' -U postgres
+  - ls -la ${HOME}
   - cd ${HOME}/odoo-${VERSION}
   - ./openerp-server --addons-path=${HOME}/odoo-${VERSION}/addons --db_user=postgres --db_user=openerp --db_password=admin --db_host=localhost &
   - cd $cwd
