@@ -314,6 +314,11 @@ module Ooor
 
     def load_with_defaults(attributes, default_get_list)
       defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, context)
+      self.class.associations_keys.each do |k|
+        if defaults[k].is_a?(Array) && defaults[k][0].is_a?(Array) && defaults[k][0][2].is_a?(Array)
+          defaults[k] = defaults[k][0][2]
+        end
+      end
       attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
       load(attributes)
     end
