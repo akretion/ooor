@@ -82,7 +82,7 @@ module Ooor
       @session.logger.info "creating database #{db_name} this may take a while..."
       process_id = @session.get_client(:xml, @session.base_url + "/db").call("create_database", password, db_name, demo, lang, user_password)
       sleep(2)
-      while get_progress(password, process_id)[0] != 1
+      while process_id.is_a?(Integer) && get_progress(password, process_id)[0] != 1
         @session.logger.info "..."
         sleep(0.5)
       end

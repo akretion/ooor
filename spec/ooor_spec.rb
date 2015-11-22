@@ -9,16 +9,17 @@ if ENV["CI"]
 end
 require File.dirname(__FILE__) + '/../lib/ooor'
 
+OOOR_URL = ENV['OOOR_URL'] || 'http://localhost:8069/xmlrpc'
+OOOR_DB_PASSWORD = ENV['OOOR_DB_PASSWORD'] || 'admin'
+OOOR_USERNAME = ENV['OOOR_USERNAME'] || 'admin'
+OOOR_PASSWORD = ENV['OOOR_PASSWORD'] || 'admin'
+OOOR_DATABASE = ENV['OOOR_DATABASE'] || 'ooor_test'
+
 #RSpec executable specification; see http://rspec.info/ for more information.
 #Run the file with the rspec command  from the rspec gem
 describe Ooor do
   before(:all) do
-    @url = 'http://localhost:8069/xmlrpc'
-    @db_password = 'admin'
-    @username = 'admin'
-    @password = 'admin'
-    @database = 'ooor_test'
-    @ooor = Ooor.new(:url => @url, :username => @username, :password => @password)
+    @ooor = Ooor.new(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD)
   end
 
   it "should keep quiet if no database is mentioned" do
@@ -30,15 +31,15 @@ describe Ooor do
   end
 
   it "should be able to create a new database with demo data" do
-    unless @ooor.db.list.index(@database)
-      @ooor.db.create(@db_password, @database)
+    unless @ooor.db.list.index(OOOR_DB_PASSWORD)
+      @ooor.db.create(OOOR_DB_PASSWORD, OOOR_DATABASE)
     end
-    @ooor.db.list.index(@database).should_not be_nil
+    @ooor.db.list.index(OOOR_DATABASE).should_not be_nil
   end
 
   describe "Configure existing database" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database)
+      @ooor = Ooor.new(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE)
     end
 
     it "should be able to load a profile" do
@@ -59,8 +60,8 @@ describe Ooor do
 
   describe "Do operations on configured database" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database,
-        :models => ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'ir.cron', 'ir.ui.menu', 'ir.module.module'])
+      @ooor = Ooor.new(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE,
+        models: ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'ir.cron', 'ir.ui.menu', 'ir.module.module'])
     end
 
     describe "Finders operations" do
@@ -526,7 +527,7 @@ describe Ooor do
 
   describe "Object context abilities" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :database => @database, :username => @username, :password => @password)
+      @ooor = Ooor.new(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE)
     end
 
     it "should support context when instanciating collections" do
@@ -543,7 +544,7 @@ describe Ooor do
     include Ooor
 
     it "should support ActiveModel::Naming" do
-      with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password) do |session|
+      with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE) do |session|
         session['product.product'].name.should == "ProductProduct"
         session['product.product'].model_name.route_key.should == "product-product"
         session['product.product'].model_name.param_key.should == "product_product" #TODO add more expectations
@@ -552,7 +553,7 @@ describe Ooor do
 
     it "should support model aliases" do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connectio reuse here
-      with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
+      with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
         session['products'].search().should be_kind_of(Array)
         session['product.product'].alias.should == 'products'
       end
@@ -560,14 +561,14 @@ describe Ooor do
 
     it "should have a to_param method" do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connectio reuse here
-      with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
+      with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
         session['product.product'].find(:first).to_param.should be_kind_of(String)
       end
     end
 
     it "should find by permalink" do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connection reuse here
-      with_ooor_session(:url => @url, :database => @database, :username => @username, :password => @password, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
+      with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
         lang = Ooor::Locale.to_erp_locale('en')
         session['products'].find_by_permalink('Service', context: {'lang' => lang}, fields: ['name']).should be_kind_of(Ooor::Base)
       end
@@ -576,7 +577,7 @@ describe Ooor do
 
   describe "Ative-Record like Reflections" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :models => ['product.product', 'product.category'], :reload => true)
+      @ooor = Ooor.new(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :models => ['product.product', 'product.category'], :reload => true)
     end
 
     it "should test correct class attributes of ActiveRecord Reflection" do
@@ -617,8 +618,8 @@ describe Ooor do
 
   describe "Multi-instance and class name scoping" do
     before(:all) do
-      @ooor1 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE1', :models => ['res.partner', 'product.product'], :reload => true)
-      @ooor2 = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :scope_prefix => 'OE2', :models => ['res.partner', 'product.product'], :reload => true)
+      @ooor1 = Ooor.new(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :scope_prefix => 'OE1', :models => ['res.partner', 'product.product'], :reload => true)
+      @ooor2 = Ooor.new(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :scope_prefix => 'OE2', :models => ['res.partner', 'product.product'], :reload => true)
     end
 
     it "should still be possible to find a ressource using an absolute id" do
@@ -635,24 +636,24 @@ describe Ooor do
   describe "Multi-sessions mode" do
     include Ooor
     it "should allow with_session" do
-      with_ooor_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
+      with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE) do |session|
         session['res.users'].search().should be_kind_of(Array)
         new_user = session['res.users'].create(name: 'User created by OOOR as admin', login: 'ooor1')
         new_user.destroy
       end
 
-      with_ooor_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session|
+      with_ooor_session(url: OOOR_URL, username: 'demo', password: 'demo', database: OOOR_DATABASE) do |session|
         h = session['res.users'].read([1], ["password"])
         h[0]['password'].should == "********"
       end
 
-      with_ooor_default_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
+      with_ooor_default_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE) do |session|
         session['res.users'].search().should be_kind_of(Array)
       end
     end
 
     it "should recover from expired sessions" do
-      with_ooor_session(:url => @url, :username => @username, :password => @password, :database => @database) do |session|
+      with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE) do |session|
         user_obj = session['res.users']
         user_obj.search().should be_kind_of(Array)
         session.web_session[:session_id] = 'invalid'
@@ -662,7 +663,7 @@ describe Ooor do
 
     it "should raise AccessDenied/UnAuthorizedError errors" do
       expect do
-        with_ooor_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session|
+        with_ooor_session(url: OOOR_URL, username: 'demo', password: 'demo', database: OOOR_DATABASE) do |session|
           session['ir.ui.menu'].first.save
         end
       end.to raise_error(Ooor::UnAuthorizedError)
@@ -684,11 +685,11 @@ describe Ooor do
       obj2 = 2
       s1 = 1
       s2 = 2
-      with_ooor_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session1|
+      with_ooor_session(url: OOOR_URL, username: 'demo', password: 'demo', database: OOOR_DATABASE) do |session1|
         s1 = session1
         obj1 = session1['ir.ui.menu']
       end
-      with_ooor_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session2|
+      with_ooor_session(url: OOOR_URL, username: 'demo', password: 'demo', database: OOOR_DATABASE) do |session2|
         s2 = session2
         obj2 = session2['ir.ui.menu']
       end
@@ -701,12 +702,12 @@ describe Ooor do
       obj2 = 2
       s1 = 1
       s2 = 2
-      with_ooor_session(:url => @url, :username => 'admin', :password => 'admin', :database => @database) do |session1|
+      with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE) do |session1|
         s1 = session1
         obj1 = session1['ir.ui.menu']
       end
 
-      with_ooor_session(:url => @url, :username => 'demo', :password => 'demo', :database => @database) do |session2|
+      with_ooor_session(url: OOOR_URL, username: 'demo', password: 'demo', database: OOOR_DATABASE) do |session2|
         s2 = session2
         obj2 = session2['ir.ui.menu']
       end
@@ -720,12 +721,12 @@ describe Ooor do
       obj2 = 2
       s1 = 1
       s2 = 2
-      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 111) do |session1|
+      with_ooor_session({url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE}, 111) do |session1|
         s1 = session1
         obj1 = Ooor.model_registry.get_template(session1.config, 'ir.ui.menu')
       end
 
-      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 123) do |session2|
+      with_ooor_session({url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE}, 123) do |session2|
         s2 = session2
         obj2 = Ooor.model_registry.get_template(session2.config, 'ir.ui.menu')
       end
@@ -739,11 +740,11 @@ describe Ooor do
       s1 = 1
       s2 = 2
 
-      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 123) do |session1|
+      with_ooor_session({url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE}, 123) do |session1|
         s1 = session1
       end
 
-      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 123) do |session1|
+      with_ooor_session({url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE}, 123) do |session1|
         s2 = session1
       end
 
@@ -754,11 +755,11 @@ describe Ooor do
       s1 = 1
       s2 = 2
     
-      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 111) do |session1|
+      with_ooor_session({url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE}, 111) do |session1|
         s1 = session1
       end
 
-      with_ooor_session({:url => @url, :username => 'admin', :password => 'admin', :database => @database}, 123) do |session1|
+      with_ooor_session({url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE}, 123) do |session1|
         s2 = session1
       end
     
@@ -770,7 +771,7 @@ describe Ooor do
 
   describe "Multi-format serialization" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database)
+      @ooor = Ooor.new(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE)
     end
 
     it "should serialize in json" do
@@ -783,7 +784,7 @@ describe Ooor do
 
   describe "Ruby OpenERP extensions" do
     before(:all) do
-      @ooor = Ooor.new(:url => @url, :username => @username, :password => @password, :database => @database, :helper_paths => [File.dirname(__FILE__) + '/helpers/*'], :reload => true)
+      @ooor = Ooor.new(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :helper_paths => [File.dirname(__FILE__) + '/helpers/*'], :reload => true)
     end
 
     it "should have default core helpers loaded" do

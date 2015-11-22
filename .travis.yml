@@ -30,11 +30,8 @@ install:
 
 before_script:
   - cwd=$(pwd)
-  - psql -c "CREATE USER openerp WITH PASSWORD 'admin';" -U postgres
-  - psql -c 'create database ooor_test with owner openerp;' -U postgres
-  - ls -la ${HOME}
   - cd ${HOME}/odoo-${VERSION}
-  - ./openerp-server --addons-path=${HOME}/odoo-${VERSION}/addons --db_user=postgres --db_user=openerp --db_password=admin --db_host=localhost &
+  - ./openerp-server --addons-path=${HOME}/odoo-${VERSION}/addons --db_user=travis --db_password=admin --db_host=localhost &
   - cd $cwd
   - bundle install
 
