@@ -18,7 +18,7 @@ rvm:
   - 2.1.0
 
 env:
-  - VERSION="8.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" RAILS_VERSION=4.2
+  - VERSION="7.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" RAILS_VERSION=4.2
 
 virtualenv:
   system_site_packages: true

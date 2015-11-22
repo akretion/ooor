@@ -119,21 +119,20 @@ module Ooor
 
     def lazy_load(meth, *args)
       @lazy = false
-      load(rpc_execute('read', [id], (self.class.fast_fields + [meth]).uniq, *args || context)[0]).tap do
+      fields = (self.class.fast_fields + [meth]).uniq
+      load(rpc_execute('read', [@attributes["id"]], fields, *args || context)[0]).tap do
         @lazy = false
       end
     end
 
     def get_attribute(meth, *args)
-      lazy_load(meth, *args) if @lazy
+      lazy_load(meth, *args) if @lazy && @attributes["id"]
       if @attributes.has_key?(meth)
         @attributes[meth]
-      else #lazy loading
-        if @attributes["id"]
-          @attributes[meth] = rpc_execute('read', [@attributes["id"]], [meth], *args || context)[0][meth]
-        else
-          nil
-        end
+      elsif @attributes["id"] # if field is computed for instance
+        @attributes[meth] = rpc_execute('read', [@attributes["id"]], [meth], *args || context)[0][meth]
+      else
+        nil
       end
     end
 
