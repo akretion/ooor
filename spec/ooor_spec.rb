@@ -14,6 +14,7 @@ OOOR_DB_PASSWORD = ENV['OOOR_DB_PASSWORD'] || 'admin'
 OOOR_USERNAME = ENV['OOOR_USERNAME'] || 'admin'
 OOOR_PASSWORD = ENV['OOOR_PASSWORD'] || 'admin'
 OOOR_DATABASE = ENV['OOOR_DATABASE'] || 'ooor_test'
+OOOR_ODOO_VERSION = ENV['VERSION'] || '9.0'
 
 #RSpec executable specification; see http://rspec.info/ for more information.
 #Run the file with the rspec command  from the rspec gem
@@ -200,6 +201,7 @@ describe Ooor do
         end
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should read many2many relations" do
         s = SaleOrder.find(:first)
         s.order_policy = 'manual'
@@ -207,6 +209,7 @@ describe Ooor do
         s.wkf_action('order_confirm')
         s.wkf_action('manual_invoice')
         SaleOrder.find(:first).order_line[1].invoice_lines.should be_kind_of(Array)
+      end
       end
 
       it "should read polymorphic references" do
@@ -221,10 +224,12 @@ describe Ooor do
         p.name.should == "testProduct1"
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should properly change value when m2o is set" do
         p = ProductProduct.find(:first)
         p.categ_id = 7
         p.categ_id.id.should == 7
+      end
       end
 
       it "should be able to create a product" do
@@ -253,6 +258,7 @@ describe Ooor do
         o.id.should be_kind_of(Integer)
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should be able to to create an invoice" do
         i = AccountInvoice.new(:origin => 'ooor_test')
         partner_id = ResPartner.search([['name', 'ilike', 'Agrolait']])[0]
@@ -260,7 +266,9 @@ describe Ooor do
         i.save
         i.id.should be_kind_of(Integer)
       end
+      end
 
+      if OOOR_ODOO_VERSION == '7.0'
       it "should be able to call on_change" do
         o = SaleOrder.new
         partner_id = ResPartner.search([['name', 'ilike', 'Agrolait']])[0]
@@ -273,6 +281,7 @@ describe Ooor do
         line.on_change('product_id_change', :product_id, product_id, pricelist_id, product_id, product_uom_qty, false, 1, false, false, o.partner_id.id, 'en_US', true, false, false, false)
         line.save
         SaleOrder.find(o.id).order_line.size.should == 1
+      end
       end
 
       it "should use default fields on creation" do
@@ -306,6 +315,7 @@ describe Ooor do
         s.partner_id.id.should == new_partner_id
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should be able to do product.taxes_id = [id1, id2]" do
         p = ProductProduct.find(1)
         p.taxes_id = AccountTax.search([['type_tax_use','=','sale']])[0..1]
@@ -313,7 +323,9 @@ describe Ooor do
         p.taxes_id[0].should be_kind_of(AccountTax)
         p.taxes_id[1].should be_kind_of(AccountTax)
       end
+      end
 
+      if OOOR_ODOO_VERSION == '7.0'
       it "should be able to create one2many relations on the fly" do
         so = SaleOrder.new
         partner_id = ResPartner.search([['name', 'ilike', 'Agrolait']])[0]
@@ -321,6 +333,7 @@ describe Ooor do
         so.order_line = [SaleOrderLine.new(:name => 'sl1', :product_id => 1, :price_unit => 21, :product_uom => 1), SaleOrderLine.new(:name => 'sl2', :product_id => 1, :price_unit => 21, :product_uom => 1)] #create one order line
         so.save
         so.amount_total.should == 42.0
+      end
       end
 
       it "should be able to assign a polymorphic relation" do
@@ -349,6 +362,7 @@ describe Ooor do
         so.respond_to?(:order_line_attributes=).should == true
       end
 
+      if OOOR_ODOO_VERSION == '7.0'
       it "should support CRUD on o2m via nested attributes" do
         p = ProductProduct.create(name:'Ooor product with packages')
         p.packaging_attributes = {'1' => {name: 'pack1'}, '2' => {name: 'pack2'}}
@@ -362,17 +376,20 @@ describe Ooor do
         p.packaging.size.should == 1
         p.packaging[0].name.should == 'pack2_modified'
       end
+      end
 
       it "should be able to call build upon a o2m association" do
         so = SaleOrder.find :first
         so.order_line.build().should be_kind_of(SaleOrderLine)
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should recast string m2o string id to an integer (it happens in forms)" do
         uom_id = @ooor.const_get('product.uom').search()[0]
         p = ProductProduct.new(name: "z recast id", uom_id: uom_id.to_s)
         p.save
         p.uom_id.id.should == uom_id
+      end
       end
 
       it "should recast string m2m string ids to an array of integer (it happens in forms)" do
@@ -384,11 +401,13 @@ describe Ooor do
     end
 
     describe "Fields validations" do
+      if OOOR_ODOO_VERSION == '7.0'
       it "should point to invalid fields" do
         p = ProductProduct.find :first
         p.ean13 = 'invalid_ean'
         p.save.should == false
         p.errors.messages[:ean13].should_not be_nil 
+      end
       end
 
       it "should list all available fields when you call an invalid field" do
@@ -414,6 +433,7 @@ describe Ooor do
         end
       end
 
+      if OOOR_ODOO_VERSION == '7.0'
       it "should call customized before_save callback on nested o2m" do
         with_ooor_session({username: 'admin', password: 'admin'}, 'noshare1') do |session|
           # we purposely make reflections happen to ensure they won't be reused in next session
@@ -431,6 +451,7 @@ describe Ooor do
           p = session['product.product'].create name: 'nested callback test', packaging_attributes: {'1' => {name: 'pack'}, '2' => {name: 'pack'}}
           probe.should == 'pack'
         end
+      end
       end
 
     end
@@ -456,8 +477,15 @@ describe Ooor do
         collection.all.size.should == 5
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should support name_search in ARel (used in association widgets with Ooorest)" do
-        Ooor.default_session.const_get('product.category').all(name_search: 'Com')[0].name.should == "All products / Saleable / Components"
+        if OOOR_ODOO_VERSION == '7.0'
+          expected = "All products / Saleable / Components"
+        else
+          expected = "All / Saleable / Components"
+        end
+        Ooor.default_session.const_get('product.category').all(name_search: 'Com')[0].name.should == expected
+      end
       end
 
       it "should be possible to invoke batch methods on relations" do
@@ -474,13 +502,16 @@ describe Ooor do
     end
 
     describe "report support" do
-      it "should print reports" do
+      if OOOR_ODOO_VERSION == '7.0'
+      it "should print reports" do # TODO make work in v8
         base_id = IrModuleModule.search(name:'base')[0]
         IrModuleModule.get_report_data("ir.module.reference", [base_id], 'pdf', {}).should be_kind_of(Array)
+      end
       end
     end
 
     describe "wizard management" do
+      if OOOR_ODOO_VERSION != '9.0'
       it "should be possible to pay an invoice in one step" do        
         inv = AccountInvoice.find(:first).copy() # creates a draft invoice
         inv.state.should == "draft"
@@ -489,11 +520,10 @@ describe Ooor do
         voucher = @ooor.const_get('account.voucher').new({:amount=>inv.amount_total, :type=>"receipt", :partner_id => inv.partner_id.id}, {"default_amount"=>inv.amount_total, "invoice_id"=>inv.id})
         voucher.on_change("onchange_partner_id", [], :partner_id, inv.partner_id.id, @ooor.const_get('account.journal').find('account.bank_journal').id, 0.0, 1, 'receipt', false)
         voucher.save
-#        voucher.wkf_action 'proforma_voucher'
-        
-#        inv.reload
+      end
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should be possible to call resource actions and workflow actions" do
         s = SaleOrder.find(:first).copy()
         s.wkf_action('order_confirm')
@@ -505,6 +535,7 @@ describe Ooor do
         i.wkf_action('invoice_cancel')
         i.action_cancel_draft
         s.reload.state.should == "invoice_except"
+      end
       end
     end
 
@@ -566,12 +597,14 @@ describe Ooor do
       end
     end
 
+    if OOOR_ODOO_VERSION != '9.0' # TODO make it work on 9
     it "should find by permalink" do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connection reuse here
       with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
         lang = Ooor::Locale.to_erp_locale('en')
         session['products'].find_by_permalink('Service', context: {'lang' => lang}, fields: ['name']).should be_kind_of(Ooor::Base)
       end
+    end
     end
   end
 
@@ -599,10 +632,12 @@ describe Ooor do
       reflection.klass.should == ProductCategory
     end
 
+    if OOOR_ODOO_VERSION == '7.0'
     it "should reflect on o2m association (used in simple_form, cocoon...)" do
       reflection = ProductProduct.reflect_on_association(:packaging)
       reflection.should be_kind_of(Ooor::Reflection::AssociationReflection)
       reflection.klass.openerp_model == 'product.packaging'
+    end
     end
 
     it "should reflect on m2m association (used in simple_form, cocoon...)" do

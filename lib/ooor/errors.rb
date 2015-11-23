@@ -25,7 +25,7 @@ module Ooor
         return ValueError.new(method, faultCode, faultString, *args)
       elsif faultCode =~ /ValidateError/
         return ValidationError.new(method, faultCode, faultString, *args)
-      elsif faultCode =~ /AccessDenied/ || faultCode =~ /Access Denied/
+      elsif faultCode =~ /AccessDenied/ || faultCode =~ /Access Denied/ || faultCode =~ /AccessError/
         return UnAuthorizedError.new(method, faultCode, faultString, *args)
       elsif faultCode =~ /AuthenticationError: Credentials not provided/
         return InvalidSessionError.new(method, faultCode, faultString, *args)
