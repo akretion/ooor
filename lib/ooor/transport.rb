@@ -14,11 +14,15 @@ module Ooor
     def get_client(type, url)
       case type
       when :json
-        @json_clients ||= {}
-        @json_clients[url] ||= JsonClient.new(url, :request => { timeout: config[:rpc_timeout] || 900 })
+        json_clients = Thread.current.thread_variable_get(:json_clients) || {}
+        json_clients[url] ||= JsonClient.new(url, :request => { timeout: config[:rpc_timeout] || 900 })
+        Thread.current.thread_variable_set(:json_clients, json_clients)
+        json_clients[url]
       when :xml
-        @xml_clients ||= {}
-        @xml_clients[url] ||= XmlRpcClient.new2(url, nil, config[:rpc_timeout] || 900)
+        xml_clients = Thread.current.thread_variable_get(:xml_clients) || {}
+        xml_clients[url] ||= XmlRpcClient.new2(url, nil, config[:rpc_timeout] || 900)
+        Thread.current.thread_variable_set(:xml_clients, xml_clients)
+        xml_clients[url]
       end
     end
 
