@@ -315,16 +315,14 @@ describe Ooor do
         s.partner_id.id.should == new_partner_id
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should be able to do product.taxes_id = [id1, id2]" do
         p = ProductProduct.find(1)
-        if OOOR_ODOO_VERSION == '9.0'
-          p.taxes_id = AccountTax.search
-        else
-          p.taxes_id = AccountTax.search([['type_tax_use','=','sale']])[0..1]
-        end
+        p.taxes_id = AccountTax.search([['type_tax_use','=','sale']])[0..1]
         p.save
         p.taxes_id[0].should be_kind_of(AccountTax)
         p.taxes_id[1].should be_kind_of(AccountTax)
+      end
       end
 
       if OOOR_ODOO_VERSION == '7.0'
