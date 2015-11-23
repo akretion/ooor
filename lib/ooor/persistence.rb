@@ -324,6 +324,9 @@ module Ooor
         # strange case with default product taxes on v9
         elsif defaults[k].is_a?(Array) && defaults[k][0] == [5] && defaults[k][1].is_a?(Array)
           defaults[k] = [defaults[k][1].last] # TODO may e more subtle
+        # default ResPartners category_id on v9; know why...
+        elsif defaults[k].is_a?(Array) && defaults[k][0].is_a?(Array)
+          defaults[k] = defaults[k][0]
         end
       end
       attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
