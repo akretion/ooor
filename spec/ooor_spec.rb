@@ -201,6 +201,7 @@ describe Ooor do
         end
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should read many2many relations" do
         s = SaleOrder.find(:first)
         s.order_policy = 'manual'
@@ -208,6 +209,7 @@ describe Ooor do
         s.wkf_action('order_confirm')
         s.wkf_action('manual_invoice')
         SaleOrder.find(:first).order_line[1].invoice_lines.should be_kind_of(Array)
+      end
       end
 
       it "should read polymorphic references" do
@@ -222,10 +224,12 @@ describe Ooor do
         p.name.should == "testProduct1"
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should properly change value when m2o is set" do
         p = ProductProduct.find(:first)
         p.categ_id = 7
         p.categ_id.id.should == 7
+      end
       end
 
       it "should be able to create a product" do
