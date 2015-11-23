@@ -18,6 +18,8 @@ rvm:
   - 2.1.0
 
 env:
+  - VERSION="7.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" RAILS_VERSION=4.2
+  - VERSION="8.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" RAILS_VERSION=4.2
   - VERSION="9.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" RAILS_VERSION=4.2
 
 virtualenv:
