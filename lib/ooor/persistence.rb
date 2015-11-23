@@ -315,8 +315,15 @@ module Ooor
     def load_with_defaults(attributes, default_get_list)
       defaults = rpc_execute("default_get", default_get_list || self.class.fields.keys + self.class.associations_keys, context)
       self.class.associations_keys.each do |k|
+        # m2m with existing records:
         if defaults[k].is_a?(Array) && defaults[k][0].is_a?(Array) && defaults[k][0][2].is_a?(Array)
           defaults[k] = defaults[k][0][2]
+        # m2m with records to create:
+        elsif defaults[k].is_a?(Array) && defaults[k][0].is_a?(Array) && defaults[k][0][2].is_a?(Hash) # TODO make more robust
+          defaults[k] = defaults[k].map { |item| self.class.all_fields[k]['relation'].new(item[2]) }
+        # strange case with default product taxes on v9
+        elsif defaults[k].is_a?(Array) && defaults[k][0] == [5]
+          defaults[k] = [defaults[k][1].last] # TODO may e more subtle
         end
       end
       attributes = HashWithIndifferentAccess.new(defaults.merge(attributes.reject {|k, v| v.blank? }))
