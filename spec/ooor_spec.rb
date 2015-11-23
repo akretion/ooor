@@ -317,7 +317,11 @@ describe Ooor do
 
       it "should be able to do product.taxes_id = [id1, id2]" do
         p = ProductProduct.find(1)
-        p.taxes_id = AccountTax.search([['type_tax_use','=','sale']])[0..1]
+        if OOOR_ODOO_VERSION == '9.0'
+          p.taxes_id = AccountTax.search
+        else
+          p.taxes_id = AccountTax.search([['type_tax_use','=','sale']])[0..1]
+        end
         p.save
         p.taxes_id[0].should be_kind_of(AccountTax)
         p.taxes_id[1].should be_kind_of(AccountTax)
