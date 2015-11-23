@@ -322,7 +322,7 @@ module Ooor
         elsif defaults[k].is_a?(Array) && defaults[k][0].is_a?(Array) && defaults[k][0][2].is_a?(Hash) # TODO make more robust
           defaults[k] = defaults[k].map { |item| self.class.all_fields[k]['relation'].new(item[2]) }
         # strange case with default product taxes on v9
-        elsif defaults[k].is_a?(Array) && defaults[k][0] == [5]
+        elsif defaults[k].is_a?(Array) && defaults[k][0] == [5] && defaults[k][1].is_a?(Array)
           defaults[k] = [defaults[k][1].last] # TODO may e more subtle
         end
       end
