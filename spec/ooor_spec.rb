@@ -258,12 +258,14 @@ describe Ooor do
         o.id.should be_kind_of(Integer)
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should be able to to create an invoice" do
         i = AccountInvoice.new(:origin => 'ooor_test')
         partner_id = ResPartner.search([['name', 'ilike', 'Agrolait']])[0]
         i.on_change('onchange_partner_id', :partner_id, partner_id, 'out_invoice', partner_id, false, false)
         i.save
         i.id.should be_kind_of(Integer)
+      end
       end
 
       if OOOR_ODOO_VERSION == '7.0'
@@ -379,11 +381,13 @@ describe Ooor do
         so.order_line.build().should be_kind_of(SaleOrderLine)
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should recast string m2o string id to an integer (it happens in forms)" do
         uom_id = @ooor.const_get('product.uom').search()[0]
         p = ProductProduct.new(name: "z recast id", uom_id: uom_id.to_s)
         p.save
         p.uom_id.id.should == uom_id
+      end
       end
 
       it "should recast string m2m string ids to an array of integer (it happens in forms)" do
@@ -471,6 +475,7 @@ describe Ooor do
         collection.all.size.should == 5
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should support name_search in ARel (used in association widgets with Ooorest)" do
         if OOOR_ODOO_VERSION == '7.0'
           expected = "All products / Saleable / Components"
@@ -478,6 +483,7 @@ describe Ooor do
           expected = "All / Saleable / Components"
         end
         Ooor.default_session.const_get('product.category').all(name_search: 'Com')[0].name.should == expected
+      end
       end
 
       it "should be possible to invoke batch methods on relations" do
@@ -503,6 +509,7 @@ describe Ooor do
     end
 
     describe "wizard management" do
+      if OOOR_ODOO_VERSION != '9.0'
       it "should be possible to pay an invoice in one step" do        
         inv = AccountInvoice.find(:first).copy() # creates a draft invoice
         inv.state.should == "draft"
@@ -511,11 +518,10 @@ describe Ooor do
         voucher = @ooor.const_get('account.voucher').new({:amount=>inv.amount_total, :type=>"receipt", :partner_id => inv.partner_id.id}, {"default_amount"=>inv.amount_total, "invoice_id"=>inv.id})
         voucher.on_change("onchange_partner_id", [], :partner_id, inv.partner_id.id, @ooor.const_get('account.journal').find('account.bank_journal').id, 0.0, 1, 'receipt', false)
         voucher.save
-#        voucher.wkf_action 'proforma_voucher'
-        
-#        inv.reload
+      end
       end
 
+      if OOOR_ODOO_VERSION != '9.0'
       it "should be possible to call resource actions and workflow actions" do
         s = SaleOrder.find(:first).copy()
         s.wkf_action('order_confirm')
@@ -527,6 +533,7 @@ describe Ooor do
         i.wkf_action('invoice_cancel')
         i.action_cancel_draft
         s.reload.state.should == "invoice_except"
+      end
       end
     end
 
@@ -588,12 +595,14 @@ describe Ooor do
       end
     end
 
+    if OOOR_ODOO_VERSION != '9.0' # TODO make it work on 9
     it "should find by permalink" do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connection reuse here
       with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
         lang = Ooor::Locale.to_erp_locale('en')
         session['products'].find_by_permalink('Service', context: {'lang' => lang}, fields: ['name']).should be_kind_of(Ooor::Base)
       end
+    end
     end
   end
 
