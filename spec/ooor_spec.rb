@@ -24,18 +24,18 @@ describe Ooor do
   end
 
   it "should keep quiet if no database is mentioned" do
-    @ooor.models.should be_empty
+    expect(@ooor.models).to be_empty
   end
 
   it "should be able to list databases" do
-    @ooor.db.list.should be_kind_of(Array) 
+    expect(@ooor.db.list).to be_kind_of(Array) 
   end
 
   it "should be able to create a new database with demo data" do
     unless @ooor.db.list.index(OOOR_DB_PASSWORD)
       @ooor.db.create(OOOR_DB_PASSWORD, OOOR_DATABASE)
     end
-    @ooor.db.list.index(OOOR_DATABASE).should_not be_nil
+    expect(@ooor.db.list.index(OOOR_DATABASE)).not_to be_nil
   end
 
   describe "Configure existing database" do
@@ -46,7 +46,7 @@ describe Ooor do
     it "should be able to load a profile" do
       IrModuleModule.install_modules(['sale', 'account_voucher'])
       @ooor.load_models
-      @ooor.models.keys.should_not be_empty
+      expect(@ooor.models.keys).not_to be_empty
     end
 
     it "should be able to configure the database" do
@@ -70,42 +70,42 @@ describe Ooor do
         first_product_id = ProductProduct.search([], 0, 1).first
         product1 = ProductProduct.find(first_product_id)
         expect(product1).not_to be_nil
-        product1.attributes.should be_kind_of(Hash)
+        expect(product1.attributes).to be_kind_of(Hash)
       end
 
       it "fetches data given an array of ids" do
         products = ProductProduct.find([1,2])
-        products.size.should == 2
+        expect(products.size).to eq(2)
       end
 
       it "should fetches data given an implicit array of ids" do
         products = ProductProduct.find(1, 2)
-        products.size.should == 2
+        expect(products.size).to eq(2)
       end
       
       it "should fetches data even if an id is passed as a string (web usage)" do
         product = ProductProduct.find("1")
-        product.should be_kind_of(ProductProduct)
+        expect(product).to be_kind_of(ProductProduct)
       end
 
       it "should fetches data even with array containing string" do
         products = ProductProduct.find(["1", 2])
-        products.size.should == 2
+        expect(products.size).to eq(2)
       end
 
       it "should fetches data even with an implicit array containing string" do
         products = ProductProduct.find("1", 2)
-        products.size.should == 2
+        expect(products.size).to eq(2)
       end
 
       it "should accept hash domain in find" do
         products = ProductProduct.find(active: true)
-        products.should be_kind_of(Array)
+        expect(products).to be_kind_of(Array)
       end
       
       it "should accept array domain in find" do
         products = ProductProduct.find(['active', '=', true])
-        products.should be_kind_of(Array)
+        expect(products).to be_kind_of(Array)
       end
 
       it "fetches last data created last" do
@@ -114,36 +114,36 @@ describe Ooor do
       end
 
       it "should load required models on the fly" do
-        ProductProduct.find(:first).categ_id.should be_kind_of(ProductCategory)
+        expect(ProductProduct.find(:first).categ_id).to be_kind_of(ProductCategory)
       end
 
       it "should be able to specify the fields to read" do
         p = ProductProduct.find(1, :fields=>["state", "id"])
-        p.should_not be_nil
+        expect(p).not_to be_nil
       end
 
       it "should be able to find using ir.model.data absolute ids" do
         p = ResPartner.find('res_partner_1')
-        p.should_not be_nil
+        expect(p).not_to be_nil
         p = ResPartner.find('base.res_partner_1')#module scoping is optionnal
-        p.should_not be_nil
+        expect(p).not_to be_nil
       end
 
       it "should be able to use OpenERP domains" do
         partners = ResPartner.find(:all, :domain=>[['supplier', '=', 1],['active','=',1]], :fields=>["id", "name"])
-        partners.should_not be_empty
+        expect(partners).not_to be_empty
         products = ProductProduct.find(:all, :domain=>[['categ_id','=',1],'|',['name', '=', 'PC1'],['name','=','PC2']])
-        products.should be_kind_of(Array)
+        expect(products).to be_kind_of(Array)
       end
 
       it "should mimic ActiveResource scoping" do
         partners = ResPartner.find(:all, :params => {:supplier => true})
-        partners.should_not be_empty
+        expect(partners).not_to be_empty
       end
 
       it "should mimic ActiveResource scopinging with first" do
         partner = ResPartner.find(:first, :params => {:customer => true})
-        partner.should be_kind_of ResPartner
+        expect(partner).to be_kind_of ResPartner
       end
 
 #      NOTE: in Ooor 2.1 we don't support this anymore, use session.with_context(context) {} instead
@@ -163,41 +163,41 @@ describe Ooor do
 
       it "should support OpenERP search method" do
         partners = ResPartner.search([['name', 'ilike', 'a']], 0, 2)
-        partners.should_not be_empty
+        expect(partners).not_to be_empty
       end
 
       it "should cast dates properly from OpenERP to Ruby" do
         o = SaleOrder.find(1)
-        o.date_order.should be_kind_of(Date)
+        expect(o.date_order).to be_kind_of(Date)
         c = IrCron.find(1)
-        c.nextcall.should be_kind_of(DateTime)
+        expect(c.nextcall).to be_kind_of(DateTime)
       end
 
       it "should not load false values in empty strings (for HTML forms)" do
-        ResPartner.first.mobile.should be_nil
+        expect(ResPartner.first.mobile).to be_nil
       end
 
       it "should map OpenERP types to Rails types" do
-        (%w[char binary many2one one2many many2many]).each { |t| Ooor::Base.to_rails_type(t).should be_kind_of(Symbol) }
+        (%w[char binary many2one one2many many2many]).each { |t| expect(Ooor::Base.to_rails_type(t)).to be_kind_of(Symbol) }
       end
 
       it "should be able to call any Class method" do
-        ResPartner.name_search('ax', [], 'ilike', {}).should_not be_nil
+        expect(ResPartner.name_search('ax', [], 'ilike', {})).not_to be_nil
       end
     end
 
     describe "Relations reading" do
       it "should read many2one relations" do
         o = SaleOrder.find(:first)
-        o.partner_id.should be_kind_of(ResPartner)
+        expect(o.partner_id).to be_kind_of(ResPartner)
         p = ProductProduct.find(1) #inherited via product template
-        p.categ_id.should be_kind_of(ProductCategory)
+        expect(p.categ_id).to be_kind_of(ProductCategory)
       end
 
       it "should read one2many relations" do
         o = SaleOrder.find(:first)
         o.order_line.each do |line|
-        line.should be_kind_of(SaleOrderLine)
+        expect(line).to be_kind_of(SaleOrderLine)
         end
       end
 
@@ -208,12 +208,12 @@ describe Ooor do
         s.save
         s.wkf_action('order_confirm')
         s.wkf_action('manual_invoice')
-        SaleOrder.find(:first).order_line[1].invoice_lines.should be_kind_of(Array)
+        expect(SaleOrder.find(:first).order_line[1].invoice_lines).to be_kind_of(Array)
       end
       end
 
       it "should read polymorphic references" do
-        IrUiMenu.find(:first, :domain => [['name', '=', 'Customers'], ['parent_id', '!=', false]]).action.should be_kind_of(IrActionsAct_window)
+        expect(IrUiMenu.find(:first, :domain => [['name', '=', 'Customers'], ['parent_id', '!=', false]]).action).to be_kind_of(IrActionsAct_window)
       end
     end
 
@@ -221,41 +221,41 @@ describe Ooor do
       it "should be able to assign a value to an unloaded field" do
         p = ProductProduct.new
         p.name = "testProduct1"
-        p.name.should == "testProduct1"
+        expect(p.name).to eq("testProduct1")
       end
 
       if OOOR_ODOO_VERSION != '9.0'
       it "should properly change value when m2o is set" do
         p = ProductProduct.find(:first)
         p.categ_id = 7
-        p.categ_id.id.should == 7
+        expect(p.categ_id.id).to eq(7)
       end
       end
 
       it "should be able to create a product" do
         p = ProductProduct.create(:name => "testProduct1", :categ_id => 1)
-        ProductProduct.find(p.id).categ_id.id.should == 1
+        expect(ProductProduct.find(p.id).categ_id.id).to eq(1)
         p = ProductProduct.new(:name => "testProduct1")
         p.categ_id = 1
         p.save
-        p.categ_id.id.should == 1
+        expect(p.categ_id.id).to eq(1)
       end
 
       it "should support read on new objects" do
         u = ResUsers.new({name: "joe", login: "joe"})
-        u.id.should be_nil
-        u.name.should == "joe"
-        u.email.should == nil
+        expect(u.id).to be_nil
+        expect(u.name).to eq("joe")
+        expect(u.email).to eq(nil)
         u.save
-        u.id.should_not be_nil
-        u.name.should == "joe"
-        u.destroy.should be_kind_of(ResUsers)
+        expect(u.id).not_to be_nil
+        expect(u.name).to eq("joe")
+        expect(u.destroy).to be_kind_of(ResUsers)
       end
 
       it "should be able to create an order" do
         p_id = ResPartner.search([['name', 'ilike', 'Agrolait']])[0]
         o = SaleOrder.create(partner_id: p_id, partner_invoice_id: p_id, partner_shipping_id: p_id, pricelist_id: 1)
-        o.id.should be_kind_of(Integer)
+        expect(o.id).to be_kind_of(Integer)
       end
 
       if OOOR_ODOO_VERSION != '9.0'
@@ -264,7 +264,7 @@ describe Ooor do
         partner_id = ResPartner.search([['name', 'ilike', 'Agrolait']])[0]
         i.on_change('onchange_partner_id', :partner_id, partner_id, 'out_invoice', partner_id, false, false)
         i.save
-        i.id.should be_kind_of(Integer)
+        expect(i.id).to be_kind_of(Integer)
       end
       end
 
@@ -280,18 +280,18 @@ describe Ooor do
         product_uom_qty = 1
         line.on_change('product_id_change', :product_id, product_id, pricelist_id, product_id, product_uom_qty, false, 1, false, false, o.partner_id.id, 'en_US', true, false, false, false)
         line.save
-        SaleOrder.find(o.id).order_line.size.should == 1
+        expect(SaleOrder.find(o.id).order_line.size).to eq(1)
       end
       end
 
       it "should use default fields on creation" do
         p = ProductProduct.new
-        p.categ_id.should be_kind_of(ProductCategory)
+        expect(p.categ_id).to be_kind_of(ProductCategory)
       end
 
       it "should skipped inherited default fields properly, for instance at product variant creation" do
         #note that we force [] here for the default_get_fields otherwise OpenERP will blows up while trying to write in the product template!
-        ProductProduct.create({:product_tmpl_id => 25, :code => 'OOOR variant'}, []).should be_kind_of(ProductProduct)
+        expect(ProductProduct.create({:product_tmpl_id => 25, :code => 'OOOR variant'}, [])).to be_kind_of(ProductProduct)
       end
     end
 
@@ -304,7 +304,7 @@ describe Ooor do
 
       it "should be able to reload resource" do
         s = SaleOrder.find(:first)
-        s.reload.should be_kind_of(SaleOrder)
+        expect(s.reload).to be_kind_of(SaleOrder)
       end
     end
 
@@ -312,7 +312,7 @@ describe Ooor do
       it "should be able to assign many2one relations on new" do
         new_partner_id = ResPartner.search()[0]
         s = SaleOrder.new(:partner_id => new_partner_id)
-        s.partner_id.id.should == new_partner_id
+        expect(s.partner_id.id).to eq(new_partner_id)
       end
 
       if OOOR_ODOO_VERSION != '9.0'
@@ -320,8 +320,8 @@ describe Ooor do
         p = ProductProduct.find(1)
         p.taxes_id = AccountTax.search([['type_tax_use','=','sale']])[0..1]
         p.save
-        p.taxes_id[0].should be_kind_of(AccountTax)
-        p.taxes_id[1].should be_kind_of(AccountTax)
+        expect(p.taxes_id[0]).to be_kind_of(AccountTax)
+        expect(p.taxes_id[1]).to be_kind_of(AccountTax)
       end
       end
 
@@ -332,7 +332,7 @@ describe Ooor do
         so.on_change('onchange_partner_id', :partner_id, partner_id, partner_id) #auto-complete the address and other data based on the partner
         so.order_line = [SaleOrderLine.new(:name => 'sl1', :product_id => 1, :price_unit => 21, :product_uom => 1), SaleOrderLine.new(:name => 'sl2', :product_id => 1, :price_unit => 21, :product_uom => 1)] #create one order line
         so.save
-        so.amount_total.should == 42.0
+        expect(so.amount_total).to eq(42.0)
       end
       end
 
@@ -344,22 +344,22 @@ describe Ooor do
     describe "Rails associations methods" do
       it "should read m2o id with an extra _id suffix" do
         p = ProductProduct.find(1)
-        p.categ_id_id.should be_kind_of(Integer)
+        expect(p.categ_id_id).to be_kind_of(Integer)
       end
 
       it "should read o2m with an extra _ids suffix" do
         so = SaleOrder.find :first
-        so.order_line_ids.should be_kind_of(Array)
+        expect(so.order_line_ids).to be_kind_of(Array)
       end
 
       it "should read m2m with an extra _ids suffix" do
         p = ProductProduct.find(1)
-        p.taxes_id_ids.should be_kind_of(Array)
+        expect(p.taxes_id_ids).to be_kind_of(Array)
       end
 
       it "should support Rails nested attributes methods" do
         so = SaleOrder.find :first
-        so.respond_to?(:order_line_attributes=).should == true
+        expect(so.respond_to?(:order_line_attributes=)).to eq(true)
       end
 
       if OOOR_ODOO_VERSION == '7.0'
@@ -370,17 +370,17 @@ describe Ooor do
         p = ProductProduct.find p.id
         pack1 = p.packaging[0]
         pack2 = p.packaging[1]
-        pack2.name.index('pack').should == 0
+        expect(pack2.name.index('pack')).to eq(0)
         p.packaging_attributes = {'1' => {name: 'pack1', '_destroy'=> true, id: pack1.id}, '2' => {name: 'pack2_modified', id: pack2.id}}
         p.save
-        p.packaging.size.should == 1
-        p.packaging[0].name.should == 'pack2_modified'
+        expect(p.packaging.size).to eq(1)
+        expect(p.packaging[0].name).to eq('pack2_modified')
       end
       end
 
       it "should be able to call build upon a o2m association" do
         so = SaleOrder.find :first
-        so.order_line.build().should be_kind_of(SaleOrderLine)
+        expect(so.order_line.build()).to be_kind_of(SaleOrderLine)
       end
 
       if OOOR_ODOO_VERSION != '9.0'
@@ -388,7 +388,7 @@ describe Ooor do
         uom_id = @ooor.const_get('product.uom').search()[0]
         p = ProductProduct.new(name: "z recast id", uom_id: uom_id.to_s)
         p.save
-        p.uom_id.id.should == uom_id
+        expect(p.uom_id.id).to eq(uom_id)
       end
       end
 
@@ -396,7 +396,7 @@ describe Ooor do
         categ_ids = @ooor.const_get('res.partner.category').search()[0..1]
         p = ResPartner.new(name: "z recast ids", category_id: categ_ids.join(','))
         p.save
-        p.category_id.map{|c| c.id}.should == categ_ids
+        expect(p.category_id.map{|c| c.id}).to eq(categ_ids)
       end
     end
 
@@ -405,8 +405,8 @@ describe Ooor do
       it "should point to invalid fields" do
         p = ProductProduct.find :first
         p.ean13 = 'invalid_ean'
-        p.save.should == false
-        p.errors.messages[:ean13].should_not be_nil 
+        expect(p.save).to eq(false)
+        expect(p.errors.messages[:ean13]).not_to be_nil 
       end
       end
 
@@ -429,7 +429,7 @@ describe Ooor do
         with_ooor_session username: 'admin', password: 'admin' do |session|
           menu = session['ir.ui.menu'].first
           menu.save
-          probe.should == menu.name
+          expect(probe).to eq(menu.name)
         end
       end
 
@@ -449,7 +449,7 @@ describe Ooor do
 
         with_ooor_session({username: 'admin', password: 'admin'}, 'noshare2') do |session|
           p = session['product.product'].create name: 'nested callback test', packaging_attributes: {'1' => {name: 'pack'}, '2' => {name: 'pack'}}
-          probe.should == 'pack'
+          expect(probe).to eq('pack')
         end
       end
       end
@@ -458,23 +458,23 @@ describe Ooor do
 
     describe "ARel emulation" do
       it "should have an 'all' method" do
-        ResUsers.all.should be_kind_of(Array)
+        expect(ResUsers.all).to be_kind_of(Array)
       end
 
       it "should have a 'first' method" do
-        ResUsers.first.id.should == 1
+        expect(ResUsers.first.id).to eq(1)
       end
 
       it "should have a 'last' method" do
-        ResUsers.last.id.should == ResUsers.find(:last).id
+        expect(ResUsers.last.id).to eq(ResUsers.find(:last).id)
       end
 
       it "should be ready for Kaminari pagination via ARel scoping" do
         num = 2
         default_per_page = 5
         collection = ProductProduct.where(active: true).limit(default_per_page).offset(default_per_page * ([num.to_i, 1].max - 1)).order("categ_id")
-        collection.all(fields:['name']).should be_kind_of(Array)
-        collection.all.size.should == 5
+        expect(collection.all(fields:['name'])).to be_kind_of(Array)
+        expect(collection.all.size).to eq(5)
       end
 
       if OOOR_ODOO_VERSION != '9.0'
@@ -484,20 +484,20 @@ describe Ooor do
         else
           expected = "All / Saleable / Components"
         end
-        Ooor.default_session.const_get('product.category').all(name_search: 'Com')[0].name.should == expected
+        expect(Ooor.default_session.const_get('product.category').all(name_search: 'Com')[0].name).to eq(expected)
       end
       end
 
       it "should be possible to invoke batch methods on relations" do
-        Ooor.default_session.const_get('product.product').where(type: 'service').write(type: 'service').should == true
+        expect(Ooor.default_session.const_get('product.product').where(type: 'service').write(type: 'service')).to eq(true)
       end
 
       it "should forward Array methods to the Array" do
-        Ooor.default_session.const_get('product.product').where(type: 'service').size.should be_kind_of(Integer)
+        expect(Ooor.default_session.const_get('product.product').where(type: 'service').size).to be_kind_of(Integer)
       end
 
       it "should support reloading relation" do
-        Ooor.default_session.const_get('product.product').where(type: 'service').reload.all.should be_kind_of(Array)
+        expect(Ooor.default_session.const_get('product.product').where(type: 'service').reload.all).to be_kind_of(Array)
       end
     end
 
@@ -505,7 +505,7 @@ describe Ooor do
       if OOOR_ODOO_VERSION == '7.0'
       it "should print reports" do # TODO make work in v8
         base_id = IrModuleModule.search(name:'base')[0]
-        IrModuleModule.get_report_data("ir.module.reference", [base_id], 'pdf', {}).should be_kind_of(Array)
+        expect(IrModuleModule.get_report_data("ir.module.reference", [base_id], 'pdf', {})).to be_kind_of(Array)
       end
       end
     end
@@ -514,9 +514,9 @@ describe Ooor do
       if OOOR_ODOO_VERSION != '9.0'
       it "should be possible to pay an invoice in one step" do        
         inv = AccountInvoice.find(:first).copy() # creates a draft invoice
-        inv.state.should == "draft"
+        expect(inv.state).to eq("draft")
         inv.wkf_action('invoice_open')
-        inv.state.should == "open"
+        expect(inv.state).to eq("open")
         voucher = @ooor.const_get('account.voucher').new({:amount=>inv.amount_total, :type=>"receipt", :partner_id => inv.partner_id.id}, {"default_amount"=>inv.amount_total, "invoice_id"=>inv.id})
         voucher.on_change("onchange_partner_id", [], :partner_id, inv.partner_id.id, @ooor.const_get('account.journal').find('account.bank_journal').id, 0.0, 1, 'receipt', false)
         voucher.save
@@ -534,7 +534,7 @@ describe Ooor do
         i.wkf_action('invoice_open')
         i.wkf_action('invoice_cancel')
         i.action_cancel_draft
-        s.reload.state.should == "invoice_except"
+        expect(s.reload.state).to eq("invoice_except")
       end
       end
     end
@@ -576,24 +576,24 @@ describe Ooor do
 
     it "should support ActiveModel::Naming" do
       with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE) do |session|
-        session['product.product'].name.should == "ProductProduct"
-        session['product.product'].model_name.route_key.should == "product-product"
-        session['product.product'].model_name.param_key.should == "product_product" #TODO add more expectations
+        expect(session['product.product'].name).to eq("ProductProduct")
+        expect(session['product.product'].model_name.route_key).to eq("product-product")
+        expect(session['product.product'].model_name.param_key).to eq("product_product") #TODO add more expectations
       end
     end
 
     it "should support model aliases" do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connectio reuse here
       with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
-        session['products'].search().should be_kind_of(Array)
-        session['product.product'].alias.should == 'products'
+        expect(session['products'].search()).to be_kind_of(Array)
+        expect(session['product.product'].alias).to eq('products')
       end
     end
 
     it "should have a to_param method" do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connectio reuse here
       with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
-        session['product.product'].find(:first).to_param.should be_kind_of(String)
+        expect(session['product.product'].find(:first).to_param).to be_kind_of(String)
       end
     end
 
@@ -602,7 +602,7 @@ describe Ooor do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connection reuse here
       with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
         lang = Ooor::Locale.to_erp_locale('en')
-        session['products'].find_by_permalink('Service', context: {'lang' => lang}, fields: ['name']).should be_kind_of(Ooor::Base)
+        expect(session['products'].find_by_permalink('Service', context: {'lang' => lang}, fields: ['name'])).to be_kind_of(Ooor::Base)
       end
     end
     end
@@ -615,39 +615,39 @@ describe Ooor do
 
     it "should test correct class attributes of ActiveRecord Reflection" do
       object = Ooor::Reflection::AssociationReflection.new(:test, :people, {}, nil)
-      object.name.should == :people
-      object.macro.should == :test
-      object.options.should == {}
+      expect(object.name).to eq(:people)
+      expect(object.macro).to eq(:test)
+      expect(object.options).to eq({})
     end
 
     it "should test correct class name matching with class name" do
       object = Ooor::Reflection::AssociationReflection.new(:test, 'product_product', {class_name: 'product.product'}, nil)
       object.session = @ooor
-      object.klass.should == ProductProduct
+      expect(object.klass).to eq(ProductProduct)
     end
 
     it "should reflect on m2o association (used in simple_form, cocoon...)" do
       reflection = ProductProduct.reflect_on_association(:categ_id)
-      reflection.should be_kind_of(Ooor::Reflection::AssociationReflection)
-      reflection.klass.should == ProductCategory
+      expect(reflection).to be_kind_of(Ooor::Reflection::AssociationReflection)
+      expect(reflection.klass).to eq(ProductCategory)
     end
 
     if OOOR_ODOO_VERSION == '7.0'
     it "should reflect on o2m association (used in simple_form, cocoon...)" do
       reflection = ProductProduct.reflect_on_association(:packaging)
-      reflection.should be_kind_of(Ooor::Reflection::AssociationReflection)
+      expect(reflection).to be_kind_of(Ooor::Reflection::AssociationReflection)
       reflection.klass.openerp_model == 'product.packaging'
     end
     end
 
     it "should reflect on m2m association (used in simple_form, cocoon...)" do
       reflection = ResPartner.reflect_on_association(:category_id)
-      reflection.should be_kind_of(Ooor::Reflection::AssociationReflection)
-      reflection.klass.should == ResPartnerCategory
+      expect(reflection).to be_kind_of(Ooor::Reflection::AssociationReflection)
+      expect(reflection.klass).to eq(ResPartnerCategory)
     end
 
     it "should support column_for_attribute (used by simple_form)" do
-      @ooor.const_get('ir.cron').find(:first).column_for_attribute('name')[:type].should == :string
+      expect(@ooor.const_get('ir.cron').find(:first).column_for_attribute('name')[:type]).to eq(:string)
     end
   end
 
@@ -658,13 +658,13 @@ describe Ooor do
     end
 
     it "should still be possible to find a ressource using an absolute id" do
-      OE1::ResPartner.find('res_partner_1').should be_kind_of(OE1::ResPartner)
+      expect(OE1::ResPartner.find('res_partner_1')).to be_kind_of(OE1::ResPartner)
     end
 
     it "should be able to read in one instance and write in an other" do
       p1 = OE1::ProductProduct.find(1)
       p2 = OE2::ProductProduct.create(:name => p1.name, :categ_id => p1.categ_id.id)
-      p2.should be_kind_of(OE2::ProductProduct)
+      expect(p2).to be_kind_of(OE2::ProductProduct)
     end
   end
 
@@ -672,27 +672,27 @@ describe Ooor do
     include Ooor
     it "should allow with_session" do
       with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE) do |session|
-        session['res.users'].search().should be_kind_of(Array)
+        expect(session['res.users'].search()).to be_kind_of(Array)
         new_user = session['res.users'].create(name: 'User created by OOOR as admin', login: 'ooor1')
         new_user.destroy
       end
 
       with_ooor_session(url: OOOR_URL, username: 'demo', password: 'demo', database: OOOR_DATABASE) do |session|
         h = session['res.users'].read([1], ["password"])
-        h[0]['password'].should == "********"
+        expect(h[0]['password']).to eq("********")
       end
 
       with_ooor_default_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE) do |session|
-        session['res.users'].search().should be_kind_of(Array)
+        expect(session['res.users'].search()).to be_kind_of(Array)
       end
     end
 
     it "should recover from expired sessions" do
       with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE) do |session|
         user_obj = session['res.users']
-        user_obj.search().should be_kind_of(Array)
+        expect(user_obj.search()).to be_kind_of(Array)
         session.web_session[:session_id] = 'invalid'
-        user_obj.search().should be_kind_of(Array)
+        expect(user_obj.search()).to be_kind_of(Array)
       end
     end
 
@@ -706,13 +706,13 @@ describe Ooor do
 
     it "should assign a secure web session_id to a new web session" do
       session = Ooor.session_handler.retrieve_session({}, nil, {})
-      session.id.should be_kind_of String
-      session.id.size.should == 32
+      expect(session.id).to be_kind_of String
+      expect(session.id.size).to eq(32)
     end
 
     it "should keep existing web session_id" do
       session = Ooor.session_handler.retrieve_session({}, "12345678912345", {})
-      session.id.should == "12345678912345"
+      expect(session.id).to eq("12345678912345")
     end
 
     it "should reuse the same session and proxies with session with same spec" do
@@ -728,8 +728,8 @@ describe Ooor do
         s2 = session2
         obj2 = session2['ir.ui.menu']
       end
-      s1.object_id.should == s2.object_id
-      obj1.object_id.should == obj2.object_id
+      expect(s1.object_id).to eq(s2.object_id)
+      expect(obj1.object_id).to eq(obj2.object_id)
     end
 
     it "should not reuse the same session and proxies with session with different spec" do
@@ -747,8 +747,8 @@ describe Ooor do
         obj2 = session2['ir.ui.menu']
       end
 
-      s1.object_id.should_not == s2.object_id
-      obj1.object_id.should_not == obj2.object_id
+      expect(s1.object_id).not_to eq(s2.object_id)
+      expect(obj1.object_id).not_to eq(obj2.object_id)
     end
 
     it "when using different web sessions, it should still share model schemas" do
@@ -766,8 +766,8 @@ describe Ooor do
         obj2 = Ooor.model_registry.get_template(session2.config, 'ir.ui.menu')
       end
 
-      s1.object_id.should_not == s2.object_id
-      obj1.should == obj2 unless ActiveModel::VERSION::STRING.start_with? "3.2" #for some reason this doesn't work with Rails 3.2
+      expect(s1.object_id).not_to eq(s2.object_id)
+      expect(obj1).to eq(obj2) unless ActiveModel::VERSION::STRING.start_with? "3.2" #for some reason this doesn't work with Rails 3.2
     end
 
 
@@ -783,7 +783,7 @@ describe Ooor do
         s2 = session1
       end
 
-      s1.object_id.should == s2.object_id
+      expect(s1.object_id).to eq(s2.object_id)
     end
 
     it "should not use the same session when session spec matches but session_id is different (web)" do
@@ -798,7 +798,7 @@ describe Ooor do
         s2 = session1
       end
     
-      s1.object_id.should_not == s2.object_id
+      expect(s1.object_id).not_to eq(s2.object_id)
     end
 
   end
@@ -828,9 +828,9 @@ describe Ooor do
     end
 
     it "should load custom helper paths" do
-      IrModuleModule.say_hello.should == "Hello"
+      expect(IrModuleModule.say_hello).to eq("Hello")
       mod = IrModuleModule.find(:first, :domain=>['name', '=', 'sale'])
-      mod.say_name.should == "sale"
+      expect(mod.say_name).to eq("sale")
     end
 
   end
