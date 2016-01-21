@@ -18,7 +18,7 @@ Related projects - a full web stack!
 ------------------------------------
 
 * [Ooorest](http://github.com/akretion/ooorest), Ooor is the **Model** layer of **MVC**. Ooorest is the **Controller** layer, enforcing a clean Railish **REST API** and offering handy **helper** to use OpenERP in your Rails application.
-* [Aktooor](http://github.com/akretion/aktooor), Aktoor is the missing **View** layer of **MVC**. It's based on [SimpleForm](https://github.com/plataformatec/simple_form), that is a clean minimalist framework that extend Rails form framework over [Twitter Bootstrap](http://getbootstrap.com)
+* [Aktooor](http://github.com/akretion/aktooor), Aktooor is the missing **View** layer of **MVC**. It's based on [SimpleForm](https://github.com/plataformatec/simple_form), that is a clean minimalist framework that extend Rails form framework over [Twitter Bootstrap](http://getbootstrap.com)
 * [Erpify](http://github.com/akretion/erpify), Erpify is OpenERP inside the Liquid non evaling language, that is the templating language of Shopify or LocomotiveCMS for instance.
 * [Locomotive-erpify](http://github.com/akretion/locomtive-erpify), Erpify for LocomotiveCMS, both the engine and the Wagon local editor
 * [Solarize](http://github.com/akretion/solarize), pulling data from OpenERP relational database may not scale to your need. No problem with Solarize: you can index your OpenERP data with the [Solerp](http://github.com/akretion/solerp) OpenERP module, then search it using SolR API and even load it from SolR without even hitting OpenERP!
