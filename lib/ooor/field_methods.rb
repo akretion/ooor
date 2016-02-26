@@ -29,7 +29,7 @@ module Ooor
           fields[k]["type"] != "binary" && (options[:include_functions] || !fields[k]["function"])
         end
       end
-      
+
       private
 
       def generate_accessors #TODO we should cache this is a module cached like the template, or eventually generate source code or both
@@ -126,7 +126,7 @@ module Ooor
     end
 
     def get_attribute(meth, *args)
-      lazy_load(meth, *args) if @lazy && @attributes["id"]
+      lazy_load(meth, *args) if @lazy && @attributes["id"] && !@attributes.has_key?(meth)
       if @attributes.has_key?(meth)
         @attributes[meth]
       elsif @attributes["id"] # if field is computed for instance
