@@ -1,7 +1,6 @@
 require 'active_support/concern'
 
 module Ooor
-  class Rack
 
     DEFAULT_OOOR_SESSION_CONFIG_MAPPER = Proc.new do |env|
       Ooor.logger.debug "\n\nWARNING: using DEFAULT_OOOR_SESSION_CONFIG_MAPPER, you should probably define your own instead!
@@ -51,10 +50,10 @@ module Ooor
             end
           end
           session = Ooor.session_handler.retrieve_session(config, spec, web_session)
-        end       
+        end
         session
       end
-        
+
       def set_ooor_session!(env, status, headers, body)
         case headers["Set-Cookie"]
         when nil, ''
@@ -62,7 +61,7 @@ module Ooor
         when Array
           headers["Set-Cookie"] = headers["Set-Cookie"].join("\n")
         end
-        
+
         ooor_session = env['ooor']['ooor_session']
         if ooor_session.config[:session_sharing]
           share_openerp_session!(headers, ooor_session)
@@ -74,7 +73,7 @@ module Ooor
         response = ::Rack::Response.new body, status, headers
         response.finish
       end
-        
+
       def share_openerp_session!(headers, ooor_session)
         if ooor_session.config[:username] == 'admin'
           if ooor_session.config[:force_session_sharing]
@@ -98,17 +97,18 @@ module Ooor
 
     end
 
-    include RackBehaviour
+    class Rack
+      include RackBehaviour
 
-    def initialize(app=nil)
-      @app=app
+      def initialize(app=nil)
+        @app=app
+      end
+
+      def call(env)
+        set_ooor!(env)
+        status, headers, body = @app.call(env)
+        set_ooor_session!(env, status, headers, body)
+      end
     end
 
-    def call(env)
-      set_ooor!(env)
-      status, headers, body = @app.call(env)
-      set_ooor_session!(env, status, headers, body)
-    end
-
-  end
 end
