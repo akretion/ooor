@@ -11,7 +11,7 @@ module Ooor
         @plural = klass.openerp_model # OpenERP doesn't enforce plural / singular conventions sadly...
         @element = klass.openerp_model
         @human = klass.description || klass.openerp_model
-        @param_key = klass.openerp_model.gsub('.', '_') 
+        @param_key = klass.openerp_model.gsub('.', '_')
         @i18n_key = klass.openerp_model
         @route_key = klass.openerp_model.gsub('.', '-')
         @singular_route_key = klass.openerp_model.gsub('.', '-')
@@ -58,8 +58,14 @@ module Ooor
 
       def find_by_permalink(param, options={})
         # NOTE in v8, see if we can use PageConverter here https://github.com/akretion/openerp-addons/blob/trunk-website-al/website/models/ir_http.py#L138
-        param = param.to_i unless param.to_i == 0
-        options.merge!(domain: {param_field => param})
+        param.gsub!('-', ' ')
+        if param.split(' ').last.to_i != 0
+          options.merge!(domain: {:id => param.split(' ').last.to_i})
+        elsif param.to_i == 0
+          options.merge!(domain: [param_field, 'ilike', param])
+        else
+          options.merge!(domain: {:id => param.to_i})
+        end
         find(:first, options)
       end
 
