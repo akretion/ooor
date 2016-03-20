@@ -32,13 +32,21 @@ module Ooor
         env['ooor'] = {'context' => context, 'ooor_session'=> ooor_session}
       end
 
+      def session_key
+        if defined?(Rails)
+          Rails.application.config.session_options[:key]
+        else
+          'rack.session'
+        end
+      end
+
       def get_ooor_session(env)
         cookies_hash = env['rack.request.cookie_hash'] || ::Rack::Request.new(env).cookies
-        session = Ooor.session_handler.sessions[cookies_hash['ooor_session_id']]
+        session = Ooor.session_handler.sessions[cookies_hash[self.session_key()]]
         session ||= Ooor.session_handler.sessions[cookies_hash['session_id']]
         unless session # session could have been used by an other worker, try getting it
           config = Ooor::Rack.ooor_session_config_mapper.call(env)
-          spec = config[:session_sharing] ? cookies_hash['session_id'] : cookies_hash['ooor_session_id']
+          spec = config[:session_sharing] ? cookies_hash['session_id'] : cookies_hash[self.session_key()]
           web_session = Ooor.session_handler.get_web_session(spec) if spec # created by some other worker?
           unless web_session
             if config[:session_sharing]
@@ -65,10 +73,6 @@ module Ooor
         ooor_session = env['ooor']['ooor_session']
         if ooor_session.config[:session_sharing]
           share_openerp_session!(headers, ooor_session)
-        else # NOTE: we don't put that in a Rails session because we want to remain server agnostic
-          headers["Set-Cookie"] = [headers["Set-Cookie"],
-            "ooor_session_id=#{ooor_session.id}; Path=/",
-          ].join("\n")
         end
         response = ::Rack::Response.new body, status, headers
         response.finish
