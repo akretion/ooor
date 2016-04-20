@@ -29,7 +29,7 @@ module Ooor
   class CommonService < Service
     define_service(:common, %w[ir_get ir_set ir_del about ooor_alias_login logout timezone_get get_available_updates get_migration_scripts get_server_environment login_message check_connectivity about get_stats list_http_services version authenticate get_available_updates set_loglevel get_os_time get_sqlcount])
 
-    def login(db, username, password)
+    def login(db, username, password, kw={})
       @session.logger.debug "OOOR login - db: #{db}, username: #{username}"
 
       if @session.config[:force_xml_rpc]
@@ -39,7 +39,7 @@ module Ooor
         response = conn.post do |req|
           req.url '/web/session/authenticate'
           req.headers['Content-Type'] = 'application/json'
-          req.body = {method: 'call', params: { db: db, login: username, password: password}}.to_json
+          req.body = {method: 'call', params: {db: db, login: username, password: password, base_location: kw}}.to_json
         end
         @session.web_session[:cookie] = response.headers["set-cookie"]
         json_response = JSON.parse(response.body)
@@ -52,8 +52,10 @@ module Ooor
           end
 
           @session.web_session[:session_id] = json_response['result']['session_id']
-          user_id = json_response['result']['uid']
+          user_id = json_response['result'].delete('uid')
           @session.config[:user_id] = user_id
+          @session.web_session.merge!(json_response['result'].delete('user_context'))
+          @session.config.merge!(json_response['result'])
           Ooor.session_handler.register_session(@session)
           user_id
         else
@@ -96,7 +98,7 @@ module Ooor
 
     def object_service(service, obj, method, *args)
       unless @session.config[:user_id]
-        @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password])
+        @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password], @session.config[:params])
       end
       args = inject_session_context(service, method, *args)
       uid = @session.config[:user_id]

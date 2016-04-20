@@ -58,6 +58,7 @@ module Ooor
             end
           end
           session = Ooor.session_handler.retrieve_session(config, spec, web_session)
+          session.config[:params] = {email: env['warden'].user.try(:email)}
         end
         session
       end
