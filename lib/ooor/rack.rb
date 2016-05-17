@@ -7,8 +7,10 @@ module Ooor
       You can define an Ooor::Rack.ooor_session_config_mapper block that will be evaled
       in the context of the rack middleware call after user is authenticated using Warden.
       Use it to map a Warden authentication to the OpenERP authentication you want.\n"""
-      Ooor.default_config
+      {}
     end
+
+    DEFAULT_OOOR_PUBLIC_SESSION_CONFIG_MAPPER = DEFAULT_OOOR_SESSION_CONFIG_MAPPER
 
     module RackBehaviour
       extend ActiveSupport::Concern
@@ -17,10 +19,16 @@ module Ooor
           @ooor_session_config_mapper = block if block
           @ooor_session_config_mapper || DEFAULT_OOOR_SESSION_CONFIG_MAPPER
         end
+
+        def ooor_public_session_config_mapper(&block)
+          @ooor_public_session_config_mapper = block if block
+          @ooor_public_session_config_mapper || DEFAULT_OOOR_PUBLIC_SESSION_CONFIG_MAPPER
+        end
       end
 
       def set_ooor!(env)
         ooor_session = self.get_ooor_session(env)
+        ooor_public_session = self.get_ooor_public_session(env)
         if defined?(I18n) && I18n.locale
           lang = Ooor::Locale.to_erp_locale(I18n.locale)
         elsif http_lang = env["HTTP_ACCEPT_LANGUAGE"]
@@ -29,7 +37,7 @@ module Ooor
           lang = ooor_session.config['lang'] || 'en_US'
         end
         context = {'lang' => lang} #TODO also deal with timezone
-        env['ooor'] = {'context' => context, 'ooor_session'=> ooor_session}
+        env['ooor'] = {'context' => context, 'ooor_session'=> ooor_session, 'ooor_public_session' => ooor_public_session}
       end
 
       def session_key
@@ -40,12 +48,17 @@ module Ooor
         end
       end
 
+      def get_ooor_public_session(env)
+        config = Ooor::Rack.ooor_public_session_config_mapper.call(env)
+        Ooor.session_handler.retrieve_session(config)
+      end
+
       def get_ooor_session(env)
         cookies_hash = env['rack.request.cookie_hash'] || ::Rack::Request.new(env).cookies
         session = Ooor.session_handler.sessions[cookies_hash[self.session_key()]]
         session ||= Ooor.session_handler.sessions[cookies_hash['session_id']]
         unless session # session could have been used by an other worker, try getting it
-          config = Ooor::Rack.ooor_session_config_mapper.call(env)
+          config = Ooor.default_config.merge(Ooor::Rack.ooor_session_config_mapper.call(env))
           spec = config[:session_sharing] ? cookies_hash['session_id'] : cookies_hash[self.session_key()]
           web_session = Ooor.session_handler.get_web_session(spec) if spec # created by some other worker?
           unless web_session
