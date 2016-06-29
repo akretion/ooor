@@ -61,15 +61,7 @@ module Ooor
           config = Ooor.default_config.merge(Ooor::Rack.ooor_session_config_mapper.call(env))
           spec = config[:session_sharing] ? cookies_hash['session_id'] : cookies_hash[self.session_key()]
           web_session = Ooor.session_handler.get_web_session(spec) if spec # created by some other worker?
-          unless web_session
-            if config[:session_sharing]
-              web_session = {session_id: cookies_hash['session_id']}
-              spec = cookies_hash['session_id']
-            else
-              web_session = {}
-              spec = nil
-            end
-          end
+          web_session ||= {session_id: cookies_hash['session_id']}
           session = Ooor.session_handler.retrieve_session(config, spec, web_session)
           session.config[:params] = {email: env['warden'].try(:user).try(:email)}
         end
