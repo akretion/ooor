@@ -4,6 +4,7 @@
 #    Licensed under the MIT license, see MIT-LICENSE file
 
 require 'json'
+require 'nokogiri'
 
 module Ooor
   autoload :InvalidSessionError, 'ooor/errors'
@@ -62,6 +63,15 @@ module Ooor
           raise Faraday::Error::ClientError.new(response.status, response)
         end
       end
+    end
+
+    def csrf_token()
+      @session.logger.debug "OOOR csrf_token"
+      conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
+    	login_page = conn.get('/web/login') do |req|
+        req.headers['Cookie'] = "session_id=#{@session.web_session[:session_id]}"
+      end.body # TODO implement some caching
+      Nokogiri::HTML(login_page).css("input[name='csrf_token']")[0]['value']
     end
 
     private
