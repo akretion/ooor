@@ -34,7 +34,7 @@ module Ooor
             params.merge!({"session_id" => session_info[:session_id]})
           end
           response = JSON.parse(post do |req|
-            req.headers['Cookie'] = session_info[:cookie]
+            req.headers['Cookie'] = session_info[:cookie] if session_info[:cookie]
             req.url url
             req.headers['Content-Type'] = 'application/json'
             req.body = {"jsonrpc"=>"2.0","method"=>"call", "params" => params, "id"=>session_info[:req_id]}.to_json
