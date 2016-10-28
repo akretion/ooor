@@ -58,9 +58,8 @@ module Ooor
 
       def find_by_permalink(param, options={})
         # NOTE in v8, see if we can use PageConverter here https://github.com/akretion/openerp-addons/blob/trunk-website-al/website/models/ir_http.py#L138
-        param.gsub!('-', ' ')
-        if param.split(' ').last.to_i != 0
-          options.merge!(domain: {:id => param.split(' ').last.to_i})
+        if param.split('-').last.to_i != 0
+          options.merge!(domain: {:id => param.split('-').last.to_i})
         elsif param.to_i == 0
           options.merge!(domain: [param_field, 'ilike', param])
         else
