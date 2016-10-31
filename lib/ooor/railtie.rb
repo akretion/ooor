@@ -30,7 +30,8 @@ module Ooor
 
     def load_config(config_file=nil, env=nil)
       config_file ||= defined?(Rails.root) && "#{Rails.root}/config/ooor.yml" || 'ooor.yml'
-      @config = HashWithIndifferentAccess.new(::YAML.load_file(config_file)[env || 'development'])
+      config_parsed = ::YAML.load(ERB.new(File.new(config_file).read).result)
+      @config = HashWithIndifferentAccess.new(config_parsed)[env || 'development']
     rescue SystemCallError
       Ooor.logger.error """failed to load OOOR yaml configuration file.
          make sure your app has a #{config_file} file correctly set up
