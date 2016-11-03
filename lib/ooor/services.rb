@@ -4,7 +4,7 @@
 #    Licensed under the MIT license, see MIT-LICENSE file
 
 require 'json'
-require 'nokogiri'
+
 
 module Ooor
   autoload :InvalidSessionError, 'ooor/errors'
@@ -66,6 +66,10 @@ module Ooor
     end
 
     def csrf_token()
+      unless defined?(Nokogiri)
+        raise "You need to install the nokogiri gem for this feature"
+      end
+      require 'nokogiri'
       @session.logger.debug "OOOR csrf_token"
       conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
     	login_page = conn.get('/web/login') do |req|
