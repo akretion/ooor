@@ -14,3 +14,8 @@ end
 group :development do
   gem 'rake'
 end
+
+platforms :ruby_19 do
+    gem 'tins', '~> 1.6.0'
+    gem 'term-ansicolor', '~> 1.3.2'
+end
