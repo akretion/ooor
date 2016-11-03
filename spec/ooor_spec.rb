@@ -28,7 +28,7 @@ describe Ooor do
   end
 
   it "should be able to list databases" do
-    expect(@ooor.db.list).to be_kind_of(Array) 
+    expect(@ooor.db.list).to be_kind_of(Array)
   end
 
   it "should be able to create a new database with demo data" do
@@ -82,7 +82,7 @@ describe Ooor do
         products = ProductProduct.find(1, 2)
         expect(products.size).to eq(2)
       end
-      
+
       it "should fetches data even if an id is passed as a string (web usage)" do
         product = ProductProduct.find("1")
         expect(product).to be_kind_of(ProductProduct)
@@ -102,7 +102,7 @@ describe Ooor do
         products = ProductProduct.find(active: true)
         expect(products).to be_kind_of(Array)
       end
-      
+
       it "should accept array domain in find" do
         products = ProductProduct.find(['active', '=', true])
         expect(products).to be_kind_of(Array)
@@ -406,7 +406,7 @@ describe Ooor do
         p = ProductProduct.find :first
         p.ean13 = 'invalid_ean'
         expect(p.save).to eq(false)
-        expect(p.errors.messages[:ean13]).not_to be_nil 
+        expect(p.errors.messages[:ean13]).not_to be_nil
       end
       end
 
@@ -489,7 +489,7 @@ describe Ooor do
       end
 
       it "should be possible to invoke batch methods on relations" do
-        expect(Ooor.default_session.const_get('product.product').where(type: 'service').write(type: 'service')).to eq(true)
+        expect(Ooor.default_session.const_get('product.product').where(type: 'service').write({type: 'service'}, {})).to eq(true)
       end
 
       it "should forward Array methods to the Array" do
@@ -512,7 +512,7 @@ describe Ooor do
 
     describe "wizard management" do
       if OOOR_ODOO_VERSION != '9.0'
-      it "should be possible to pay an invoice in one step" do        
+      it "should be possible to pay an invoice in one step" do
         inv = AccountInvoice.find(:first).copy() # creates a draft invoice
         expect(inv.state).to eq("draft")
         inv.wkf_action('invoice_open')
@@ -789,7 +789,7 @@ describe Ooor do
     it "should not use the same session when session spec matches but session_id is different (web)" do
       s1 = 1
       s2 = 2
-    
+
       with_ooor_session({url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE}, 111) do |session1|
         s1 = session1
       end
@@ -797,7 +797,7 @@ describe Ooor do
       with_ooor_session({url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE}, 123) do |session1|
         s2 = session1
       end
-    
+
       expect(s1.object_id).not_to eq(s2.object_id)
     end
 
