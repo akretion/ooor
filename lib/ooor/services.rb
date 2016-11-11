@@ -47,8 +47,7 @@ module Ooor
         validate_response(json_response)
 
         if response.status == 200
-          sid_part1 = @session.web_session[:cookie].split("sid=")[1]
-          if sid_part1
+          if sid_part1 = @session.web_session[:cookie].split("sid=")[1]
             @session.web_session[:sid] = @session.web_session[:cookie].split("sid=")[1].split(";")[0] # NOTE side is required on v7 but not on v8, this enables to sniff if we are on v7
           end
 
@@ -111,7 +110,7 @@ module Ooor
     define_service(:object, %w[execute exec_workflow])
 
     def object_service(service, obj, method, *args)
-      unless @session.config[:user_id]
+      if !@session.config[:user_id] && @session.config[:username]
         @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password], @session.config[:params])
       end
       args = inject_session_context(service, method, *args)
@@ -122,7 +121,7 @@ module Ooor
         pass = @session.config[:password]
         send(service, db, uid, pass, obj, method, *args)
       else
-        unless @session.web_session[:session_id]
+        if !@session.web_session[:session_id] && @session.config[:username]
           @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password])
         end
         json_conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
@@ -134,7 +133,7 @@ module Ooor
       rescue SessionExpiredError
         @session.logger.debug "session for uid: #{uid} has expired, trying to login again"
         @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password])
-        retry
+        retry # TODO put a retry limit to avoid infinite login attempts
     end
 
     def inject_session_context(service, method, *args)
