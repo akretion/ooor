@@ -59,7 +59,13 @@ module Ooor
         session ||= Ooor.session_handler.sessions[cookies_hash['session_id']]
         unless session # session could have been used by an other worker, try getting it
           config = Ooor.default_config.merge(Ooor::Rack.ooor_session_config_mapper.call(env))
-          spec = config[:session_sharing] ? cookies_hash['session_id'] : cookies_hash[self.session_key()]
+          if config[:session_sharing]
+            spec = cookies_hash['session_id']
+          else
+            # NOTE eventually the Rails cookie is too long to be used as a file caching key later
+            # so we cut it. TODO May be doing a sha1 of it would be more robust.
+            spec = cookies_hash[self.session_key()][0..32]
+          end
           web_session = Ooor.session_handler.get_web_session(spec) if spec # created by some other worker?
           web_session ||= {session_id: cookies_hash['session_id']}
           session = Ooor.session_handler.retrieve_session(config, spec, web_session)
