@@ -3,6 +3,8 @@ source "http://rubygems.org"
 gemspec
 
 gem "activemodel", "~> #{ENV["RAILS_VERSION"]}" if ENV["RAILS_VERSION"]
+gem 'activemodel-serializers-xml'
+gem 'active_model_serializers'
 
 group :test do
   gem 'rspec'

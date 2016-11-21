@@ -1,6 +1,8 @@
 require 'active_support'
 require 'active_support/core_ext/class/attribute_accessors'
 require 'active_model'
+require 'activemodel-serializers-xml'
+require 'active_model_serializers'
 
 module Ooor
   # Ooor::MiniActiveResource is a shrinked version of ActiveResource::Base with the bare minimum we need for Ooor.
