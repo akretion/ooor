@@ -33,7 +33,7 @@ Ooor doesn't connect to the OpenERP database, instead it uses the OpenERP data a
 
 Ooor is less than 2000 lines of code. It has a test coverage of around 80%. It doesn't embed any business rule, it's just a client to OpenERP. The code of Ooor is modeled after Rails [ActiveModel](http://api.rubyonrails.org/classes/ActiveModel/Model.html), [ActiveResource](https://github.com/rails/activeresource) and [ActiveRecord](http://api.rubyonrails.org/classes/ActiveRecord/Base.html) layers.
 
-More specifically, an OpenERP Ooor proxy implements the ActiveModel API. Instead of depending on ActiveResource which is actually a bit different (not multi-tenant, little access right management), we copied a tiny subset of it in the mini_active_resource.rb file and OpenERP proxies include this module. Finally Ooor emulates the ActiveRecord API wherever possible delegating its requests to OpenERP using OpenERP domain [S expressions](http://en.wikipedia.org/wiki/S-expression) instead of SQL. The ActiveRecord API emulation is actually pretty good: think **Ooor looks more like ActiveRecord than Mongoid**; it has associations, surface ARel API, Reflection API, can be paginated via Kaminary, can be integrated with SimpleForm or Cocoon seamlessly...
+More specifically, an OpenERP Ooor proxy implements the ActiveModel API. Instead of depending on ActiveResource which is actually a bit different (not multi-tenant, little access right management), we copied a tiny subset of it in the `mini_active_resource.rb` file and OpenERP proxies include this module. Finally Ooor emulates the ActiveRecord API wherever possible delegating its requests to OpenERP using OpenERP domain [S expressions](http://en.wikipedia.org/wiki/S-expression) instead of SQL. The ActiveRecord API emulation is actually pretty good: think **Ooor looks more like ActiveRecord than Mongoid**; it has associations, surface ARel API, Reflection API, can be paginated via Kaminary, can be integrated with SimpleForm or Cocoon seamlessly...
 
 Ooor features **several session modes**: in the default IRB console usage it uses a global login scheme and generate constants for your OpenERP proxies, such as ProductProduct for the product.product OpenERP object much like Rails ActiveRecord. In web mode instead, you can have several sessions and do session['product.product'] to get a proxy to the Product object matching your current session credentials, chosen database and OpenERP url (yes Ooor is not only multi-database like OpenEP, it's in fact **multi-OpenERP**!)
 
@@ -209,7 +209,7 @@ Note: currently OOOR doesn't deal with the View layer, or has a very limited sup
 So, it's not possible so far for OOOR to know an on_change signature. Because of this, the on_change syntax is  bit awkward
 as you will see (fortunately OpenERP SA announced they will fix that on_change API in subsequent v6 OpenERP releases):
 you need to explicitely tell the on_change name, the parameter name that changed, the new value and finally
-enfore the on_change syntax (looking at the OpenERP model code or view or XML/RPC logs will help you to find out). But
+enforce the on_change syntax (looking at the OpenERP model code or view or XML/RPC logs will help you to find out). But
 ultimately it works:
 
 ```ruby
