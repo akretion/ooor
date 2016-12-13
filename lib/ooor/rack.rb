@@ -49,8 +49,8 @@ module Ooor
       end
 
       def get_ooor_public_session(env)
-        config = Ooor::Rack.ooor_public_session_config_mapper.call(env)
-        Ooor.session_handler.retrieve_session(config)
+        config = Ooor.default_config.merge(Ooor::Rack.ooor_public_session_config_mapper.call(env))
+        Ooor.session_handler.retrieve_session(config, :noweb)
       end
 
       def get_ooor_session(env)
