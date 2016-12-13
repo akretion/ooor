@@ -17,7 +17,7 @@ module Ooor
         Thread.current[:json_clients] ||= {}
         Thread.current[:json_clients][url] ||= JsonClient.new(url, :request => { timeout: config[:rpc_timeout] || 900 })
       when :xml
-        Thread.current[:xml_clients] ||= {}        
+        Thread.current[:xml_clients] ||= {}
         Thread.current[:xml_clients][url] ||= XmlRpcClient.new2(url, nil, config[:rpc_timeout] || 900)
       end
     end
