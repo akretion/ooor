@@ -28,41 +28,7 @@ module Ooor
 
 
   class CommonService < Service
-    define_service(:common, %w[ir_get ir_set ir_del about ooor_alias_login logout timezone_get get_available_updates get_migration_scripts get_server_environment login_message check_connectivity about get_stats list_http_services version authenticate get_available_updates set_loglevel get_os_time get_sqlcount])
-
-    def login(db, username, password, kw={})
-      @session.logger.debug "OOOR login - db: #{db}, username: #{username}"
-
-      if @session.config[:force_xml_rpc]
-        send("ooor_alias_login", db, username, password)
-      else
-        conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
-        response = conn.post do |req|
-          req.url '/web/session/authenticate'
-          req.headers['Content-Type'] = 'application/json'
-          req.body = {method: 'call', params: {db: db, login: username, password: password, base_location: kw}}.to_json
-        end
-        @session.web_session[:cookie] = response.headers["set-cookie"]
-        json_response = JSON.parse(response.body)
-        validate_response(json_response)
-
-        if response.status == 200
-          if sid_part1 = @session.web_session[:cookie].split("sid=")[1]
-            @session.web_session[:sid] = @session.web_session[:cookie].split("sid=")[1].split(";")[0] # NOTE side is required on v7 but not on v8, this enables to sniff if we are on v7
-          end
-
-          @session.web_session[:session_id] = json_response['result']['session_id']
-          user_id = json_response['result'].delete('uid')
-          @session.config[:user_id] = user_id
-          @session.web_session.merge!(json_response['result'].delete('user_context'))
-          @session.config.merge!(json_response['result'])
-          Ooor.session_handler.register_session(@session)
-          user_id
-        else
-          raise Faraday::Error::ClientError.new(response.status, response)
-        end
-      end
-    end
+    define_service(:common, %w[ir_get ir_set ir_del about logout timezone_get get_available_updates get_migration_scripts get_server_environment login_message check_connectivity about get_stats list_http_services version authenticate get_available_updates set_loglevel get_os_time get_sqlcount])
 
     def csrf_token()
       unless defined?(Nokogiri)
@@ -110,9 +76,7 @@ module Ooor
     define_service(:object, %w[execute exec_workflow])
 
     def object_service(service, obj, method, *args)
-      if !@session.config[:user_id] && @session.config[:username]
-        @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password], @session.config[:params])
-      end
+      @session.login_if_required()
       args = inject_session_context(service, method, *args)
       uid = @session.config[:user_id]
       db = @session.config[:database]
@@ -121,9 +85,6 @@ module Ooor
         pass = @session.config[:password]
         send(service, db, uid, pass, obj, method, *args)
       else
-        if !@session.web_session[:session_id] && @session.config[:username]
-          @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password])
-        end
         json_conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
         json_conn.oe_service(@session.web_session, service, obj, method, *args)
       end
@@ -132,7 +93,7 @@ module Ooor
         retry
       rescue SessionExpiredError
         @session.logger.debug "session for uid: #{uid} has expired, trying to login again"
-        @session.common.login(@session.config[:database], @session.config[:username], @session.config[:password])
+        @session.login(@session.config[:database], @session.config[:username], @session.config[:password])
         retry # TODO put a retry limit to avoid infinite login attempts
     end
 

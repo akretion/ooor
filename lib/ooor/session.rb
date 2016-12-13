@@ -23,6 +23,48 @@ module Ooor
       @id = id || web_session[:session_id]
     end
 
+    def login_if_required
+      if !config[:user_id] || !web_session[:session_id]
+        login(config[:database], config[:username], config[:password], config[:params])
+      end
+    end
+
+    def login(db, username, password, kw={})
+      logger.debug "OOOR login - db: #{db}, username: #{username}"
+      if config[:force_xml_rpc]
+        send("ooor_alias_login", db, username, password)
+      else
+        conn = get_client(:json, "#{self.base_jsonrpc2_url}")
+        response = conn.post do |req|
+          req.url '/web/session/authenticate'
+          req.headers['Content-Type'] = 'application/json'
+          req.body = {method: 'call', params: {db: db, login: username, password: password, base_location: kw}}.to_json
+        end
+        web_session[:cookie] = response.headers["set-cookie"]
+        json_response = JSON.parse(response.body)
+        error = json_response["error"]
+        if error && (error["data"]["type"] == "server_exception" || error['message'] == "Odoo Server Error")
+          raise "#{error['message']} ------- #{error['data']['debug']}"
+        elsif response.status == 200
+          if sid_part1 = web_session[:cookie].split("sid=")[1]
+            # NOTE required on v7 but not on v8+, this enables to sniff if we are on v7
+            web_session[:sid] = web_session[:cookie].split("sid=")[1].split(";")[0]
+          end
+
+          web_session[:session_id] = json_response['result']['session_id']
+
+          user_id = json_response['result'].delete('uid')
+          config[:user_id] = user_id
+          web_session.merge!(json_response['result'].delete('user_context'))
+          config.merge!(json_response['result'])
+          Ooor.session_handler.register_session(self)
+          user_id
+        else
+          raise Faraday::Error::ClientError.new(response.status, response)
+        end
+      end
+    end
+
     def set_config(configuration)
       configuration.each do |k, v|
         config.send "#{k}=", v
@@ -95,7 +137,7 @@ module Ooor
         model_ids = object.object_service(:execute, "ir.model", :search, search_domain, 0, false, false, {}, false)
         models_records = object.object_service(:execute, "ir.model", :read, model_ids, ['model', 'name'])
       else
-        response = object.object_service(:search_read, "ir.model", 'search_read', 
+        response = object.object_service(:search_read, "ir.model", 'search_read',
                 fields: ['model', 'name'],
                 offset: 0,
                 limit: false,
@@ -148,7 +190,7 @@ module Ooor
     end
 
 #    def models; @models ||= {}; end
-    
+
     def logger; Ooor.logger; end
 
     def helper_paths
