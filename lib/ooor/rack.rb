@@ -54,20 +54,18 @@ module Ooor
       end
 
       def get_ooor_session(env)
-        cookies_hash = env['rack.request.cookie_hash'] || ::Rack::Request.new(env).cookies
-        session = Ooor.session_handler.sessions[cookies_hash[self.session_key()]]
-        session ||= Ooor.session_handler.sessions[cookies_hash['session_id']]
+        ruby_session_id = ::Rack::Request.new(env).session.id
+        session = Ooor.session_handler.sessions[ruby_session_id]
         unless session # session could have been used by an other worker, try getting it
           config = Ooor.default_config.merge(Ooor::Rack.ooor_session_config_mapper.call(env))
-          if config[:session_sharing]
+          if config[:session_sharing] # same session_id as Odoo mode
+            cookies_hash = env['rack.request.cookie_hash'] || ::Rack::Request.new(env).cookies
             spec = cookies_hash['session_id']
           else
-            # NOTE eventually the Rails cookie is too long to be used as a file caching key later
-            # so we cut it. TODO May be doing a sha1 of it would be more robust.
-            spec = cookies_hash[self.session_key()][0..32]
+            spec = ruby_session_id
           end
           web_session = Ooor.session_handler.get_web_session(spec) if spec # created by some other worker?
-          web_session ||= {session_id: cookies_hash['session_id']}
+          web_session ||= {session_id: cookies_hash['session_id']} if config[:session_sharing]
           session = Ooor.session_handler.retrieve_session(config, spec, web_session)
           session.config[:params] = {email: env['warden'].try(:user).try(:email)}
         end
