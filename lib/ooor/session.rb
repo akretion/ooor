@@ -1,6 +1,7 @@
 require 'ooor/services'
 require 'active_support/configurable'
 require 'active_support/core_ext/hash/slice'
+require 'addressable/uri'
 
 module Ooor
   class Session
@@ -13,6 +14,20 @@ module Ooor
     def db(); @db_service ||= DbService.new(self); end
     def object(); @object_service ||= ObjectService.new(self); end
     def report(); @report_service ||= ReportService.new(self); end
+
+
+    def public_controller_method(path, query_values)
+      login_if_required()
+      conn = get_client(:json, "#{base_jsonrpc2_url}")
+      conn.post do |req|
+        req.url path
+        req.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        req.headers['Cookie'] = "session_id=#{web_session[:session_id]}"
+        uri = Addressable::URI.new
+        uri.query_values = query_values
+        req.body = uri.query
+      end
+    end
 
     def initialize(config, web_session, id)
       set_config(_config(config))
