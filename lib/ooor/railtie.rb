@@ -9,7 +9,7 @@ module Ooor
       Ooor.default_config = load_config(false, Rails.env)
       Ooor.logger.level = @config[:log_level] if @config[:log_level]
       Ooor.cache_store = Rails.cache
-      Ooor.default_session = Ooor.session_handler.retrieve_session(Ooor.default_config)
+      Ooor.default_session = Ooor.session_handler.retrieve_session(Ooor.default_config, :noweb)
 
       if Ooor.default_config[:bootstrap]
         Ooor.default_session.global_login(config.merge(generate_constants: true))

@@ -44,7 +44,7 @@ module Ooor
     module ClassMethods
       
       attr_accessor :default_config, :default_session, :cache_store
-      
+
       IRREGULAR_CONTEXT_POSITIONS = {
         import_data: 5,
         fields_view_get: 2,
@@ -59,7 +59,7 @@ module Ooor
 
       def new(config={})
         Ooor.default_config = config.merge(generate_constants: true)
-        session = session_handler.retrieve_session(config)
+        session = session_handler.retrieve_session(config, :noweb)
         if config[:database] && config[:password]
           session.global_login(config)
         end
@@ -83,11 +83,11 @@ module Ooor
 
       def session_handler() @session_handler ||= SessionHandler.new; end
       def model_registry() @model_registry ||= ModelRegistry.new; end
-      
+
       def logger
         @logger ||= Logger.new($stdout)
       end
-      
+
       def logger=(logger)
         @logger = logger
       end
@@ -101,7 +101,6 @@ module Ooor
 
     def with_ooor_session(config={}, id=:noweb)
       session = Ooor.session_handler.retrieve_session(config, id)
-      Ooor.session_handler.register_session(session)
       yield session
     end
 
