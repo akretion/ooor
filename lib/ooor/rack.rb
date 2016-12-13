@@ -12,6 +12,9 @@ module Ooor
 
     DEFAULT_OOOR_PUBLIC_SESSION_CONFIG_MAPPER = DEFAULT_OOOR_SESSION_CONFIG_MAPPER
 
+    DEFAULT_OOOR_ENV_DECORATOR = Proc.new do |env|
+    end
+
     module RackBehaviour
       extend ActiveSupport::Concern
       module ClassMethods
@@ -23,6 +26,11 @@ module Ooor
         def ooor_public_session_config_mapper(&block)
           @ooor_public_session_config_mapper = block if block
           @ooor_public_session_config_mapper || DEFAULT_OOOR_PUBLIC_SESSION_CONFIG_MAPPER
+        end
+
+        def decorate_env(&block)
+          @ooor_env_decorator = block if block
+          @ooor_env_decorator || DEFAULT_OOOR_ENV_DECORATOR
         end
       end
 
@@ -38,14 +46,7 @@ module Ooor
         end
         context = {'lang' => lang} #TODO also deal with timezone
         env['ooor'] = {'context' => context, 'ooor_session'=> ooor_session, 'ooor_public_session' => ooor_public_session}
-      end
-
-      def session_key
-        if defined?(Rails)
-          Rails.application.config.session_options[:key]
-        else
-          'rack.session'
-        end
+        Ooor::Rack.decorate_env.call(env)
       end
 
       def get_ooor_public_session(env)
