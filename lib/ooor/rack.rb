@@ -116,11 +116,19 @@ module Ooor
     class Rack
       include RackBehaviour
 
+      attr_accessor :app, :env
+
       def initialize(app=nil)
         @app=app
       end
 
       def call(env)
+        threadsafed = dup
+        threadsafed.env = env
+        threadsafed._call
+      end
+
+      def _call
         set_ooor!(env)
         status, headers, body = @app.call(env)
         set_ooor_session!(env, status, headers, body)
