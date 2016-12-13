@@ -17,12 +17,19 @@ module Ooor
       else
         spec = id
       end
-      if config[:reload] || !s = sessions[spec]
+
+      s = sessions[spec]
+      # reload or no matching session found so create a new one
+      if config[:reload] || !s
         config = Ooor.default_config.merge(config) if Ooor.default_config.is_a? Hash
-        Ooor::Session.new(config, web_session, id)
+      Ooor::Session.new(config, web_session, id)
+
+      # found but config mismatch still
       elsif noweb_session_spec(s.config) != noweb_session_spec(config)
         config = Ooor.default_config.merge(config) if Ooor.default_config.is_a? Hash
         Ooor::Session.new(config, web_session, id)
+
+      # matching session, update web_session of it eventually
       else
         s.tap {|s| s.web_session.merge!(web_session)} #TODO merge config also?
       end
@@ -44,11 +51,11 @@ module Ooor
       @sessions = {}
       @connections = {}
     end
-    
+
     def get_web_session(key)
       Ooor.cache.read(key)
     end
-    
+
     def set_web_session(key, web_session)
       Ooor.cache.write(key, web_session)
     end
