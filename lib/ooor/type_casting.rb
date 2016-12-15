@@ -6,16 +6,16 @@
 module Ooor
   module TypeCasting
     extend ActiveSupport::Concern
-    
+
     OPERATORS = ["=", "!=", "<=", "<", ">", ">=", "=?", "=like", "=ilike", "like", "not like", "ilike", "not ilike", "in", "not in", "child_of"]
     BLACKLIST = %w[id write_date create_date write_ui create_ui]
-  
+
     module ClassMethods
-      
+
       def openerp_string_domain_to_ruby(string_domain) #FIXME: used? broken?
         eval(string_domain.gsub('(', '[').gsub(')',']'))
       end
-      
+
       def to_openerp_domain(domain)
         if domain.is_a?(Hash)
           return domain.map{|k,v| [k.to_s, '=', v]}
@@ -27,7 +27,7 @@ module Ooor
           return domain
         end
       end
-      
+
       def to_rails_type(type)
         case type.to_sym
         when :char
@@ -98,14 +98,14 @@ module Ooor
           answer
         end
       end
-      
+
     end
-    
+
     def sanitize_attribute(skey, value)
       type = self.class.fields[skey]['type']
-      if type == 'boolean' && value == 1 || value == "1"
+      if type == 'boolean' && (value == 1 || value == "1")
         true
-      elsif type == 'boolean'&& value == 0 || value == "0"
+      elsif type == 'boolean'&& (value == 0 || value == "0")
         false
       elsif value == false && type != 'boolean'
         nil
@@ -152,7 +152,7 @@ module Ooor
       association_keys.each { |k| associations[k] = self.cast_association(k) }
       @attributes.slice(*attribute_keys).merge(associations)
     end
-    
+
     def get_changed_values
       attribute_keys = changed.select {|k| self.class.fields.has_key?(k)} - BLACKLIST
       association_keys = changed.select {|k| self.class.associations_keys.index(k)}
@@ -218,6 +218,6 @@ module Ooor
         v
       end
     end
- 
+
   end
 end
