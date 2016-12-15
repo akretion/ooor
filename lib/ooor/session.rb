@@ -1,7 +1,7 @@
 require 'ooor/services'
 require 'active_support/configurable'
 require 'active_support/core_ext/hash/slice'
-require 'addressable/uri'
+
 
 module Ooor
   class Session
@@ -17,6 +17,10 @@ module Ooor
 
 
     def public_controller_method(path, query_values)
+      unless defined?(Addressable)
+        raise "You need to install the addressable gem for this feature"
+      end
+      require 'addressable/uri'
       login_if_required()
       conn = get_client(:json, "#{base_jsonrpc2_url}")
       conn.post do |req|
