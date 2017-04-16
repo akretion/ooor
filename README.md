@@ -168,10 +168,10 @@ Create:
 
 ```ruby
 pc = ProductCategory.new(:name => 'Categ From Rails!')
-#<ProductCategory:0xb702c42c @prefix_options={}, @attributes={"name"=>"Categ From Rails!"}>
+# <ProductCategory:0xb702c42c @prefix_options={}, @attributes={"name"=>"Categ From Rails!"}>
 pc.create
 pc.id
-#$ => 14
+# $ => 14
 ```
 
 
@@ -200,7 +200,7 @@ Call workflow:
 s = SaleOrder.find(2)
 s.wkf_action('cancel')
 s.state
-#=> 'cancel'
+# => 'cancel'
 ```
 
 On Change methods:
@@ -215,7 +215,7 @@ ultimately it works:
 ```ruby
 l = SaleOrderLine.new
 l.on_change('product_id_change', :product_id, 20, 1, 20, 1, false, 1, false, false, 7, 'en_US', true, false, false, false)
-#=> #<SaleOrderLine:0x7f76118b4348 @prefix_options={}, @relations={"product_uos"=>false, "product_id"=>20, "product_uom"=>1, "tax_id"=>[]}, @loaded_relations={}, @attributes={"name"=>"[TOW1] ATX Mid-size Tower", "product_uos_qty"=>1, "delay"=>1.0, "price_unit"=>37.5, "type"=>"make_to_stock", "th_weight"=>0}>
+# => #<SaleOrderLine:0x7f76118b4348 @prefix_options={}, @relations={"product_uos"=>false, "product_id"=>20, "product_uom"=>1, "tax_id"=>[]}, @loaded_relations={}, @attributes={"name"=>"[TOW1] ATX Mid-size Tower", "product_uos_qty"=>1, "delay"=>1.0, "price_unit"=>37.5, "type"=>"make_to_stock", "th_weight"=>0}>
 ```
 Notice that it reloads the Objects attrs and print warning message accordingly
 
@@ -231,7 +231,7 @@ so.on_change('onchange_partner_id', :partner_id, 1, 1, false) #auto-complete the
 so.order_line = [SaleOrderLine.new(:name => 'sl1', :product_id => 1, :price_unit => 42, :product_uom => 1)] #create one order line
 so.save
 so.amount_total
-#=> 42.0
+# => 42.0
 ```
 
 
@@ -252,15 +252,15 @@ Call old style wizards (OpenERP v5):
 
 ```ruby
 inv = AccountInvoice.find(4)
-#in case the inv.state is 'draft', do inv.wkf_action('invoice_open')
+# in case the inv.state is 'draft', do inv.wkf_action('invoice_open')
 wizard = inv.old_wizard_step('account.invoice.pay') #tip: you can inspect the wizard fields, arch and datas
 wizard.reconcile({:journal_id => 6, :name =>"from_rails"}) #if you want to pay all; will give you a reloaded invoice
 inv.state
-#=> "paid"
-#or if you want a payment with a write off:
+# => "paid"
+# or if you want a payment with a write off:
 wizard.writeoff_check({"amount" => 12, "journal_id" => 6, "name" =>'from_rails'}) #use the button name as the wizard method
 wizard.reconcile({required missing write off fields...}) #will give you a reloaded invoice because state is 'end'
-#TODO test and document new osv_memory wizards API
+# TODO test and document new osv_memory wizards API
 ```
 
 
@@ -290,8 +290,8 @@ Example:
 ```ruby 
 inv = AccountInvoice.find(3)
 report = inv.get_report_data('account.invoice') #account.invoice is the service name defined in Invoices report
-#Save the report to a file
-#report[1] contains the file extension and report[0] contains the binary data of the report encoded in base64
+# Save the report to a file
+# report[1] contains the file extension and report[0] contains the binary data of the report encoded in base64
 File.open("invoice_report.#{report[1]}", "w") {|f| f.write(Base64.decode64(report[0]))} 
 ```
 
@@ -302,7 +302,7 @@ An Ooor client can have a global user logged in, to change it:
 ```ruby
 Ooor.global_login('demo', 'demo')
 s = SaleOrder.find(2)
-#=> 'Access denied error'
+# => 'Access denied error'
 ```
 
 Instead, every Ooor business objects can also belong to some specific user. To achieve that, generate your object passing
