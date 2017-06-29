@@ -40,6 +40,7 @@ module Ooor
       @local_context = {}
       @web_session = web_session || {}
       @id = id || web_session[:session_id]
+      Ooor.session_handler.register_session(self)
     end
 
     def login_if_required

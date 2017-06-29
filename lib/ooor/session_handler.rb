@@ -19,10 +19,10 @@ module Ooor
       end
 
       s = sessions[spec]
-      # reload or no matching session found so create a new one
+      # reload session or create a new one if no matching session found
       if config[:reload] || !s
         config = Ooor.default_config.merge(config) if Ooor.default_config.is_a? Hash
-      Ooor::Session.new(config, web_session, id)
+        Ooor::Session.new(config, web_session, id)
 
       # found but config mismatch still
       elsif noweb_session_spec(s.config) != noweb_session_spec(config)
