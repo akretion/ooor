@@ -4,6 +4,12 @@ gemspec
 
 gem "activemodel", "~> #{ENV["RAILS_VERSION"]}" if ENV["RAILS_VERSION"]
 
+if ENV["RAILS_VERSION"].to_i >= 5
+  gem 'activemodel-serializers-xml'
+  gem 'active_model_serializers'
+end
+
+
 group :test do
   gem 'rspec'
   if ENV["CI"]

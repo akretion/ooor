@@ -2,6 +2,20 @@ require 'active_support'
 require 'active_support/core_ext/class/attribute_accessors'
 require 'active_model'
 
+if ActiveModel.respond_to?(:version) && ActiveModel.version.version.to_i >= 5
+  begin
+    require 'active_model_serializers'
+    require 'activemodel-serializers-xml'
+  rescue LoadError
+    puts """When using ActiveModel or Rails 5+, you should add
+    gem 'active_model_serializers'
+    gem 'activemodel-serializers-xml'
+    in your Gemfile.
+    """
+  end
+end
+
+
 module Ooor
   # Ooor::MiniActiveResource is a shrinked version of ActiveResource::Base with the bare minimum we need for Ooor.
   # as a reminder ActiveResource::Base is the main class for mapping RESTful resources as models in a Rails application.
@@ -21,10 +35,12 @@ module Ooor
     attr_accessor :attributes, :id
 
     def to_json(options={})
+      raise "you should add gem 'active_model_serializers' in your Gemfile" unless defined?(ActiveModel::Serializers::JSON)
       super(include_root_in_json ? { :root => self.class.element_name }.merge(options) : options)
     end
 
     def to_xml(options={})
+      raise "you should add gem 'activemodel-serializers-xml' in your Gemfile" unless defined?(ActiveModel::Serializers::Xml)
       super({ :root => self.class.element_name }.merge(options))
     end
 
@@ -63,8 +79,8 @@ module Ooor
 
 
     include ActiveModel::Conversion
-    include ActiveModel::Serializers::JSON
-    include ActiveModel::Serializers::Xml
+    include ActiveModel::Serializers::JSON if defined?(ActiveModel::Serializers::JSON)
+    include ActiveModel::Serializers::Xml if defined?(ActiveModel::Serializers::Xml)
 
   end
 end
