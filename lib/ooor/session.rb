@@ -67,7 +67,7 @@ module Ooor
           raise "#{error['message']} ------- #{error['data']['debug']}"
         elsif response.status == 200
           if sid_part1 = web_session[:cookie].split("sid=")[1]
-            # NOTE required on v7 but not on v8+, this enables to sniff if we are on v7
+            # required on v7 but not on v8+, this enables us to sniff if we are on v7
             web_session[:sid] = web_session[:cookie].split("sid=")[1].split(";")[0]
           end
 
@@ -76,7 +76,7 @@ module Ooor
           user_id = json_response['result'].delete('uid')
           config[:user_id] = user_id
           web_session.merge!(json_response['result'].delete('user_context'))
-          config.merge!(json_response['result'])
+          set_config(json_response['result'])
           Ooor.session_handler.register_session(self)
           user_id
         else
@@ -105,7 +105,7 @@ module Ooor
     end
 
     def global_login(options)
-      config.merge!(options.symbolize_keys)
+      set_config(options)
       load_models(config[:models], options[:reload])
     end
 
@@ -219,6 +219,18 @@ module Ooor
 
     def class_name_from_model_key(model_key)
       model_key.split('.').collect {|name_part| name_part.capitalize}.join
+    end
+
+    def odoo_serie
+      if config[:server_version_info] # v10 and onward
+        config[:server_version_info][0]
+      elsif config['partner_id']
+        9
+      elsif web_session[:sid]
+        7
+      else
+        8
+      end
     end
 
     private

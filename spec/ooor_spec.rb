@@ -801,6 +801,12 @@ describe Ooor do
       expect(s1.object_id).not_to eq(s2.object_id)
     end
 
+    it "should sniff the Odoo version properly" do
+      with_ooor_session({url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE}) do |session|
+        expect(session.odoo_serie).to eq(OOOR_ODOO_VERSION.split('.').first.to_i)
+      end
+    end
+
   end
 
 
