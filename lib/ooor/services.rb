@@ -57,7 +57,27 @@ module Ooor
 
 
   class DbService < Service
-    define_service(:db, %w[get_progress drop dump restore rename db_exist list change_admin_password list_lang server_version migrate_databases create_database duplicate_database])
+    def self.define_json_db_service(methods)
+      methods.each do |meth|
+        self.instance_eval do
+          define_method meth do |*args|
+            json_conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
+            url = "/web/database/#{meth}"
+            json_conn.oe_request(@session.web_session, url, {}, 'POST')
+          end
+        end
+      end
+    end
+
+    define_service(:db, %w[get_progress drop dump restore rename db_exist change_admin_password list_lang server_version migrate_databases create_database duplicate_database])
+
+    define_json_db_service(%w[list create])
+
+#    def list()
+#      json_conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
+#      url = "/web/database/list"
+#      json_conn.oe_request(@session.web_session, url, {}, 'POST')
+#    end
 
     def create(password=@session.config[:db_password], db_name='ooor_test', demo=true, lang='en_US', user_password=@session.config[:password] || 'admin')
       @session.logger.info "creating database #{db_name} this may take a while..."

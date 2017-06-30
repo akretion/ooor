@@ -30,8 +30,12 @@ module Ooor
         rpc_execute(:search, to_openerp_domain(domain), offset, limit, order, context, count)
       end
 
-      def name_search(name='', domain=[], operator='ilike', context={}, limit=100)
-        rpc_execute(:name_search, name, to_openerp_domain(domain), operator, context, limit)
+      def name_search(name='', domain=[], operator='ilike', limit=100, context={})
+        if session.odoo_serie < 10
+          rpc_execute(:name_search, name, to_openerp_domain(domain), operator, context, limit)
+        else
+          rpc_execute(:name_search, name, to_openerp_domain(domain), operator, limit)
+        end
       end
 
       def rpc_execute(method, *args)
@@ -65,7 +69,7 @@ module Ooor
       def offset(value); relation.offset(value); end
       def first(*args); relation.first(*args); end
       def last(*args); relation.last(*args); end
-      
+
       def logger; Ooor.logger; end
 
       private

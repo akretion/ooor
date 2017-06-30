@@ -14,7 +14,7 @@ OOOR_DB_PASSWORD = ENV['OOOR_DB_PASSWORD'] || 'admin'
 OOOR_USERNAME = ENV['OOOR_USERNAME'] || 'admin'
 OOOR_PASSWORD = ENV['OOOR_PASSWORD'] || 'admin'
 OOOR_DATABASE = ENV['OOOR_DATABASE'] || 'ooor_test'
-OOOR_ODOO_VERSION = ENV['VERSION'] || '9.0'
+OOOR_ODOO_VERSION = ENV['VERSION'] || '10.0'
 
 #RSpec executable specification; see http://rspec.info/ for more information.
 #Run the file with the rspec command  from the rspec gem
@@ -32,7 +32,7 @@ describe Ooor do
   end
 
   it "should be able to create a new database with demo data" do
-    unless @ooor.db.list.index(OOOR_DB_PASSWORD)
+    unless @ooor.db.list.index(OOOR_DATABASE)
       @ooor.db.create(OOOR_DB_PASSWORD, OOOR_DATABASE)
     end
     expect(@ooor.db.list.index(OOOR_DATABASE)).not_to be_nil
@@ -181,8 +181,8 @@ describe Ooor do
         (%w[char binary many2one one2many many2many]).each { |t| expect(Ooor::Base.to_rails_type(t)).to be_kind_of(Symbol) }
       end
 
-      it "should be able to call any Class method" do
-        expect(ResPartner.name_search('ax', [], 'ilike', {})).not_to be_nil
+      it "should be able to call name_search" do
+        expect(ResPartner.name_search('ax', [], 'ilike')).not_to be_nil
       end
     end
 
@@ -201,7 +201,7 @@ describe Ooor do
         end
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should read many2many relations" do
         s = SaleOrder.find(:first)
         s.order_policy = 'manual'
@@ -224,7 +224,7 @@ describe Ooor do
         expect(p.name).to eq("testProduct1")
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should properly change value when m2o is set" do
         p = ProductProduct.find(:first)
         p.categ_id = 7
@@ -258,7 +258,7 @@ describe Ooor do
         expect(o.id).to be_kind_of(Integer)
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should be able to to create an invoice" do
         i = AccountInvoice.new(:origin => 'ooor_test')
         partner_id = ResPartner.search([['name', 'ilike', 'Agrolait']])[0]
@@ -315,7 +315,7 @@ describe Ooor do
         expect(s.partner_id.id).to eq(new_partner_id)
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should be able to do product.taxes_id = [id1, id2]" do
         p = ProductProduct.find(1)
         p.taxes_id = AccountTax.search([['type_tax_use','=','sale']])[0..1]
@@ -383,7 +383,7 @@ describe Ooor do
         expect(so.order_line.build()).to be_kind_of(SaleOrderLine)
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should recast string m2o string id to an integer (it happens in forms)" do
         uom_id = @ooor.const_get('product.uom').search()[0]
         p = ProductProduct.new(name: "z recast id", uom_id: uom_id.to_s)
@@ -477,7 +477,7 @@ describe Ooor do
         expect(collection.all.size).to eq(5)
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should support name_search in ARel (used in association widgets with Ooorest)" do
         if OOOR_ODOO_VERSION == '7.0'
           expected = "All products / Saleable / Components"
@@ -511,7 +511,7 @@ describe Ooor do
     end
 
     describe "wizard management" do
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should be possible to pay an invoice in one step" do
         inv = AccountInvoice.find(:first).copy() # creates a draft invoice
         expect(inv.state).to eq("draft")
@@ -523,7 +523,7 @@ describe Ooor do
       end
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should be possible to call resource actions and workflow actions" do
         s = SaleOrder.find(:first).copy()
         s.wkf_action('order_confirm')
@@ -597,7 +597,7 @@ describe Ooor do
       end
     end
 
-    if OOOR_ODOO_VERSION != '9.0' # TODO make it work on 9
+    if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION) # TODO make it work on 9
     it "should find by permalink" do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connection reuse here
       with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|
