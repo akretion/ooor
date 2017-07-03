@@ -33,7 +33,8 @@ install:
 before_script:
   - cwd=$(pwd)
   - cd ${HOME}/odoo-${VERSION}
-  - [ -f openerp-server ] && ln -s ./openerp-server ./odoo-bin && chmod +x ./odoo-bin
+  - ln -s ./openerp-server ./odoo-bin
+  - chmod +x ./odoo-bin
   - ./odoo-bin --addons-path=${HOME}/odoo-${VERSION}/addons --db_user=travis --db_password=admin --db_host=localhost &
   - cd $cwd
   - bundle install
