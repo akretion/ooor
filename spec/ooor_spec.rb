@@ -70,7 +70,7 @@ describe Ooor do
   describe "Do operations on configured database" do
     before(:all) do
       @ooor = Ooor.new(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE,
-                       models: ['res.users', 'res.partner', 'res.partner.category', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'ir.cron', 'ir.ui.menu', 'ir.module.module', 'ir.actions.client'])
+                       models: ['res.users', 'res.partner', 'res.company', 'res.partner.category', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'ir.cron', 'ir.ui.menu', 'ir.module.module', 'ir.actions.client'])
     end
 
     describe "Finders operations" do
@@ -199,7 +199,7 @@ describe Ooor do
     describe "Relations reading" do
       it "should read many2one relations" do
         partner = ResPartner.find(:first)
-        expect(partner.country_id).to be_kind_of(ResCountry)
+        expect(partner.company_id).to be_kind_of(ResCompany)
         p = ProductProduct.find(1) #inherited via product template
         expect(p.categ_id).to be_kind_of(ProductCategory)
       end
@@ -217,8 +217,10 @@ describe Ooor do
         expect(c.partner_ids[0].category_id).to be_kind_of(Array)
       end
 
+      if ['9.0', '10.0'].include?(OOOR_ODOO_VERSION)
       it "should read polymorphic references" do
         expect(IrUiMenu.where(name: "Settings").first.child_id[0].action).to be_kind_of(IrActionsClient)
+      end
       end
     end
 
@@ -301,7 +303,7 @@ describe Ooor do
 
     describe "Basic updates" do
       it "should cast properly from Ruby to OpenERP" do
-        partner = ResPartner.find(:first).copy()
+        partner = ResPartner.find :first
         partner.date = 2.days.ago
         partner.save
       end
@@ -549,7 +551,7 @@ describe Ooor do
       end
 
       it "should be able to destroy loaded business objects" do
-        ResPartner.find(:first).copy().destroy()
+        ProductProduct.find(:first).copy({name: 'new name'}).destroy()
       end
     end
 
