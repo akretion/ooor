@@ -16,7 +16,7 @@ module Ooor
     def report(); @report_service ||= ReportService.new(self); end
 
 
-    def public_controller_method(path, query_values)
+    def public_controller_method(path, query_values={})
       unless defined?(Addressable)
         raise "You need to install the addressable gem for this feature"
       end
@@ -222,14 +222,24 @@ module Ooor
     end
 
     def odoo_serie
-      if config[:server_version_info] # v10 and onward
-        config[:server_version_info][0]
-      elsif config['partner_id']
-        9
-      elsif web_session[:sid]
-        7
+      if config.user_id # authenticated session
+        if config[:server_version_info] # v10 and onward
+          config[:server_version_info][0]
+        elsif config['partner_id']
+          9
+        elsif web_session[:sid]
+          7
+        else
+          8
+        end
       else
-        8
+        json_conn = get_client(:json, base_jsonrpc2_url)
+        begin
+          @version_info ||= json_conn.oe_service(web_session, "/web/webclient/version_info", nil, nil, [])
+          @version_info['server_serie'].to_i
+        rescue # Odoo v7 doesn't have this version info service
+          7
+        end
       end
     end
 

@@ -19,6 +19,8 @@ env:
   - VERSION="7.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" RAILS_VERSION=3.2
   - VERSION="8.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" RAILS_VERSION=4.2
   - VERSION="9.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" RAILS_VERSION=5.1
+  - VERSION="10.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" RAILS_VERSION=5.1
+
 
 virtualenv:
   system_site_packages: true
@@ -31,7 +33,8 @@ install:
 before_script:
   - cwd=$(pwd)
   - cd ${HOME}/odoo-${VERSION}
-  - ./openerp-server --addons-path=${HOME}/odoo-${VERSION}/addons --db_user=travis --db_password=admin --db_host=localhost &
+  - if [[ -f ./openerp-server ]]; then ln -s ./openerp-server ./odoo-bin; chmod +x ./odoo-bin; fi
+  - ./odoo-bin --addons-path=${HOME}/odoo-${VERSION}/addons --db_user=travis --db_password=admin --db_host=localhost &
   - cd $cwd
   - bundle install
 
@@ -43,4 +46,4 @@ services:
 
 matrix:
   allow_failures:
-    - env: "VERSION=8.0"
+    #    - env: "VERSION=8.0"

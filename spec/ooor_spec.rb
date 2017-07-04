@@ -14,7 +14,7 @@ OOOR_DB_PASSWORD = ENV['OOOR_DB_PASSWORD'] || 'admin'
 OOOR_USERNAME = ENV['OOOR_USERNAME'] || 'admin'
 OOOR_PASSWORD = ENV['OOOR_PASSWORD'] || 'admin'
 OOOR_DATABASE = ENV['OOOR_DATABASE'] || 'ooor_test'
-OOOR_ODOO_VERSION = ENV['VERSION'] || '9.0'
+OOOR_ODOO_VERSION = ENV['VERSION'] || '10.0'
 
 #RSpec executable specification; see http://rspec.info/ for more information.
 #Run the file with the rspec command  from the rspec gem
@@ -32,7 +32,7 @@ describe Ooor do
   end
 
   it "should be able to create a new database with demo data" do
-    unless @ooor.db.list.index(OOOR_DB_PASSWORD)
+    unless @ooor.db.list.index(OOOR_DATABASE)
       @ooor.db.create(OOOR_DB_PASSWORD, OOOR_DATABASE)
     end
     expect(@ooor.db.list.index(OOOR_DATABASE)).not_to be_nil
@@ -44,11 +44,18 @@ describe Ooor do
     end
 
     it "should be able to load a profile" do
-      IrModuleModule.install_modules(['sale', 'account_voucher'])
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
+        modules = ['sale', 'account_voucher']
+      else
+        modules = ['product']
+      end
+
+      IrModuleModule.install_modules(modules)
       @ooor.load_models
       expect(@ooor.models.keys).not_to be_empty
     end
 
+    if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
     it "should be able to configure the database" do
       if AccountTax.search.empty?
         w1 = @ooor.const_get('account.installer').create(:charts => "configurable")
@@ -57,12 +64,13 @@ describe Ooor do
         w1.action_next
       end
     end
+    end
   end
 
   describe "Do operations on configured database" do
     before(:all) do
       @ooor = Ooor.new(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE,
-        models: ['res.user', 'res.partner', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'ir.cron', 'ir.ui.menu', 'ir.module.module'])
+                       models: ['res.users', 'res.partner', 'res.company', 'res.partner.category', 'product.product',  'sale.order', 'account.invoice', 'product.category', 'ir.cron', 'ir.ui.menu', 'ir.module.module', 'ir.actions.client'])
     end
 
     describe "Finders operations" do
@@ -109,7 +117,7 @@ describe Ooor do
       end
 
       it "fetches last data created last" do
-        last_product_id = ProductProduct.search([], 0, 1, "create_date DESC").first
+        last_product_id = ProductProduct.search([], 0, 0, "id ASC").last
         expect(ProductProduct.find(:last).id).to eq last_product_id
       end
 
@@ -167,8 +175,10 @@ describe Ooor do
       end
 
       it "should cast dates properly from OpenERP to Ruby" do
-        o = SaleOrder.find(1)
-        expect(o.date_order).to be_kind_of(Date)
+        partner = ResPartner.find :first
+        partner.date = Date.today
+        partner.save
+        expect(partner.date).to be_kind_of(Date)
         c = IrCron.find(1)
         expect(c.nextcall).to be_kind_of(DateTime)
       end
@@ -181,39 +191,36 @@ describe Ooor do
         (%w[char binary many2one one2many many2many]).each { |t| expect(Ooor::Base.to_rails_type(t)).to be_kind_of(Symbol) }
       end
 
-      it "should be able to call any Class method" do
-        expect(ResPartner.name_search('ax', [], 'ilike', {})).not_to be_nil
+      it "should be able to call name_search" do
+        expect(ResPartner.name_search('ax', [], 'ilike')).not_to be_nil
       end
     end
 
     describe "Relations reading" do
       it "should read many2one relations" do
-        o = SaleOrder.find(:first)
-        expect(o.partner_id).to be_kind_of(ResPartner)
+        partner = ResPartner.find(:first)
+        expect(partner.company_id).to be_kind_of(ResCompany)
         p = ProductProduct.find(1) #inherited via product template
         expect(p.categ_id).to be_kind_of(ProductCategory)
       end
 
       it "should read one2many relations" do
-        o = SaleOrder.find(:first)
-        o.order_line.each do |line|
-        expect(line).to be_kind_of(SaleOrderLine)
+        user = ResUsers.where(['partner_id', '!=', false]).first
+        partner = user.partner_id
+        partner.user_ids.each do |user|
+          expect(user).to be_kind_of(ResUsers)
         end
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
       it "should read many2many relations" do
-        s = SaleOrder.find(:first)
-        s.order_policy = 'manual'
-        s.save
-        s.wkf_action('order_confirm')
-        s.wkf_action('manual_invoice')
-        expect(SaleOrder.find(:first).order_line[1].invoice_lines).to be_kind_of(Array)
-      end
+        c = ResPartnerCategory.find 5
+        expect(c.partner_ids[0].category_id).to be_kind_of(Array)
       end
 
+      if ['9.0', '10.0'].include?(OOOR_ODOO_VERSION)
       it "should read polymorphic references" do
-        expect(IrUiMenu.find(:first, :domain => [['name', '=', 'Customers'], ['parent_id', '!=', false]]).action).to be_kind_of(IrActionsAct_window)
+        expect(IrUiMenu.where(name: "Settings").first.child_id[0].action).to be_kind_of(IrActionsClient)
+      end
       end
     end
 
@@ -224,7 +231,7 @@ describe Ooor do
         expect(p.name).to eq("testProduct1")
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should properly change value when m2o is set" do
         p = ProductProduct.find(:first)
         p.categ_id = 7
@@ -252,13 +259,12 @@ describe Ooor do
         expect(u.destroy).to be_kind_of(ResUsers)
       end
 
-      it "should be able to create an order" do
-        p_id = ResPartner.search([['name', 'ilike', 'Agrolait']])[0]
-        o = SaleOrder.create(partner_id: p_id, partner_invoice_id: p_id, partner_shipping_id: p_id, pricelist_id: 1)
-        expect(o.id).to be_kind_of(Integer)
+      it "should be able to create a record" do
+        partner = ResPartner.create(name: 'ooor Partner', company_id: 1)
+        expect(partner.id).to be_kind_of(Integer)
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should be able to to create an invoice" do
         i = AccountInvoice.new(:origin => 'ooor_test')
         partner_id = ResPartner.search([['name', 'ilike', 'Agrolait']])[0]
@@ -297,25 +303,24 @@ describe Ooor do
 
     describe "Basic updates" do
       it "should cast properly from Ruby to OpenERP" do
-        o = SaleOrder.find(:first).copy()
-        o.date_order = 2.days.ago
-        o.save
+        partner = ResPartner.find :first
+        partner.date = 2.days.ago
+        partner.save
       end
 
       it "should be able to reload resource" do
-        s = SaleOrder.find(:first)
-        expect(s.reload).to be_kind_of(SaleOrder)
+        s = ResPartner.find(:first)
+        expect(s.reload).to be_kind_of(ResPartner)
       end
     end
 
     describe "Relations assignations" do
       it "should be able to assign many2one relations on new" do
-        new_partner_id = ResPartner.search()[0]
-        s = SaleOrder.new(:partner_id => new_partner_id)
-        expect(s.partner_id.id).to eq(new_partner_id)
+        partner = ResPartner.new(company_id: 2)
+        expect(partner.company_id.id).to eq(2)
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should be able to do product.taxes_id = [id1, id2]" do
         p = ProductProduct.find(1)
         p.taxes_id = AccountTax.search([['type_tax_use','=','sale']])[0..1]
@@ -348,18 +353,18 @@ describe Ooor do
       end
 
       it "should read o2m with an extra _ids suffix" do
-        so = SaleOrder.find :first
-        expect(so.order_line_ids).to be_kind_of(Array)
+        partner = ResPartner.find :first
+        expect(partner.user_ids_ids).to be_kind_of(Array)
       end
 
       it "should read m2m with an extra _ids suffix" do
-        p = ProductProduct.find(1)
-        expect(p.taxes_id_ids).to be_kind_of(Array)
+        partner = ResPartner.find :first
+        expect(partner.category_id_ids).to be_kind_of(Array)
       end
 
       it "should support Rails nested attributes methods" do
-        so = SaleOrder.find :first
-        expect(so.respond_to?(:order_line_attributes=)).to eq(true)
+        partner = ResPartner.find :first
+        expect(partner.respond_to?(:user_ids_attributes=)).to eq(true)
       end
 
       if OOOR_ODOO_VERSION == '7.0'
@@ -379,11 +384,11 @@ describe Ooor do
       end
 
       it "should be able to call build upon a o2m association" do
-        so = SaleOrder.find :first
-        expect(so.order_line.build()).to be_kind_of(SaleOrderLine)
+        partner = ResPartner.find :first
+        expect(partner.user_ids.build()).to be_kind_of(ResUsers)
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should recast string m2o string id to an integer (it happens in forms)" do
         uom_id = @ooor.const_get('product.uom').search()[0]
         p = ProductProduct.new(name: "z recast id", uom_id: uom_id.to_s)
@@ -477,7 +482,7 @@ describe Ooor do
         expect(collection.all.size).to eq(5)
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should support name_search in ARel (used in association widgets with Ooorest)" do
         if OOOR_ODOO_VERSION == '7.0'
           expected = "All products / Saleable / Components"
@@ -511,7 +516,7 @@ describe Ooor do
     end
 
     describe "wizard management" do
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should be possible to pay an invoice in one step" do
         inv = AccountInvoice.find(:first).copy() # creates a draft invoice
         expect(inv.state).to eq("draft")
@@ -523,7 +528,7 @@ describe Ooor do
       end
       end
 
-      if OOOR_ODOO_VERSION != '9.0'
+      if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION)
       it "should be possible to call resource actions and workflow actions" do
         s = SaleOrder.find(:first).copy()
         s.wkf_action('order_confirm')
@@ -546,11 +551,7 @@ describe Ooor do
       end
 
       it "should be able to destroy loaded business objects" do
-        orders = SaleOrder.find(:all, :domain => [['origin', 'ilike', 'ooor_test']])
-        orders.each {|order| order.destroy}
-
-        invoices = AccountInvoice.find(:all, :domain => [['origin', 'ilike', 'ooor_test']])
-        invoices.each {|inv| inv.destroy}
+        ProductProduct.find(:first).copy({name: 'new name'}).destroy()
       end
     end
 
@@ -597,7 +598,7 @@ describe Ooor do
       end
     end
 
-    if OOOR_ODOO_VERSION != '9.0' # TODO make it work on 9
+    if ['7.0', '8.0'].include?(OOOR_ODOO_VERSION) # TODO make it work on 9
     it "should find by permalink" do
       Ooor.session_handler.reset!() # alias isn't part of the connection spec, we don't want connection reuse here
       with_ooor_session(url: OOOR_URL, username: OOOR_USERNAME, password: OOOR_PASSWORD, database: OOOR_DATABASE, :aliases => {en_US: {products: 'product.product'}}, :param_keys => {'product.product' => 'name'}) do |session|

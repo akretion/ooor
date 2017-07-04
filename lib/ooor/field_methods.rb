@@ -10,7 +10,11 @@ module Ooor
         if force || !fields
           @t.fields = {}
           @columns_hash = {}
-          fields_get = rpc_execute("fields_get", false, context)
+          if session.odoo_serie < 10
+            fields_get = rpc_execute("fields_get", false, context)
+          else
+            fields_get = rpc_execute("fields_get", false)
+          end
           fields_get.each { |k, field| reload_field_definition(k, field) }
           @t.associations_keys = many2one_associations.keys + one2many_associations.keys + many2many_associations.keys + polymorphic_m2o_associations.keys
           logger.debug "#{fields.size} fields loaded in model #{self.name}"

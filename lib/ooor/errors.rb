@@ -15,7 +15,7 @@ module Ooor
         return UnknownOpenERPServerError.new("method: #{method} - args: #{args.inspect}")
       end
     end
-      
+
     def self.build(faultCode, faultString, method, *args)
       if faultCode =~ /AttributeError: / || faultCode =~ /object has no attribute/
         return UnknownAttributeOrAssociationError.new("method: #{method} - args: #{args.inspect}", faultCode, faultString)
@@ -43,9 +43,9 @@ module Ooor
       @faultString = faultString
       super()
     end
-    
+
     def filter_password(args)
-      if args[0].is_a?(String) && args[2].is_a?(String) && (args[1].is_a?(Integer) || args[1].to_i != 0)
+      if args[0].is_a?(String) && args[2].is_a?(String) && (args[1].is_a?(Integer) || (args[1].respond_to?(:to_i) && args[1].to_i != 0))
         args[2] = "####"
       end
       args.map! do |arg|
@@ -96,10 +96,10 @@ module Ooor
       fields.each { |field| errors.add(field.strip.to_sym, msg) }
     end
   end
-  
+
   class UnknownAttributeOrAssociationError < OpenERPServerError
     attr_accessor :klass
-    
+
     def to_s()
       s = super
       s << available_fields(@klass) if @klass

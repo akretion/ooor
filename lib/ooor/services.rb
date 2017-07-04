@@ -14,12 +14,18 @@ module Ooor
       @session = session
     end
 
+    # using define_method provides handy autocompletion
     def self.define_service(service, methods)
       methods.each do |meth|
         self.instance_eval do
           define_method meth do |*args|
-            endpoint = @session.get_client(:xml, "#{@session.base_url}/#{service.to_s.gsub('ooor_alias_', '')}") #TODO make that transport agnostic
-            endpoint.call(meth.gsub('ooor_alias_', ''), *args)
+            if @session.odoo_serie > 7
+              json_conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
+              json_conn.oe_service(@session.web_session, service, nil, meth, *args)
+            else # via XMLRPC on v7:
+              endpoint = @session.get_client(:xml, "#{@session.base_url}/#{service.to_s.gsub('ooor_alias_', '')}")
+              endpoint.call(meth.gsub('ooor_alias_', ''), *args)
+            end
           end
         end
       end
@@ -60,12 +66,17 @@ module Ooor
     define_service(:db, %w[get_progress drop dump restore rename db_exist list change_admin_password list_lang server_version migrate_databases create_database duplicate_database])
 
     def create(password=@session.config[:db_password], db_name='ooor_test', demo=true, lang='en_US', user_password=@session.config[:password] || 'admin')
-      @session.logger.info "creating database #{db_name} this may take a while..."
-      process_id = @session.get_client(:xml, @session.base_url + "/db").call("create_database", password, db_name, demo, lang, user_password)
-      sleep(2)
-      while process_id.is_a?(Integer) && get_progress(password, process_id)[0] != 1
-        @session.logger.info "..."
-        sleep(0.5)
+      if @session.odoo_serie > 7
+        json_conn = @session.get_client(:json, "#{@session.base_jsonrpc2_url}")
+        x = json_conn.oe_service(@session.web_session, :db, nil, 'create_database', password, db_name, demo, lang, user_password)
+      else # via XMLRPC on v7:
+        @session.logger.info "creating database #{db_name} this may take a while..."
+        process_id = @session.get_client(:xml, @session.base_url + "/db").call("create_database", password, db_name, demo, lang, user_password)
+        sleep(2)
+        while process_id.is_a?(Integer) && get_progress(password, process_id)[0] != 1
+          @session.logger.info "..."
+          sleep(0.5)
+        end
       end
       @session.global_login(username: 'admin', password: user_password, database: db_name)
     end

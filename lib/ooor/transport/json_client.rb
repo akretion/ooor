@@ -9,6 +9,9 @@ module Ooor
           if service == :exec_workflow
             url = '/web/dataset/exec_workflow'
             params = {"model"=>obj, "id"=>args[0], "signal"=>method}
+          elsif service == :db || service == :common
+            url = '/jsonrpc'
+            params = {"service"=> service, "method"=> method, "args"=> args}
           elsif service == :execute
             url = '/web/dataset/call_kw'
             if (i = Ooor.irregular_context_position(method)) && args.size < i
@@ -17,10 +20,13 @@ module Ooor
               kwargs = {}
             end
             params = {"model"=>obj, "method"=> method, "kwargs"=> kwargs, "args"=>args}#, "context"=>context}
+          elsif service.to_s.start_with?("/") # assuming service URL is forced
+            url = service
+            params = args[0]
           else
             url = "/web/dataset/#{service}"
             params = args[0].merge({"model"=>obj})
-          end
+          end # TODO reports for version > 7
           oe_request(session_info, url, params, method, *args)
         end
 
