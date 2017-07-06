@@ -7,6 +7,7 @@
 
 module Ooor
   # = Similar to Active Record Relation
+  # subset of https://github.com/rails/rails/blob/master/activerecord/lib/active_record/relation/query_methods.rb
   class Relation
     attr_reader :klass, :loaded
     attr_accessor :options, :count_field, :includes_values, :eager_load_values, :preload_values,
