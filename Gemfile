@@ -12,6 +12,7 @@ end
 
 group :test do
   gem 'rspec'
+  gem "rails", "~> #{ENV["RAILS_VERSION"]}" if ENV["RAILS_VERSION"]
   if ENV["CI"]
     gem "coveralls", require: false
   end
