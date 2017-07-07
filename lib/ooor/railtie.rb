@@ -21,10 +21,10 @@ module Ooor
           puts "Could not load Rack::I18nLocaleSwitcher, if your application is internationalized, make sure to include rack-i18n_locale_switcher in your Gemfile"
         end
       end
-      if defined?(Warden::Manager)
-        app.middleware.insert_after Warden::Manager, '::Ooor::Rack'
+      if defined?(::Warden::Manager)
+        app.middleware.insert_after ::Warden::Manager, ::Ooor::Rack
       else
-        app.middleware.insert_after ActionDispatch::ParamsParser, '::Ooor::Rack'
+        app.middleware.insert_after ::Rack::Head, ::Ooor::Rack
       end
     end
 
