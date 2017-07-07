@@ -1,0 +1,49 @@
+# Odoo. Versions 7 and up are supported.
+#
+default: &default
+  global_context:
+    'lang': fr_FR
+  bootstrap: true
+
+
+development:
+  <<: *default
+  database: db
+  username: admin
+  password: admin
+  url: http://localhost:8069
+
+
+# database to use when you run tests with "rake".
+test:
+  <<: *default
+  username: admin
+  password: admin
+  url: http://localhost:8069
+
+
+# As with config/secrets.yml, you never want to store sensitive information,
+# like your Odoo portal password, in your source code. If your source code is
+# ever seen by anyone, they now have access to your ERP with the portal user.
+#
+# Instead, provide the password as a unix environment variable when you boot
+# the app. Read http://guides.rubyonrails.org/configuring.html#configuring-a-database
+# for a full rundown on how to provide these environment variables in a
+# production deployment.
+#
+# On Heroku and other platform providers, you may have a full connection URL
+# available as an environment variable. For example:
+#
+#   OOOR_URL="ooor://myuser:mypass@localhost:port/somedatabase"
+#
+# You can use this database configuration with:
+#
+#   production:
+#     url: <%%= ENV['OOOR_URL'] %>
+#
+production:
+  <<: *default
+  database: prod_db
+  username: portal_user
+  password: <%%= ENV['OOOR_PASSWORD'] %>
+  url: https://prod_host
