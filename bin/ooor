@@ -7,52 +7,37 @@ require 'rubygems'
 require 'logger'
 require 'ooor'
 require 'irb/completion'
-  
-unless ARGV.empty?
-  username = ARGV[0].split(".")[0]
-  database = ARGV[0].split(".")[1..100].join(".").split("@")[0]
-  if ARGV[0].index("@")
-    base_url = ARGV[0].split("@")[1]
-  else
-    base_url = "localhost"
-    end  
-  port_given = false
-  if base_url.index(":") #port in URL
-    t = base_url.split(":")
-    base_url = t[0]
-    port = t[1]
-    port_given = true
-  else
-    port = "8069"
-  end
 
-  if ARGV[1] == "-s" || ARGV[2] == "-s" #secure mode
-    port = 443 unless port_given
-    protocol = "https"
-  else
-    protocol = "http"
-  end
 
-  url = "#{protocol}://#{base_url}:#{port}/xmlrpc"
-  if ARGV[1] && ARGV[1] != "-s"
-    password = ARGV[1]
-  else
-    puts "password?"
-    system "stty -echo"
-    password = $stdin.gets.chomp!
-    system "stty echo"
-    password = 'admin' if password.blank?
-  end
-  
-else
+if ARGV.empty? || ARGV[0].sub('--', '') == 'help'
   puts "USAGE: ooor admin.database@host\nor ooor admin.database@host:port\nor ooor admin.database for localhost\nyou can specify the password with ooor admin.database@host password\nyou can use the -s option for secure HTTPS mode"
   exit 0
 end
 
+cs = ARGV.join
 ARGV[0] = "--readline"
 ARGV[1] = "--prompt"
 ARGV[2] = "inf-ruby"
 
-@ooor = Ooor.new(:url => url, :database => database || 'demo', :username => username || 'admin', :password => password || 'admin', :log_level => Logger::INFO)
+Ooor.set_default_config(cs)
 
+unless Ooor.default_config[:password]
+  puts "password?"
+  system "stty -echo"
+  password = $stdin.gets.chomp!
+  system "stty echo"
+  password = 'admin' if password.blank?
+  Ooor.default_config[:password] = password
+end
+
+unless Ooor.default_config[:database]
+  puts "database?"
+  system "stty -echo"
+  password = $stdin.gets.chomp!
+  system "stty echo"
+  database = 'db' if database.blank?
+  Ooor.default_config[:database] = database
+end
+
+@ooor = Ooor.new(Ooor.default_config)
 IRB.start(__FILE__)
