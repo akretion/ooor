@@ -31,7 +31,7 @@ module Ooor
           else             find_single(scope, options)
           end
         end
-      
+
         def find_first_or_last(options, ordering = "ASC")
           options[:order] ||= "id #{ordering}"
           options[:limit] = 1
@@ -44,7 +44,7 @@ module Ooor
           reload_fields_definition(false)
           fields = options[:fields] || options[:only] || fast_fields(options)
           fields += options[:include] if options[:include]
-          
+
           if scope
             is_collection, records = read_scope(context, fields, scope)
           else
@@ -53,12 +53,52 @@ module Ooor
           active_resources = []
           records.each { |record| active_resources << new(record, [], true)}
           if is_collection
-            active_resources
+             inject_includes!(active_resources, options)
+             active_resources
           else
             active_resources[0]
           end
         end
-        
+
+        def inject_includes!(active_resources, options)
+          (options[:includes] || []).each do |key|
+            if key.is_a?(Hash) # recursive includes
+              sub_options = key.values.first
+              if sub_options.is_a?(Array) # like Rails User.includes(:address, friends: [:address, :followers])
+                sub_options = {includes: sub_options}
+              end
+              key = key.keys.first.to_s
+            else
+              key = key.to_s
+            end
+
+            if many2one_associations.keys.include?(key)
+              filtered_ids = active_resources.map do |i|
+                val = i.associations[key]
+                val.is_a?(Array) ? val.first : val
+              end.select {|i| i} # filter out nil ids
+            elsif one2many_associations.keys.include?(key) || many2many_associations.keys.include?(key)
+              filtered_ids = active_resources.map { |i| i.associations[key]}.flatten
+            end
+
+            relation = all_fields[key]['relation']
+            records = const_get(relation).find(filtered_ids, sub_options)
+            records_hash = Hash[ *records.collect { |r| [ r.id, r ] }.flatten ]
+            if many2one_associations.keys.include?(key)
+              active_resources.each_with_index do |res|
+                val = res.associations[key]
+                rel_id = val.is_a?(Array) ? val.first : val
+                res.loaded_associations[key] = rel_id ? records_hash[rel_id] : nil
+              end
+            else # one2many and many2many
+              active_resources.each_with_index do |res|
+                rel_ids = res.associations[key]
+                res.loaded_associations[key] = rel_ids.map { |i| records_hash[i] }
+              end
+            end
+          end
+        end
+
         def read_scope(context, fields, scope)
           if scope.is_a? Array
             is_collection = true
@@ -71,7 +111,7 @@ module Ooor
           records.sort_by! {|r| scope.index(r["id"])} if @session.config[:force_xml_rpc]
           return is_collection, records
         end
-        
+
         def read_domain(context, fields, options)
           if @session.config[:force_xml_rpc]
             domain = to_openerp_domain(options[:domain] || options[:conditions] || [])
