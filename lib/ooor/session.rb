@@ -34,7 +34,7 @@ module Ooor
     end
 
     def initialize(config, web_session, id)
-      set_config(_config(config))
+      set_config(HashWithIndifferentAccess.new(config))
       Object.const_set(config[:scope_prefix], Module.new) if config[:scope_prefix]
       @models = {}
       @local_context = {}
@@ -51,6 +51,9 @@ module Ooor
 
     def login(db, username, password, kw={})
       logger.debug "OOOR login - db: #{db}, username: #{username}"
+      raise "Cannot login without specifying a database" unless db
+      raise "Cannot login without specifying a username" unless username
+      raise "Cannot login without specifying a password" unless password
       if config[:force_xml_rpc]
         send("ooor_alias_login", db, username, password)
       else
@@ -104,9 +107,9 @@ module Ooor
       self[key] = value
     end
 
-    def global_login(options)
+    def global_login(options={})
       set_config(options)
-      load_models(config[:models], options[:reload])
+      load_models(config[:models], config[:reload])
     end
 
     def with_context(context)
@@ -241,13 +244,6 @@ module Ooor
           7
         end
       end
-    end
-
-    private
-
-    def _config(config)
-      c = config.is_a?(String) ? Ooor.load_config(config, env) : config #TODO env, see old Connection
-      HashWithIndifferentAccess.new(c)
     end
 
   end
