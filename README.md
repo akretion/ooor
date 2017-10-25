@@ -7,33 +7,36 @@
 Why use Ooor?
 -------------
 
-* Ooor is an **administration Swiss Army knife** in interactive IRB sessions. It lets you connect remotely to any running OpenERP instance without stopping it, without compromising its security. It has tab auto-completion and object introspection features.
-* Ooor is a **data migration tool** (inside Kettle with the TerminatOOOR JRuby plugin). Your favorite ETL with OpenERP API super-powers!
-* Ooor is the basis for unleashed **web development**, using any **Rack** framework such as **Sinatra** or **Rails**.
+* Ooor is an administration **Swiss Army knife** in an interactive Ruby session. You connect remotely to any running Odoo instance without stopping it, without compromising its security. It has tab auto-completion and object introspection features. You can script anything you would do in the web interface or in an Odoo module with the same level of query optimization.
+* Ooor is the basis for unleashed **web development**. It is **Rack** based and inject proxies to Odoo entities in your Rack env just like you use them in your env registry in Odoo modules. You use it in popular Ruby web frameworks such as **Sinatra** or **Rails**.
 
-OpenERP is all the rage for ERP back-offices, but sometimes you want **freedom and scalablity** for your web front ends and this is exactly what Ooor offers you. It enables you to just **reuse OpenERP Model layer** (yay! no data duplication!) and let you build the other layers much the way you want, possibly standing on the shoulders of giants like Rails. Ooor even has an optionnal Rack filter that enables you to proxy some OpenERP applications of your choice (say the shopping cart for instance) and share the HTTP session with it. Ooor is also published under the **MIT licence** so it frees you from the OpenERP AGPL license contamination for your web developements.
+Odoo is all the rage for efficiently building an ERP back-office, but sometimes you want **freedom and scalablity** for your web front ends. Ooor enables you to model your web app using standard web frameworks like Rails while using Odoo as the persistence layer - **without data duplication or synchronization/mapping logic** - and reusing the Odoo business logic.
+Ooor even has an optionnal Rack filter that enables you to proxy some Odoo applications of your choice (say the shopping cart for instance) and share the HTTP session with it.
 
+Because Ooor is ActiveModel based and emulates the ActiveRecord API well enough, it just works with popular Ruby gems such as Devise for authentication, will_paginate for pagination, SimpleForm, Cocoon for nested forms...
+
+Ooor is also a lot more advanced than its Python clones: it is very carefuly designed to save Odoo requests. It can avoid the N+1 queries and also works smartly with the Rails cache so that the meta-data used to define the Odoo proxies can be cached shared between concurrent Rails workers without the need to hit Odoo again with requests such as fields_get.
 
 Related projects - a full web stack!
 ------------------------------------
 
-* [Ooorest](http://github.com/akretion/ooorest), Ooor is the **Model** layer of **MVC**. Ooorest is the **Controller** layer, enforcing a clean Railish **REST API** and offering handy **helper** to use OpenERP in your Rails application.
+* [Ooorest](http://github.com/akretion/ooorest), Ooor is the **Model** layer of **MVC**. Ooorest is the **Controller** layer, enforcing a clean Railish **REST API** and offering handy **helper** to use Odoo in your Rails application.
 * [Aktooor](http://github.com/akretion/aktooor), Aktooor is the missing **View** layer of **MVC**. It's based on [SimpleForm](https://github.com/plataformatec/simple_form), that is a clean minimalist framework that extend Rails form framework over [Twitter Bootstrap](http://getbootstrap.com)
-* [Erpify](http://github.com/akretion/erpify), Erpify is OpenERP inside the Liquid non evaling language, that is the templating language of Shopify or LocomotiveCMS for instance.
+* [Erpify](http://github.com/akretion/erpify), Erpify is Odoo inside the Liquid non evaling language, that is the templating language of Shopify or LocomotiveCMS for instance.
 * [Locomotive-erpify](http://github.com/akretion/locomtive-erpify), Erpify for LocomotiveCMS, both the engine and the Wagon local editor
-* [Solarize](http://github.com/akretion/solarize), pulling data from OpenERP relational database may not scale to your need. No problem with Solarize: you can index your OpenERP data with the [Solerp](http://github.com/akretion/solerp) OpenERP module, then search it using SolR API and even load it from SolR without even hitting OpenERP!
-* [TerminatOOOR](http://github.com/rvalyi/terminatooor), a Pentaho ETL Kettle plugin allowing to push/pull data into/from OpenERP with an incomparable flexibility and yet benefit all standard ETL features, including the AgileBI OLAP business intelligence plugin.
+* [Solarize](http://github.com/akretion/solarize), pulling data from Odoo relational database may not scale to your need. No problem with Solarize: you can index your OpenERP data with the [Solerp](http://github.com/akretion/solerp) OpenERP module, then search it using SolR API and even load it from SolR without even hitting OpenERP!
+* [TerminatOOOR](http://github.com/rvalyi/terminatooor), a Pentaho ETL Kettle plugin allowing to push/pull data into/from Odoo with an incomparable flexibility and yet benefit all standard ETL features, including the AgileBI OLAP business intelligence plugin.
 
 
 How?
 ------------
 
-OpenERP is a Python based open source ERP. But every action in OpenERP is actually exposed as a webservice (SOA orientation, close to being RESTful).
-Ooor doesn't connect to the OpenERP database, instead it uses the OpenERP data access **JSON API** so it fully enforces OpenERP security model and business logic.
+Odoo is a Python based open source ERP. But every Odoo business method is actually exposed as a JSON-RPC webservice (SOA orientation, close to being RESTful).
+Ooor doesn't connect to the Odoo database directly, Instead it uses the Odoo JSON-RPC API so it fully enforces Odoo security model and business logic.
 
-Ooor is less than 2000 lines of code. It has a test coverage of around 80%. It doesn't embed any business rule, it's just a client to OpenERP. The code of Ooor is modeled after Rails [ActiveModel](http://api.rubyonrails.org/classes/ActiveModel/Model.html), [ActiveResource](https://github.com/rails/activeresource) and [ActiveRecord](http://api.rubyonrails.org/classes/ActiveRecord/Base.html) layers.
+Ooor is around 2000 lines of code and has a test coverage over 93%. The API it exposes is not invented but it is the one of Rails: it is modeled after Rails [ActiveModel](http://api.rubyonrails.org/classes/ActiveModel/Model.html), [ActiveResource](https://github.com/rails/activeresource) and [ActiveRecord](http://api.rubyonrails.org/classes/ActiveRecord/Base.html) layers.
 
-More specifically, an OpenERP Ooor proxy implements the ActiveModel API. Instead of depending on ActiveResource which is actually a bit different (not multi-tenant, little access right management), we copied a tiny subset of it in the `mini_active_resource.rb` file and OpenERP proxies include this module. Finally Ooor emulates the ActiveRecord API wherever possible delegating its requests to OpenERP using OpenERP domain [S expressions](http://en.wikipedia.org/wiki/S-expression) instead of SQL. The ActiveRecord API emulation is actually pretty good: think **Ooor looks more like ActiveRecord than Mongoid**; it has associations, surface ARel API, Reflection API, can be paginated via Kaminary, can be integrated with SimpleForm or Cocoon seamlessly...
+More specifically, an Odoo Ooor proxy implements the ActiveModel API. Instead of depending on ActiveResource which is actually a bit different (not multi-tenant, little access right management), we copied a tiny subset of it in the `mini_active_resource.rb` file and Odoo proxies include this module. Finally Ooor emulates the ActiveRecord API wherever possible delegating its requests to Odoo using Odoo domain [S expressions](http://en.wikipedia.org/wiki/S-expression) instead of SQL. The ActiveRecord API emulation is actually pretty good: think **Ooor looks more like ActiveRecord than Mongoid**; it has associations, surface ARel API, Reflection API, can be paginated via Kaminary, can be integrated with SimpleForm or Cocoon seamlessly...
 
 Ooor features **several session modes**: in the default IRB console usage it uses a global login scheme and generate constants for your OpenERP proxies, such as ProductProduct for the product.product OpenERP object much like Rails ActiveRecord. In web mode instead, you can have several sessions and do session['product.product'] to get a proxy to the Product object matching your current session credentials, chosen database and OpenERP url (yes Ooor is not only multi-database like OpenEP, it's in fact **multi-OpenERP**!)
 
@@ -43,21 +46,22 @@ Installation
 
     $ gem install ooor
 
-(Warning Ooor has been ureleased for several months, don't hesitate to run the git version instead)
+**Warning Ooor has been ureleased for several months, don't hesitate to run the git version instead**
 
 Trying it simply
 ------------
 
 Once you installed the OOOR gem, you get a new OOOR command line. Basic usage is:
 
-    $ ooor username.database@host:xmlrpc_port
+    $ ooor username:password@host:port/database
 
-This will bring you in a standard IRB interpreter with an OOOR client already connected to your OpenERP server so you can start playing with it.
+
+This will bring you in a standard IRB interpreter with an ooor client already connected to your Odoo server so you can start playing with it.
 
 
 ### Standalone (J)Ruby application:
 
-Let's test OOOR in an irb console (irb command):
+Let's test ooor in an irb console (irb command):
 
 ```ruby
 require 'rubygems'
@@ -65,16 +69,16 @@ require 'ooor'
 Ooor.new(:url => 'http://localhost:8069/xmlrpc', :database => 'mybase', :username => 'admin', :password => 'admin')
 ```
 
-This should load all your OpenERP models into Ruby proxy Activeresource objects. Of course there are option to load only some models.
+This should load all your Odoo models into Ruby proxy Activeresource objects. Of course there are option to load only some models.
 Let's try to retrieve the user with id 1:
 
 ```ruby
 ResUsers.find(1)
 ```
-	
+
 (in case you have an error like "no such file to load -- net/https", then on Debian/Ubuntu, you might need to do before: apt-get install libopenssl-ruby)
-    
-    
+
+
 ### (J)Ruby on Rails application:
 
 Please read details [https://github.com/rvalyi/ooor/wiki/(J)Ruby-on-Rails-application](here)
@@ -83,8 +87,8 @@ Please read details [https://github.com/rvalyi/ooor/wiki/(J)Ruby-on-Rails-applic
 API usage
 ------------
 
-Note: Ruby proxy objects are named after OpenERP models in but removing the '.' and using CamelCase.
-(we remind you that OpenERP tables are also named after OpenERP models but replacing the '.' by '_'.)
+Note: Ruby proxy objects are named after Odoo models in but removing the '.' and using CamelCase.
+(we remind you that Odoo tables are also named after Odoo models but replacing the '.' by '_'.)
 
 Basic finders:
 
@@ -96,29 +100,29 @@ ProductProduct.find(:all)
 ProductProduct.find(:last)
 ```
 
-OpenERP domain support (same as OpenERP):
+Odoo domain support (same as Odoo):
 
 ```ruby
 ResPartner.find(:all, :domain=>[['supplier', '=', 1],['active','=',1]])
-#More subtle now, remember OpenERP use a kind of inverse polish notation for complex domains,
+#More subtle now, remember Odoo use a kind of inverse polish notation for complex domains,
 #here we look for a product in category 1 AND which name is either 'PC1' OR 'PC2':
 ProductProduct.find(:all, :domain=>[['categ_id','=',1],'|',['name', '=', 'PC1'],['name','=','PC2']])
 ```
 
 
-OpenERP context support (same as OpenERP):
+Odoo context support (same as Odoo):
 
 ```ruby
 ProductProduct.find(1, :context => {:my_key => 'value'})
 ```
 
-Request params or ActiveResource equivalence of OpenERP domain (but degraded as only the = operator is supported, else use domain):
+Request params or ActiveResource equivalence of Odoo domain (but degraded as only the = operator is supported, else use domain):
 
 ```ruby
 ResPartner.find(:all, :params => {:supplier => true})
 ```
 
-OpenERP search method:
+Odoo search method:
 
 ```ruby
 ResPartner.search([['name', 'ilike', 'a']], 0, 2)
@@ -134,9 +138,9 @@ SaleOrder.find(1).order_line #one2many relation
 p = ProductProduct.find(1)
 p.product_tmpl_id #many2one relation
 p.taxes_id #automagically reads man2many relation inherited via the product_tmpl_id inheritance relation
-p.taxes_id = [1,2] #save a many2many relation, notice how we bypass the awkward OpenERP syntax for many2many (would require [6,0, [1,2]]) ,
+p.taxes_id = [1,2] #save a many2many relation, notice how we bypass the awkward Odoo syntax for many2many (would require [6,0, [1,2]]) ,
 p.save #assigns taxes with id 1 and 2 as sale taxes,
-see [the official OpenERP documentation](http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many)```
+see [the official Odoo documentation](http://doc.openerp.com/developer/5_18_upgrading_server/19_1_upgrading_server.html?highlight=many2many)```
 
 
 Inherited relations support:
@@ -145,7 +149,7 @@ Inherited relations support:
 ProductProduct.find(1).categ_id #where categ_id is inherited from the ProductTemplate
 ```
 
-Please notice that loaded relations are cached (to avoid  hitting OpenERP over and over)
+Please notice that loaded relations are cached (to avoid  hitting Odoo over and over)
 until the root object is reloaded (after save/update for instance).
 
 
@@ -286,13 +290,13 @@ Obtain report binary data:
 
 To obtain the binary data of an object report simply use the function get_report_data(report_name). This function returns a list that contains the binary data encoded in base64 and a string with the file format.
 Example:
-   
-```ruby 
+
+```ruby
 inv = AccountInvoice.find(3)
 report = inv.get_report_data('account.invoice') #account.invoice is the service name defined in Invoices report
 # Save the report to a file
 # report[1] contains the file extension and report[0] contains the binary data of the report encoded in base64
-File.open("invoice_report.#{report[1]}", "w") {|f| f.write(Base64.decode64(report[0]))} 
+File.open("invoice_report.#{report[1]}", "w") {|f| f.write(Base64.decode64(report[0]))}
 ```
 
 Change logged user:
